@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<body style="margin:0;padding:0;background-color:#0B0810;">
+  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">Confirm the new email address on your SixCentral account.</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0B0810;padding:36px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#120D1B;border:1px solid #2a2138;border-radius:14px;">
+          <tr>
+            <td style="padding:30px 32px 6px;font-family:Arial,Helvetica,sans-serif;">
+              <span style="font-size:21px;font-weight:bold;letter-spacing:1.5px;color:#ffffff;">SIX</span><span style="font-size:21px;font-weight:bold;letter-spacing:1.5px;color:#FF2E88;">CENTRAL</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:14px 32px 0;font-family:Arial,Helvetica,sans-serif;color:#F4EFE8;font-size:22px;font-weight:bold;line-height:1.3;">Confirm your new email</td>
+          </tr>
+          <tr>
+            <td style="padding:12px 32px 0;font-family:Arial,Helvetica,sans-serif;color:#A498BC;font-size:14px;line-height:1.65;">You asked to change your SixCentral account email to {{ .NewEmail }}. Confirm it below and the switch completes. Until then, your current address stays active.</td>
+          </tr>
+          <tr>
+            <td style="padding:26px 32px;" align="left">
+              <a href="{{ .ConfirmationURL }}" style="background-color:#FF2E88;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;text-decoration:none;padding:13px 28px;border-radius:10px;display:inline-block;">Confirm new email</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 32px 10px;font-family:Arial,Helvetica,sans-serif;color:#6F6488;font-size:12px;line-height:1.6;">
+              Button not working? Copy this link into your browser:<br>
+              <a href="{{ .ConfirmationURL }}" style="color:#1FE5D6;word-break:break-all;">{{ .ConfirmationURL }}</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:18px 32px 28px;font-family:Arial,Helvetica,sans-serif;color:#6F6488;font-size:11px;line-height:1.7;border-top:1px solid #241b33;">
+              Didn’t request this change? Ignore this email and your account stays exactly as it is — then reset your password from the site, just to be safe.<br><br>
+              SixCentral &mdash; the UK companion for Grand Theft Auto VI. An independent fan site, not affiliated with Rockstar Games or Take-Two Interactive.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
