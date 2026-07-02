@@ -23,6 +23,7 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg } }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="submit" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="account" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>
   );

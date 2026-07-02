@@ -188,6 +188,9 @@ export default function ProfileTab() {
               <Text style={st.proBadgeText}>PRO</Text>
             </View>
           )}
+          <Pressable style={st.editBtn} onPress={() => router.push('/account')} hitSlop={6}>
+            <Text style={st.editBtnText}>✎ Edit</Text>
+          </Pressable>
         </View>
 
         {profile?.bio ? <Text style={st.bio}>{profile.bio}</Text> : null}
@@ -322,7 +325,7 @@ export default function ProfileTab() {
           ))
         )}
 
-        <Text style={st.note}>Bio, flair, friends and gamer IDs are managed on the website for now. The app catches up fast.</Text>
+        <Text style={st.note}>Date of birth and password changes live on the website for now.</Text>
         <Pressable style={st.signout} onPress={() => supabase.auth.signOut()}>
           <Text style={st.signoutText}>Sign out</Text>
         </Pressable>
@@ -348,6 +351,8 @@ const st = StyleSheet.create({
   avatarLetter: { fontSize: 26, fontWeight: '900' },
   handle: { color: C.text, fontSize: 21, fontWeight: '800' },
   rank: { color: C.gold, marginTop: 2, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 },
+  editBtn: { borderColor: C.line2, borderWidth: 1, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6, marginLeft: 8 },
+  editBtnText: { color: C.cyan, fontWeight: '800', fontSize: 11 },
   proBadge: { backgroundColor: 'rgba(255,200,61,0.15)', borderColor: C.gold, borderWidth: 1, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
   proBadgeText: { color: C.gold, fontWeight: '900', fontSize: 11, letterSpacing: 1 },
   bio: { color: C.muted, lineHeight: 20, marginBottom: 12 },
