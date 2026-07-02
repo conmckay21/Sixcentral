@@ -34,7 +34,7 @@ const LICENCE_SUMMARY =
   'You keep ownership. It is your clip, always. You let SixCentral feature it on the site, in the app and in weekly best of compilations. We credit you and link your channel wherever it appears. Ask us to remove it any time.';
 
 function parseYoutubeId(input: string): string | null {
-  const m = input.match(/(?:youtu\.be\/|v=|shorts\/|embed\/)([A-Za-z0-9_-]{11})/);
+  const m = input.match(/(?:youtu\.be\/|v=|shorts\/|embed\/|live\/)([A-Za-z0-9_-]{11})/);
   if (m) return m[1];
   const bare = input.trim();
   return /^[A-Za-z0-9_-]{11}$/.test(bare) ? bare : null;
@@ -52,6 +52,9 @@ export default function ClipsSection() {
   const [myReacts, setMyReacts] = useState<Record<string, Partial<Record<ReactKey, boolean>>>>({});
   const [hint, setHint] = useState('');
 
+  const [route, setRoute] = useState<'link' | 'file'>('link');
+  const [file, setFile] = useState<File | null>(null);
+  const [phase, setPhase] = useState('');
   const [link, setLink] = useState('');
   const [caption, setCaption] = useState('');
   const [category, setCategory] = useState('gameplay');
@@ -239,13 +242,78 @@ export default function ClipsSection() {
     setInbox((rows) => rows.filter((r) => r.id !== id));
   }
 
+  async function submitFile() {
+    if (!sb || !session || state === 'busy') return;
+    if (!file) {
+      setState('error');
+      setMsg('Pick a video first.');
+      return;
+    }
+    if (file.size > 100 * 1024 * 1024) {
+      setState('error');
+      setMsg('Keep it under 100MB for now. Trim the clip and try again.');
+      return;
+    }
+    if (!agree) {
+      setState('error');
+      setMsg('Tick the licence box and you are good to go.');
+      return;
+    }
+    setState('busy');
+    setPhase('Uploading your video…');
+    const path = `${session.user.id}/${crypto.randomUUID()}.${file.name.toLowerCase().endsWith('.mov') ? 'mov' : 'mp4'}`;
+    const { error: upErr } = await sb.storage.from('clip-intake').upload(path, file, {
+      contentType: file.type || 'video/mp4',
+    });
+    if (upErr) {
+      setState('error');
+      setPhase('');
+      setMsg('Upload failed. Check the connection and try again.');
+      return;
+    }
+    const { data: intake, error: inErr } = await sb
+      .from('clip_intake')
+      .insert({
+        profile_id: session.user.id,
+        storage_path: path,
+        caption: caption.trim() || null,
+        category,
+        comp_entry: comp,
+        terms_version: 'v1-web-upload',
+        agreed_at: new Date().toISOString(),
+      })
+      .select('id')
+      .single();
+    if (inErr || !intake) {
+      setState('error');
+      setPhase('');
+      setMsg('Could not queue the upload. Try again.');
+      return;
+    }
+    setPhase('Posting it to YouTube for you. Keep this tab open, it can take a couple of minutes…');
+    const res = await fetch('/api/clips/process', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ intakeId: intake.id }),
+    }).catch(() => null);
+    setPhase('');
+    if (res?.ok) {
+      setState('done');
+      setFile(null);
+    } else {
+      const body = res ? ((await res.json().catch(() => null)) as { error?: string } | null) : null;
+      setState('error');
+      setMsg(body?.error ?? 'Processing hiccuped. Your upload is safe, a moderator can retry it.');
+    }
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!sb || !session || state === 'busy') return;
     const vid = parseYoutubeId(link);
     if (!vid) {
       setState('error');
-      setMsg('That does not look like a YouTube link. Paste the full watch, share or Shorts URL.');
+      setMsg('That does not look like a YouTube link. Any YouTube video or Short works: the watch URL, the share link or the Shorts link. TikTok links and phone uploads arrive with the app.');
       return;
     }
     if (!agree) {
@@ -450,22 +518,56 @@ export default function ClipsSection() {
             <form className="panel" onSubmit={submit}>
               <div className="kicker">Submit a clip</div>
               <h2 className="panel__title">Get on the feed</h2>
-              <p className="panel__muted" style={{ maxWidth: '56ch' }}>
-                Paste a YouTube link. Works with normal videos and Shorts. Console share and
-                direct upload arrive with the app.
-              </p>
-
-              <div className="acct__field">
-                <label htmlFor="cliplink">YouTube link</label>
-                <input
-                  id="cliplink"
-                  className="nl__input"
-                  placeholder="https://youtu.be/…"
-                  value={link}
-                  onChange={(e) => setLink(e.target.value)}
-                  required
-                />
+              <div className="lb-toggle" style={{ marginTop: 10 }}>
+                <button type="button" className={route === 'link' ? 'on' : ''} onClick={() => setRoute('link')}>
+                  Paste a link
+                </button>
+                <button type="button" className={route === 'file' ? 'on' : ''} onClick={() => setRoute('file')}>
+                  Upload a video
+                </button>
               </div>
+
+              {route === 'link' ? (
+                <>
+                  <p className="panel__muted" style={{ maxWidth: '56ch', marginTop: 12 }}>
+                    Any YouTube link works: full videos, Shorts, share links, the lot.
+                  </p>
+                  <div className="acct__field">
+                    <label htmlFor="cliplink">YouTube link</label>
+                    <input
+                      id="cliplink"
+                      className="nl__input"
+                      placeholder="https://youtu.be/…"
+                      value={link}
+                      onChange={(e) => setLink(e.target.value)}
+                      required={route === 'link'}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="panel__muted" style={{ maxWidth: '56ch', marginTop: 12 }}>
+                    No YouTube account needed. Save the clip to your phone from the PlayStation or
+                    Xbox app, pick it here, and we post it to YouTube for you with your credit.
+                    Up to 100MB.
+                  </p>
+                  <div className="acct__field">
+                    <label htmlFor="clipfile">Your video</label>
+                    <input
+                      id="clipfile"
+                      className="nl__input"
+                      type="file"
+                      accept="video/mp4,video/quicktime"
+                      onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                    />
+                    {file && (
+                      <p className="panel__hint">
+                        {file.name} · {(file.size / (1024 * 1024)).toFixed(1)}MB
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
 
               <div className="acct__field">
                 <label htmlFor="clipcap">Caption</label>
@@ -504,11 +606,18 @@ export default function ClipsSection() {
                 <span>I agree to the Clip Licence above.</span>
               </label>
 
+              {phase && <p className="panel__hint">{phase}</p>}
               {state === 'error' && <p className="panel__err">{msg}</p>}
 
-              <button className="nl__btn" type="submit" disabled={state === 'busy'}>
-                {state === 'busy' ? 'Submitting…' : 'Submit for review'}
-              </button>
+              {route === 'link' ? (
+                <button className="nl__btn" type="submit" disabled={state === 'busy'}>
+                  {state === 'busy' ? 'Submitting…' : 'Submit for review'}
+                </button>
+              ) : (
+                <button className="nl__btn" type="button" disabled={state === 'busy'} onClick={submitFile}>
+                  {state === 'busy' ? 'Working…' : 'Upload for review'}
+                </button>
+              )}
             </form>
           )}
         </div>

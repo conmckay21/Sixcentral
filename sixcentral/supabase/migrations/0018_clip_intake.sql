@@ -1,0 +1,6 @@
+-- ============================================================================
+--  SixCentral — 0018: clip intake (applied live 2 Jul 2026)
+--  Plan A: direct uploads land in a private 100MB-capped storage bucket plus
+--  an intake row; the processor posts to the SixCentral YouTube channel and
+--  hands the video_id to clip_submissions. See live project for canonical SQL.
+-- ============================================================================
