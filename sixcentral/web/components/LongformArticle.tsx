@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { AnyContent, Guide } from '@/lib/types';
 import { formatDate } from '@/lib/format';
-import HeroArt from '@/components/HeroArt';
+import HeroMedia from '@/components/HeroMedia';
 
 function isGuide(c: AnyContent): c is Guide {
   return c.kind === 'guide';
@@ -31,7 +31,7 @@ export default function LongformArticle({
         </div>
 
         <div className="article__hero" style={{ background: content.gradient }}>
-          <HeroArt motif={content.motif} gradient={content.gradient} />
+          <HeroMedia motif={content.motif} gradient={content.gradient} heroImage={content.heroImage} showCredit />
           <div className="v" />
         </div>
 
@@ -85,7 +85,7 @@ export default function LongformArticle({
                     className={rRumour ? 'row-item row-item--rumour' : 'row-item'}
                   >
                     <div className="row-item__thumb">
-                      <HeroArt motif={r.motif} gradient={r.gradient} compact />
+                      <HeroMedia motif={r.motif} gradient={r.gradient} heroImage={r.heroImage} compact />
                     </div>
                     <div>
                       <div className={rRumour ? 'row-item__k row-item__k--rumour' : 'row-item__k'}>

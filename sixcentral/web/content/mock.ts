@@ -14,94 +14,9 @@ export const MOCK_CATEGORIES: Category[] = [
 const G = (s: string) => s; // gradient passthrough for readability
 
 export const MOCK_GUIDES: Guide[] = [
-  {
-    kind: 'guide',
-    slug: 'your-first-ten-hours',
-    motif: 'skyline',
-    title: 'Your first ten hours in Leonida',
-    kicker: 'Beginner',
-    category: 'beginner',
-    excerpt: 'A spoiler-safe path through the opening: what to prioritise, what to ignore, and how not to waste your early money.',
-    updatedAt: '2026-06-30',
-    readingMins: 11,
-    gradient: 'linear-gradient(150deg,#FF2E88,#8A4FFF 60%,#1FE5D6)',
-    body: [
-      { type: 'p', text: 'The opening hours of a Grand Theft Auto game set the tone for everything after, and Leonida is no different. This guide keeps things spoiler-safe while pointing you at the decisions that actually matter early on.' },
-      { type: 'h2', text: 'Do these first' },
-      { type: 'ul', items: ['Follow the story until the map opens up — it unlocks fast travel and key services.', 'Grab the free collectibles that sit on your critical path; do not detour for them yet.', 'Hold your cash. The tempting early purchases are rarely the ones worth making.'] },
-      { type: 'p', text: 'Once the world is open, switch to the SixCentral tracker so your collectible and completion progress carries across every session.' },
-    ],
-    trackable: { label: 'Overall completion', slug: 'completion' },
-  },
-  {
-    kind: 'guide',
-    slug: 'fastest-money-methods',
-    motif: 'money',
-    title: 'The fastest legit money methods at launch',
-    kicker: 'Money',
-    category: 'money',
-    excerpt: 'No glitches, no exploits — the cleanest ways to build a bankroll in the early game, ranked by effort.',
-    updatedAt: '2026-06-30',
-    readingMins: 8,
-    isNew: true,
-    gradient: 'linear-gradient(150deg,#35E27C,#1FE5D6 60%,#8A4FFF)',
-    body: [
-      { type: 'p', text: 'Everyone wants a fast bankroll. These are legitimate, launch-day-safe methods — no glitches that get patched and no exploits that risk your save.' },
-      { type: 'h2', text: 'Ranked by effort vs reward' },
-      { type: 'ul', items: ['Story payouts — the reliable baseline; do not skip optional objectives.', 'Early businesses that pay back quickly (see our businesses guide).', 'Repeatable world activities once the map is open.'] },
-    ],
-  },
-  {
-    kind: 'guide',
-    slug: 'all-hidden-package-locations',
-    motif: 'map',
-    title: 'All hidden package locations & map',
-    kicker: 'Collectibles',
-    category: 'collectibles',
-    excerpt: 'Every hidden package, plotted on our original interactive map, with your found/missing count synced to the tracker.',
-    updatedAt: '2026-06-28',
-    readingMins: 11,
-    gradient: 'linear-gradient(150deg,#FF2E88,#FF9E45 60%,#FFC83D)',
-    body: [
-      { type: 'p', text: 'Hidden packages are the classic completionist grind. This guide plots every location on the SixCentral map — our own artwork, with community-verified pins.' },
-      { type: 'h2', text: 'How to use this with the tracker' },
-      { type: 'p', text: 'Open the companion app to see which packages you have left. The map shows verified pins for everyone and pending pins that the community is still confirming.' },
-    ],
-    trackable: { label: 'Hidden packages', slug: 'hidden-packages' },
-  },
-  {
-    kind: 'guide',
-    slug: 'full-completion-checklist',
-    motif: 'controller',
-    title: 'Full 100% completion checklist',
-    kicker: '100%',
-    category: 'collectibles',
-    excerpt: 'Everything you need to hit 100% in Leonida, in a sensible order, with live progress from your tracker.',
-    updatedAt: '2026-06-30',
-    readingMins: 14,
-    gradient: 'linear-gradient(150deg,#8A4FFF,#FF2E88 60%,#1FE5D6)',
-    body: [
-      { type: 'p', text: 'A complete, ordered checklist for 100% completion. Work top to bottom and your tracker keeps the running total.' },
-    ],
-    trackable: { label: 'Completion', slug: 'completion' },
-  },
-  {
-    kind: 'guide',
-    slug: 'leonida-map-regions',
-    motif: 'palms',
-    title: 'Leonida map: every region explained',
-    kicker: 'The world',
-    category: 'map',
-    excerpt: 'Vice City, the Keys, Grassrivers, Port Gellhorn — what each region is, and what to expect there.',
-    updatedAt: '2026-06-27',
-    readingMins: 12,
-    gradient: 'linear-gradient(150deg,#1FE5D6,#8A4FFF 60%,#FF2E88)',
-    body: [
-      { type: 'p', text: 'Grand Theft Auto VI is set in the state of Leonida, a modern reimagining of Florida centred on Vice City. Here is what we know about each named region so far.' },
-      { type: 'h2', text: 'Named regions' },
-      { type: 'ul', items: ['Vice City — the neon Miami analogue at the heart of the map.', 'Leonida Keys — the island chain to the south.', 'Grassrivers — the Everglades-inspired wetlands.', 'Port Gellhorn — an industrial port district.'] },
-    ],
-  },
+  // Deliberately empty pre-launch. Nothing publishes as a guide before it can
+  // be verified in-game — /guides carries the Guides Desk roadmap instead.
+  // The full guide system (cards, tracker chips, articles) is built and waiting.
 ];
 
 export const MOCK_ARTICLES: Article[] = [
@@ -241,6 +156,9 @@ export const MOCK_ARTICLES: Article[] = [
     readingMins: 6,
     gradient: 'linear-gradient(150deg,#FF2E88,#FF9E45 60%,#FFC83D)',
     motif: 'palms',
+    // To run a credited official screenshot instead of the generated art,
+    // drop the file in web/public/media/ and uncomment:
+    // heroImage: { src: '/media/gtavi-screenshot-01.jpg', alt: 'Vice City at dusk', credit: 'Rockstar Games' },
     body: [
       { type: 'p', text: 'Alongside pre-orders opening on 25 June, Rockstar published its biggest still-image release for the game so far — more than 60 screenshots, 51 of them on the official media page, largely built around the Ultimate Edition and the Vintage Vice City Pack.' },
       { type: 'h2', text: 'What the images genuinely confirm' },

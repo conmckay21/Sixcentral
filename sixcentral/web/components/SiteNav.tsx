@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { DISCORD_INVITE } from '@/lib/site';
 
 export default function SiteNav() {
   return (
@@ -10,7 +11,11 @@ export default function SiteNav() {
         <div className="nav__links">
           <Link href="/guides">Guides</Link>
           <Link href="/news/everything-confirmed">News</Link>
-          <Link href="/guides/leonida-map-regions">Map</Link>
+          {DISCORD_INVITE && (
+            <a href={DISCORD_INVITE} target="_blank" rel="noopener noreferrer">
+              Discord
+            </a>
+          )}
           <Link href="/#app" className="nav__cta">
             Get the app
           </Link>

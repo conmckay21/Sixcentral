@@ -294,3 +294,35 @@ img { max-width: 100%; display: block; }
 }
 .rumour-box strong { color: var(--orange); }
 .row-item__thumb { position: relative; overflow: hidden; }
+
+/* ---- Guides desk / community / media credit ---- */
+.grid--2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 860px) { .grid--2 { grid-template-columns: 1fr; } }
+.hero--guides h1 { max-width: 16ch; }
+.cov { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 860px) { .cov { grid-template-columns: 1fr; } }
+.cov__item {
+  display: flex; gap: 14px; border: 1px solid var(--line); border-radius: 12px;
+  padding: 16px; background: var(--bg2);
+}
+.cov__k {
+  flex: 0 0 74px; font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--cyan); padding-top: 3px;
+}
+.cov__t { font-weight: 600; color: #fff; margin-bottom: 4px; }
+.cov__d { color: var(--muted); font-size: 0.88rem; line-height: 1.5; }
+.btn-crew {
+  display: inline-block; margin-top: 16px; background: var(--cyan); color: #062a27;
+  font-family: var(--mono); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; padding: 12px 22px; border-radius: 10px;
+  transition: filter 0.15s ease;
+}
+.btn-crew:hover { filter: brightness(1.12); }
+.btn-crew--soon { background: transparent; border: 1px dashed var(--line2); color: var(--dim); cursor: default; }
+.crew-note { color: var(--dim); font-size: 0.76rem; margin-top: 8px; }
+.media-credit {
+  position: absolute; right: 10px; bottom: 10px; z-index: 3;
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.06em; text-transform: uppercase;
+  color: rgba(244, 239, 232, 0.85); background: rgba(11, 8, 16, 0.65);
+  padding: 4px 8px; border-radius: 6px; backdrop-filter: blur(4px);
+}

@@ -2,6 +2,14 @@ export type Motif =
   | 'skyline' | 'palms' | 'cassette' | 'disc' | 'money' | 'map'
   | 'signal' | 'phone' | 'controller' | 'pc' | 'globe' | 'question';
 
+export type HeroImage = {
+  /** Path under /public, e.g. '/media/gtavi-vice-city-01.jpg' */
+  src: string;
+  alt: string;
+  /** Shown as “Image: {credit}” on the article page. */
+  credit: string;
+};
+
 export type Category = {
   slug: string;
   name: string;
@@ -19,6 +27,8 @@ export type ContentBase = {
   body: Array<{ type: 'p' | 'h2' | 'ul'; text?: string; items?: string[] }>;
   gradient: string; // hero palette (all-original, no game art)
   motif?: Motif;    // HeroArt illustration key
+  /** Optional credited official screenshot; falls back to HeroArt when absent. */
+  heroImage?: HeroImage;
   isNew?: boolean;
 };
 

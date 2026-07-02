@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Article } from '@/lib/types';
 import { formatDate } from '@/lib/format';
-import HeroArt from '@/components/HeroArt';
+import HeroMedia from '@/components/HeroMedia';
 
 function Heat({ level }: { level: number }) {
   return (
@@ -17,7 +17,7 @@ export default function ArticleRow({ article }: { article: Article }) {
   return (
     <Link href={`/news/${article.slug}`} className={rumour ? 'row-item row-item--rumour' : 'row-item'}>
       <div className="row-item__thumb">
-        <HeroArt motif={article.motif} gradient={article.gradient} compact />
+        <HeroMedia motif={article.motif} gradient={article.gradient} heroImage={article.heroImage} compact />
       </div>
       <div>
         <div className={rumour ? 'row-item__k row-item__k--rumour' : 'row-item__k'}>

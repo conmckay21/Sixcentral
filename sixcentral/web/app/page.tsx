@@ -1,16 +1,15 @@
 import Link from 'next/link';
 import Countdown from '@/components/Countdown';
 import NewsletterSignup from '@/components/NewsletterSignup';
-import HeroArt from '@/components/HeroArt';
-import GuideCard from '@/components/GuideCard';
+import HeroMedia from '@/components/HeroMedia';
+import { DISCORD_INVITE } from '@/lib/site';
 import ArticleRow from '@/components/ArticleRow';
-import { getGuides, getLatestArticles, getFeatured, getRumours } from '@/lib/content';
+import { getLatestArticles, getFeatured, getRumours } from '@/lib/content';
 
 export const metadata = { alternates: { canonical: '/' } };
 
 export default async function HomePage() {
-  const [guides, articles, featured, rumours] = await Promise.all([
-    getGuides(),
+  const [articles, featured, rumours] = await Promise.all([
     getLatestArticles(4),
     getFeatured(),
     getRumours(5),
@@ -39,7 +38,7 @@ export default async function HomePage() {
         <div className="wrap">
           <Link href={`/news/${featured.slug}`} className="card" style={{ minHeight: 220 }}>
             <div className="card__media" style={{ height: 220, background: featured.gradient }}>
-              <HeroArt motif={featured.motif} gradient={featured.gradient} />
+              <HeroMedia motif={featured.motif} gradient={featured.gradient} heroImage={featured.heroImage} />
               <div className="v" />
               <div style={{ position: 'absolute', bottom: 0, padding: 22, zIndex: 2 }}>
                 <div className="card__kicker" style={{ color: 'var(--gold)' }}>
@@ -63,20 +62,34 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Latest guides */}
+      {/* The guides desk */}
       <section className="section">
         <div className="wrap">
           <div className="section__head">
             <h2>
-              Latest <span className="c">guides</span>
+              The guides <span className="c">desk</span>
             </h2>
-            <Link href="/guides">All guides →</Link>
+            <Link href="/guides">What&rsquo;s coming &rarr;</Link>
           </div>
-          <div className="grid grid--3">
-            {guides.slice(0, 3).map((g) => (
-              <GuideCard key={g.slug} guide={g} />
-            ))}
-          </div>
+          <Link href="/guides" className="card" style={{ padding: 28, display: 'block' }}>
+            <div className="kicker" style={{ color: 'var(--green)' }}>Live from day one</div>
+            <div
+              style={{
+                fontFamily: 'var(--display)',
+                textTransform: 'uppercase',
+                fontSize: '1.6rem',
+                margin: '8px 0',
+              }}
+            >
+              Everything from A to Z &mdash; the moment there is a game to guide
+            </div>
+            <p style={{ color: 'var(--muted)', maxWidth: '66ch' }}>
+              Spoiler-safe story walkthrough, the 100% checklist, every collectible on our own
+              community-verified map, money &amp; businesses, trophies live the day the list
+              publishes. Nothing publishes before it can be verified in-game &mdash; that is the
+              whole point.
+            </p>
+          </Link>
         </div>
       </section>
 
@@ -92,6 +105,101 @@ export default async function HomePage() {
             {articles.map((a) => (
               <ArticleRow key={a.slug} article={a} />
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* The Rumour Mill */}
+      <section className="section section--rumour" id="rumour-mill">
+        <div className="wrap">
+          <div className="section__head">
+            <h2>
+              The <span className="r">rumour mill</span>
+            </h2>
+            <span className="rumour-note">Unconfirmed by design — never mixed with the facts.</span>
+          </div>
+          <div className="rows">
+            {rumours.map((a) => (
+              <ArticleRow key={a.slug} article={a} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Launch list */}
+      <section className="section" id="newsletter">
+        <div className="wrap">
+          <NewsletterSignup source="home" />
+        </div>
+      </section>
+
+      {/* The app + the crew */}
+      <section className="section" id="app">
+        <div className="wrap">
+          <div className="grid grid--2">
+            <div
+              className="card"
+              style={{
+                padding: 30,
+                background: 'linear-gradient(160deg, rgba(255,46,136,0.14), var(--bg2))',
+                borderColor: 'var(--pink)',
+              }}
+            >
+              <div className="kicker" style={{ color: 'var(--pink-l)' }}>
+                The companion app
+              </div>
+              <h2
+                style={{
+                  fontFamily: 'var(--display)',
+                  textTransform: 'uppercase',
+                  fontSize: '1.8rem',
+                  margin: '8px 0',
+                }}
+              >
+                Track your 100% on the go
+              </h2>
+              <p style={{ color: 'var(--muted)', maxWidth: '52ch' }}>
+                An interactive map, collectible tracking that syncs with these guides, a community
+                clip feed, and a reputation ladder for the people mapping the game. Coming to iOS
+                and Android.
+              </p>
+            </div>
+            <div
+              className="card"
+              style={{
+                padding: 30,
+                background: 'linear-gradient(160deg, rgba(31,229,214,0.12), var(--bg2))',
+                borderColor: 'var(--cyan)',
+              }}
+              id="community"
+            >
+              <div className="kicker">The community</div>
+              <h2
+                style={{
+                  fontFamily: 'var(--display)',
+                  textTransform: 'uppercase',
+                  fontSize: '1.8rem',
+                  margin: '8px 0',
+                }}
+              >
+                Join the crew
+              </h2>
+              <p style={{ color: 'var(--muted)', maxWidth: '52ch' }}>
+                The Discord is where SixCentral gets built: founding contributors, pre-order intel,
+                and first access to everything. Confirmed contributions earn Respect on The Come-Up
+                &mdash; climb the ladder and Premium comes free at Lieutenant.
+              </p>
+              {DISCORD_INVITE ? (
+                <a className="btn-crew" href={DISCORD_INVITE} target="_blank" rel="noopener noreferrer">
+                  Join the Discord
+                </a>
+              ) : (
+                <div>
+                  <span className="btn-crew btn-crew--soon">Discord opens soon</span>
+                  <p className="crew-note">Launch-list members get the first invites.</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </section>

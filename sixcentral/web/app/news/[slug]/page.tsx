@@ -19,6 +19,9 @@ export async function generateMetadata({
     title: article.title,
     description: article.excerpt,
     alternates: { canonical: `/news/${article.slug}` },
+    ...(article.heroImage
+      ? { openGraph: { images: [{ url: article.heroImage.src, alt: article.heroImage.alt }] } }
+      : {}),
   };
 }
 

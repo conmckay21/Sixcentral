@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import NewsletterSignup from '@/components/NewsletterSignup';
+import { DISCORD_INVITE } from '@/lib/site';
 
 export default function SiteFooter() {
   return (
@@ -19,12 +20,18 @@ export default function SiteFooter() {
               <h4>Explore</h4>
               <Link href="/guides">Guides</Link>
               <Link href="/news/everything-confirmed">News</Link>
-              <Link href="/guides/leonida-map-regions">Map</Link>
+              <Link href="/#rumour-mill">The Rumour Mill</Link>
             </div>
             <div className="footer__col">
               <h4>Community</h4>
               <Link href="/#app">The app</Link>
-              <Link href="/#app">Discord</Link>
+              {DISCORD_INVITE ? (
+                <a href={DISCORD_INVITE} target="_blank" rel="noopener noreferrer">
+                  Discord
+                </a>
+              ) : (
+                <Link href="/#newsletter">Discord (soon)</Link>
+              )}
               <Link href="/#app">Clip of the Month</Link>
             </div>
           </div>
