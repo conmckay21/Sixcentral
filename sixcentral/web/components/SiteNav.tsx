@@ -11,6 +11,7 @@ export default function SiteNav() {
         <div className="nav__links">
           <Link href="/guides">Guides</Link>
           <Link href="/crew">Crew</Link>
+          <Link href="/clips">Clips</Link>
           <Link href="/news/everything-confirmed">News</Link>
           {DISCORD_INVITE && (
             <a href={DISCORD_INVITE} target="_blank" rel="noopener noreferrer">

@@ -5,6 +5,16 @@ import type { Session } from '@supabase/supabase-js';
 import { getBrowserSupabase } from '@/lib/supabase-browser';
 
 type Payload = { about?: string | null; details?: string; source?: string | null };
+type ClipRow = {
+  id: string;
+  video_id: string;
+  caption: string | null;
+  category: string | null;
+  source: string | null;
+  created_at: string;
+  profiles: { handle: string } | null;
+};
+
 type Row = {
   id: string;
   type_key: string;
@@ -24,12 +34,13 @@ export default function ModQueue() {
   const [session, setSession] = useState<Session | null>(null);
   const [isMod, setIsMod] = useState<boolean | null>(null);
   const [pending, setPending] = useState<Row[]>([]);
+  const [clipQueue, setClipQueue] = useState<ClipRow[]>([]);
   const [recent, setRecent] = useState<Row[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!sb) return;
-    const [{ data: p }, { data: r }] = await Promise.all([
+    const [{ data: p }, { data: r }, { data: cq }] = await Promise.all([
       sb.from('contributions').select(EMBED).eq('status', 'pending').order('created_at', { ascending: true }),
       sb
         .from('contributions')
@@ -37,9 +48,15 @@ export default function ModQueue() {
         .neq('status', 'pending')
         .order('reviewed_at', { ascending: false })
         .limit(10),
+      sb
+        .from('clip_submissions')
+        .select('id, video_id, caption, category, source, created_at, profiles!clip_submissions_profile_id_fkey(handle)')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true }),
     ]);
     if (p) setPending(p as unknown as Row[]);
     if (r) setRecent(r as unknown as Row[]);
+    if (cq) setClipQueue(cq as unknown as ClipRow[]);
   }, [sb]);
 
   useEffect(() => {
@@ -62,6 +79,17 @@ export default function ModQueue() {
       setReady(true);
     });
   }, [sb, load]);
+
+  async function reviewClip(id: string, status: 'approved' | 'rejected') {
+    if (!sb || !session || busy) return;
+    setBusy(id);
+    const { error } = await sb
+      .from('clip_submissions')
+      .update({ status, reviewed_by: session.user.id })
+      .eq('id', id);
+    if (!error) setClipQueue((rows) => rows.filter((r) => r.id !== id));
+    setBusy(null);
+  }
 
   async function review(id: string, status: 'accepted' | 'rejected') {
     if (!sb || !session || busy) return;
@@ -140,6 +168,48 @@ export default function ModQueue() {
                   disabled={busy === row.id}
                   onClick={() => review(row.id, 'rejected')}
                 >
+                  Reject
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="section__head" style={{ margin: '30px 0 12px' }}>
+        <h2 style={{ fontSize: '1.1rem' }}>Clip queue</h2>
+        <span className="rumour-note">{clipQueue.length} pending</span>
+      </div>
+      {clipQueue.length === 0 ? (
+        <p className="panel__muted">No clips waiting.</p>
+      ) : (
+        <div className="modq">
+          {clipQueue.map((c) => (
+            <div key={c.id} className="modq__item">
+              <div className="modq__meta">
+                <span className="modq__type">clip · {c.category ?? 'uncategorised'} · via {c.source ?? 'link'}</span>
+                <span className="modq__who">@{c.profiles?.handle ?? 'unknown'}</span>
+              </div>
+              <div className="modq__clip">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`https://i.ytimg.com/vi/${c.video_id}/hqdefault.jpg`} alt="" />
+                <div>
+                  <p className="modq__details">{c.caption ?? 'No caption'}</p>
+                  <a
+                    className="modq__source"
+                    href={`https://www.youtube.com/watch?v=${c.video_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Watch on YouTube
+                  </a>
+                </div>
+              </div>
+              <div className="modq__actions">
+                <button className="modq__accept" disabled={busy === c.id} onClick={() => reviewClip(c.id, 'approved')}>
+                  Approve and pay 50 Respect
+                </button>
+                <button className="modq__reject" disabled={busy === c.id} onClick={() => reviewClip(c.id, 'rejected')}>
                   Reject
                 </button>
               </div>

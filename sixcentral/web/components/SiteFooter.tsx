@@ -21,6 +21,7 @@ export default function SiteFooter() {
               <Link href="/guides">Guides</Link>
               <Link href="/news/everything-confirmed">News</Link>
               <Link href="/#rumour-mill">The Rumour Mill</Link>
+              <Link href="/clips">Clips</Link>
             </div>
             <div className="footer__col">
               <h4>Community</h4>

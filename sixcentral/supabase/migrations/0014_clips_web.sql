@@ -1,0 +1,6 @@
+-- ============================================================================
+--  SixCentral — 0014: clips go live on the web (applied 2 Jul 2026)
+--  clip_submissions (0001) gains moderation columns, RLS, video_id
+--  uniqueness/format checks, and the approval trigger paying the live
+--  clip_upload rate via award_respect. See project for canonical SQL.
+-- ============================================================================
