@@ -88,7 +88,7 @@ export default function ModQueue() {
     return (
       <div className="panel">
         <p className="panel__muted">
-          Moderators only — verification powers unlock at Shot Caller on The Come-Up.
+          Moderators only. Verification powers unlock at Shot Caller on The Come-Up.
         </p>
       </div>
     );
@@ -133,7 +133,7 @@ export default function ModQueue() {
                   disabled={busy === row.id}
                   onClick={() => review(row.id, 'accepted')}
                 >
-                  Accept — award Respect
+                  Accept and award Respect
                 </button>
                 <button
                   className="modq__reject"

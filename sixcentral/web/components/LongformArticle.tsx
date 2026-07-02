@@ -24,7 +24,7 @@ export default function LongformArticle({
           {isGuide(content) ? (
             <span>Updated {formatDate(content.updatedAt)}</span>
           ) : content.isRumour ? (
-            <span className="article__rumour-flag">Rumour — unconfirmed · heat {content.credibility ?? 2}/5</span>
+            <span className="article__rumour-flag">Rumour · unconfirmed · heat {content.credibility ?? 2}/5</span>
           ) : (
             <span className="article__check">✓ Facts checked {formatDate(content.updatedAt)}</span>
           )}
@@ -40,7 +40,7 @@ export default function LongformArticle({
           <div className="rumour-box">
             <strong>This is a Rumour Mill piece.</strong> Nothing here is confirmed by Rockstar
             unless explicitly marked. Our heat rating reflects the quality of the sourcing, not a
-            promise — confirmed facts live in the news section, never here.
+            promise. Confirmed facts live in the news section, never here.
           </div>
         )}
 
@@ -66,7 +66,7 @@ export default function LongformArticle({
           <Link href={`/contribute?type=verified_correction&about=/${isGuide(content) ? 'guides' : 'news'}/${content.slug}`}>
             Report it
           </Link>{' '}
-          — Respect on The Come-Up if you&rsquo;re right.
+          and bank Respect on The Come-Up if you&rsquo;re right.
         </p>
 
         {isGuide(content) && content.trackable && (

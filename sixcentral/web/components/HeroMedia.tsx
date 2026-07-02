@@ -2,7 +2,7 @@ import HeroArt from '@/components/HeroArt';
 import type { Motif, HeroImage } from '@/lib/types';
 
 /**
- * HeroMedia — the one media slot for every card and article hero.
+ * HeroMedia: the one media slot for every card and article hero.
  *
  * If the content has a `heroImage` (an official, credited press screenshot
  * the editor has added to /public/media), it renders that with an automatic
@@ -10,7 +10,7 @@ import type { Motif, HeroImage } from '@/lib/types';
  *
  * Editorial rule: images come only from Rockstar's official published
  * galleries (Newswire / media page), always credited, used in article
- * context only — never in branding, logos, or store creative.
+ * context only, never in branding, logos, or store creative.
  */
 export default function HeroMedia({
   motif,

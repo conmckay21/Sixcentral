@@ -1,11 +1,11 @@
 import type { Motif } from '@/lib/types';
 
 /**
- * HeroArt — SixCentral's original editorial artwork system.
+ * HeroArt: SixCentral's original editorial artwork system.
  *
  * Every article hero is generated, original art: a synthwave sky pulled from
  * the article's own gradient, a slatted retro sun, and a per-article motif
- * silhouette. No screenshots, no third-party IP — the imagery is ours.
+ * silhouette. No screenshots, no third-party IP. The imagery is ours.
  *
  * Renders absolutely inside a positioned container (.card__media,
  * .article__hero, .row-item__thumb).

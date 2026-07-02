@@ -51,7 +51,7 @@ export default function TheComeUp() {
           <div className="ladder">
             {(ranks.length ? ranks : []).map((r) => (
               <div key={r.id} className="ladder__row">
-                <span className="ladder__heat heat heat--gold">{'▮'.repeat(Math.max(r.heat, 0)) || '–'}</span>
+                <span className="ladder__heat heat heat--gold">{'▮'.repeat(Math.max(r.heat, 0)) || '·'}</span>
                 <span className="ladder__name">{r.name}</span>
                 <span className="ladder__min">{r.min_respect.toLocaleString('en-GB')} Respect</span>
                 <span className="ladder__perk">{r.perk ?? ''}</span>
@@ -72,8 +72,8 @@ export default function TheComeUp() {
           </div>
           <p style={{ color: 'var(--muted)', maxWidth: '68ch', marginBottom: 18 }}>
             Respect is only ever awarded for <strong style={{ color: 'var(--green)' }}>confirmed</strong>{' '}
-            contributions — a submission earns nothing until a moderator or trusted member verifies
-            it. That gate is what keeps the board honest and the data trustworthy.
+            contributions. A submission earns nothing until a moderator or trusted member verifies
+            it. That gate keeps the board honest and the data worth trusting.
           </p>
           <div className="earn">
             {earn.map((e) => (
@@ -89,8 +89,8 @@ export default function TheComeUp() {
               submit intel or a correction
             </Link>{' '}
             right here on the site, or earn as a founding contributor in the Discord. The full
-            pipeline — map pins, collectible confirmations, clip features — opens with the tracker
-            at launch.
+            pipeline of map pins, collectible confirmations and clip features opens with the
+            tracker at launch.
           </p>
         </div>
       </section>
@@ -114,7 +114,7 @@ export default function TheComeUp() {
           {rows.length === 0 ? (
             <p className="panel__muted">
               {loaded
-                ? 'The board opens with the first crew members — early names live here forever.'
+                ? 'The board opens with the first crew members. Early names live here forever.'
                 : 'Loading…'}
             </p>
           ) : (

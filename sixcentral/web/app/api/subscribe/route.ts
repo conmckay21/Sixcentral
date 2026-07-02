@@ -3,7 +3,7 @@ import { getSupabase } from '@/lib/supabase';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-/** Stored verbatim with each signup — the provable consent record. */
+/** Stored verbatim with each signup: the provable consent record. */
 const CONSENT_TEXT =
   'SixCentral launch updates and newsletter. Unsubscribe at any time.';
 
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
   const sb = getSupabase();
   if (!sb) {
     return NextResponse.json(
-      { ok: false, error: 'Signups aren’t open just yet — check back soon.' },
+      { ok: false, error: 'Signups are not open just yet. Check back soon.' },
       { status: 503 },
     );
   }
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
   // endpoint can't be used to probe whether an address is subscribed.
   if (error && error.code !== '23505') {
     return NextResponse.json(
-      { ok: false, error: 'Something went wrong — please try again.' },
+      { ok: false, error: 'Something went wrong. Please try again.' },
       { status: 500 },
     );
   }

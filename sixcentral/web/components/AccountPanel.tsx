@@ -39,15 +39,15 @@ const PRESETS = [
 
 /** Stored verbatim as the consent record for the account-page toggle. */
 const ACCOUNT_CONSENT =
-  'Launch-critical updates from SixCentral — pre-order intel, the launch-day checklist, and first access when the tracker goes live. Unsubscribe any time.';
+  'Launch-critical updates from SixCentral: pre-order intel, the launch-day checklist, and first access when the tracker goes live. Unsubscribe any time.';
 
 type Rank = { id: number; name: string; min_respect: number; heat: number; perk: string | null };
 
 const HANDLE_RE = /^[A-Za-z0-9_]{3,20}$/;
 
-/** Stored verbatim as the consent record — must match the checkbox label. */
+/** Stored verbatim as the consent record. Must match the checkbox label. */
 const SIGNUP_CONSENT =
-  'Launch-critical updates from SixCentral — pre-order intel, the launch-day checklist, and first access when the tracker goes live. Unsubscribe any time.';
+  'Launch-critical updates from SixCentral: pre-order intel, the launch-day checklist, and first access when the tracker goes live. Unsubscribe any time.';
 
 export default function AccountPanel() {
   const sb = getBrowserSupabase();
@@ -167,12 +167,12 @@ export default function AccountPanel() {
     if (!sb || authState === 'busy') return;
     if (!HANDLE_RE.test(handleField)) {
       setAuthState('error');
-      setAuthMsg('Handle: 3–20 characters, letters, numbers and underscores.');
+      setAuthMsg('Handles are 3 to 20 characters: letters, numbers and underscores.');
       return;
     }
     if (avail === 'taken') {
       setAuthState('error');
-      setAuthMsg('That handle is taken — pick another.');
+      setAuthMsg('That handle is taken. Pick another.');
       return;
     }
     if (password.length < 8) {
@@ -196,14 +196,14 @@ export default function AccountPanel() {
           .from('subscribers')
           .insert({ email: email.trim().toLowerCase(), source: 'signup', consent_text: SIGNUP_CONSENT });
       } catch {
-        /* ignore — the account matters more than the list entry */
+        /* ignore: the account matters more than the list entry */
       }
     }
     if (error) {
       setAuthState('error');
       setAuthMsg(
         /already registered/i.test(error.message)
-          ? 'That email already has an account — sign in instead.'
+          ? 'That email already has an account. Sign in instead.'
           : error.message,
       );
     } else if (!data.session) {
@@ -249,7 +249,7 @@ export default function AccountPanel() {
       setAuthMsg(error.message);
     } else {
       setAuthState('sent');
-      setAuthMsg('Reset link sent — check your inbox. It brings you back here to set a new password.');
+      setAuthMsg('Reset link sent. Check your inbox and it brings you straight back here to set a new one.');
     }
   }
 
@@ -325,7 +325,7 @@ export default function AccountPanel() {
       setDetailsMsg(
         /IDS_AGE/.test(error.message)
           ? 'Showing IDs publicly needs a date of birth on file showing 18+.'
-          : 'Could not save — check the fields and try again.',
+          : 'Could not save. Check the fields and try again.',
       );
     } else {
       setDetailsState('done');
@@ -347,7 +347,7 @@ export default function AccountPanel() {
     setFlairMsg('');
     const { error } = await sb.from('profiles').update({ flair: key }).eq('id', profile.id);
     if (error) {
-      setFlairMsg(/FLAIR_LOCKED/.test(error.message) ? 'Locked — earned at a higher rank.' : 'Could not set that.');
+      setFlairMsg(/FLAIR_LOCKED/.test(error.message) ? 'Locked. This one gets earned higher up the ladder.' : 'Could not set that.');
     } else {
       setProfile({ ...profile, flair: key });
     }
@@ -364,14 +364,14 @@ export default function AccountPanel() {
     const next = handle.trim();
     if (!HANDLE_RE.test(next)) {
       setSaveState('error');
-      setSaveMsg('3–20 characters: letters, numbers and underscores only.');
+      setSaveMsg('3 to 20 characters: letters, numbers and underscores only.');
       return;
     }
     setSaveState('busy');
     const { error } = await sb.from('profiles').update({ handle: next }).eq('id', profile.id);
     if (error) {
       setSaveState('error');
-      setSaveMsg(error.code === '23505' ? 'That handle is taken.' : 'Could not save — try again.');
+      setSaveMsg(error.code === '23505' ? 'That handle is taken.' : 'Could not save. Try again.');
     } else {
       setSaveState('done');
       setSaveMsg('Saved.');
@@ -427,7 +427,7 @@ export default function AccountPanel() {
       setAvatarState('idle');
     } catch (err) {
       setAvatarState('error');
-      setAvatarMsg(err instanceof Error ? err.message : 'Upload failed — try again.');
+      setAvatarMsg(err instanceof Error ? err.message : 'Upload failed. Try again.');
     }
   }
 
@@ -477,8 +477,8 @@ export default function AccountPanel() {
         <h2 className="panel__title">{isUp ? 'Join the crew' : 'Welcome back'}</h2>
         {isUp && (
           <p className="panel__muted" style={{ maxWidth: '54ch' }}>
-            One account for your handle, your Respect on The Come-Up, and — when the tracker
-            lands — your progress.
+            One account for your handle, your Respect on The Come-Up, and your 100% progress
+            when the tracker lands.
           </p>
         )}
 
@@ -500,9 +500,9 @@ export default function AccountPanel() {
                 />
                 {avail === 'checking' && <p className="panel__hint">Checking…</p>}
                 {avail === 'free' && <p className="panel__ok" style={{ marginTop: 8 }}>@{handleField} is free ✓</p>}
-                {avail === 'taken' && <p className="panel__err">Taken — try another.</p>}
+                {avail === 'taken' && <p className="panel__err">Taken. Try another.</p>}
                 {avail === 'invalid' && (
-                  <p className="panel__err">3–20 characters: letters, numbers, underscores.</p>
+                  <p className="panel__err">3 to 20 characters: letters, numbers, underscores.</p>
                 )}
               </div>
             )}
@@ -544,7 +544,7 @@ export default function AccountPanel() {
                   onChange={(e) => setNewsletter(e.target.checked)}
                 />
                 <span>
-                  Email me launch-critical updates — pre-order intel, the launch-day checklist, and
+                  Email me launch-critical updates: pre-order intel, the launch-day checklist, and
                   first access when the tracker goes live. Unsubscribe any time.
                 </span>
               </label>
@@ -765,7 +765,7 @@ export default function AccountPanel() {
           <div className="acct__field">
             <label htmlFor="platform">Platform</label>
             <select id="platform" className="nl__input" value={platform} onChange={(e) => setPlatform(e.target.value)}>
-              <option value="">—</option>
+              <option value="">Pick one</option>
               <option value="ps5">PS5</option>
               <option value="xbox">Xbox Series X|S</option>
             </select>
@@ -797,7 +797,7 @@ export default function AccountPanel() {
           <label className="consent-row">
             <input type="checkbox" checked={idsPublic} onChange={(e) => setIdsPublic(e.target.checked)} />
             <span>
-              Show my PSN / Gamertag on my public profile (18+ — date of birth required).
+              Show my PSN / Gamertag on my public profile (18+, date of birth required).
               Off = only you can see them.
             </span>
           </label>
@@ -817,8 +817,8 @@ export default function AccountPanel() {
                 onChange={toggleNewsletter}
               />
               <span>
-                Launch-critical updates — pre-order intel, the launch-day checklist, and first
-                access when the tracker goes live. Unsubscribe any time (that’s this box).
+                Launch-critical updates: pre-order intel, the launch-day checklist, and first
+                access when the tracker goes live. Unsubscribe any time. That’s this box.
               </span>
             </label>
           </div>
@@ -833,7 +833,7 @@ export default function AccountPanel() {
             <span>
               {profile.discord_linked
                 ? 'Discord linked ✓'
-                : 'Discord not linked — sign in with Discord once it’s live and it links automatically.'}
+                : 'Discord not linked. Sign in with Discord and it links itself.'}
             </span>
             <span>
               Member since{' '}

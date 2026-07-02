@@ -29,11 +29,11 @@ export default function NewsletterSignup({ source = 'web', compact = false }: Pr
         setState('done');
       } else {
         setState('error');
-        setMessage(data.error ?? 'Something went wrong — please try again.');
+        setMessage(data.error ?? 'Something went wrong. Please try again.');
       }
     } catch {
       setState('error');
-      setMessage('Something went wrong — please try again.');
+      setMessage('Something went wrong. Please try again.');
     }
   }
 
@@ -54,7 +54,7 @@ export default function NewsletterSignup({ source = 'web', compact = false }: Pr
             Don’t miss <span className="c">launch week</span>
           </h3>
           <p className="nl__sub">
-            One email when it matters — verified pre-order intel, the launch-day checklist, and
+            One email when it matters: verified pre-order intel, the launch-day checklist, and
             first access when the tracker goes live. No spam, unsubscribe any time.
           </p>
         </>

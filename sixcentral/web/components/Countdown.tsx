@@ -33,7 +33,7 @@ export default function Countdown() {
 
   return (
     <div className="countdown">
-      <div className="countdown__label">◷ Grand Theft Auto VI — launch countdown</div>
+      <div className="countdown__label">◷ Grand Theft Auto VI launch countdown</div>
       <div className="countdown__grid">
         {cells.map(([n, u]) => (
           <div className="cd-cell" key={u}>

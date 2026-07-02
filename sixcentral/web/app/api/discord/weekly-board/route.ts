@@ -28,13 +28,13 @@ export async function GET(req: Request) {
   const medals = ['\u{1F947}', '\u{1F948}', '\u{1F949}'];
   const lines = rows.map(
     (r, i) =>
-      `${medals[i] ?? `**${i + 1}.**`} @${r.handle} — ${Number(
+      `${medals[i] ?? `**${i + 1}.**`} @${r.handle} · ${Number(
         r.respect_week ?? 0,
       ).toLocaleString('en-GB')} Respect`,
   );
 
   const content = [
-    '\u{1F4CA} **The Come-Up — this week**',
+    '\u{1F4CA} **The Come-Up: this week**',
     ...lines,
     '',
     'Confirmed contributions only. Climb: https://sixcentral.co.uk/crew',

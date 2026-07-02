@@ -6,7 +6,7 @@ export const runtime = 'nodejs';
 /**
  * Called by the database (pg_net trigger) when a contribution flips
  * pending → accepted. Announces in #verified-log and syncs rank roles.
- * Pre-launch acceptances also grant Founding Contributor — permanently.
+ * Pre-launch acceptances also grant Founding Contributor, permanently.
  */
 
 const LAUNCH = Date.parse('2026-11-19T00:00:00Z');
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
   const who = profile.discord_id ? `<@${profile.discord_id}>` : `**@${profile.handle}**`;
   const label = ctype?.label ?? 'contribution';
   const points = ctype?.points ? `+${ctype.points} Respect` : 'Respect banked';
-  const content = `✅ **Verified: ${label}** — ${who} · **${points}** → ${
+  const content = `✅ **Verified: ${label}** ${who} · **${points}** → ${
     rank?.name ?? ''
   } · ${profile.respect.toLocaleString('en-GB')} total`;
 

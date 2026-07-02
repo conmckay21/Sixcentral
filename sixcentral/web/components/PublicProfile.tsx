@@ -73,7 +73,7 @@ export default function PublicProfileView({ handle }: { handle: string }) {
         <div className="kicker">Not found</div>
         <h2 className="panel__title">No one goes by @{handle}</h2>
         <p className="panel__muted">
-          Maybe they changed their handle — the board&rsquo;s at{' '}
+          Maybe they changed their handle. The board&rsquo;s at{' '}
           <Link href="/crew" style={{ color: 'var(--cyan)' }}>
             /crew
           </Link>
@@ -144,7 +144,7 @@ export default function PublicProfileView({ handle }: { handle: string }) {
         </div>
         {finds.length === 0 ? (
           <p className="panel__muted" style={{ marginTop: 8 }}>
-            Nothing confirmed yet — the ladder&rsquo;s waiting.
+            Nothing confirmed yet. The ladder&rsquo;s waiting.
           </p>
         ) : (
           <ul className="pp__findlist">
@@ -164,7 +164,7 @@ export default function PublicProfileView({ handle }: { handle: string }) {
       </div>
 
       <p className="pp__cta">
-        Earn your own spot —{' '}
+        Earn your own spot:{' '}
         <Link href="/contribute" style={{ color: 'var(--cyan)' }}>
           submit intel
         </Link>{' '}

@@ -4,7 +4,7 @@ import TheComeUp from '@/components/TheComeUp';
 import { DISCORD_INVITE } from '@/lib/site';
 
 export const metadata: Metadata = {
-  title: 'The Come-Up — ranks, Respect and the crew leaderboard',
+  title: 'The Come-Up: ranks, Respect and the crew leaderboard',
   description:
     'How the SixCentral reputation system works: earn Respect for confirmed contributions, climb from Fresh off the Bus to City Legend, unlock free Premium at Lieutenant.',
   alternates: { canonical: '/crew' },
@@ -20,7 +20,7 @@ export default function CrewPage() {
             Respect is <span className="c">earned</span>
           </h1>
           <p>
-            SixCentral runs on its community — the people confirming locations, correcting facts
+            SixCentral runs on its community: the people confirming locations, correcting facts
             and mapping the game. Every confirmed contribution banks Respect; Respect climbs the
             ladder; the ladder unlocks real things, including free Premium at Lieutenant and
             verification powers at Shot Caller. Nothing is bought. Everything is earned.

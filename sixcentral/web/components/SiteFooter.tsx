@@ -12,7 +12,7 @@ export default function SiteFooter() {
               SIX<span className="c">CENTRAL</span>
             </div>
             <p className="footer__tag">
-              The UK companion for Grand Theft Auto VI — guides, news and tools, built by fans.
+              Guides, news and tools for Grand Theft Auto VI. Built by fans who check their facts.
             </p>
           </div>
           <div className="footer__cols">

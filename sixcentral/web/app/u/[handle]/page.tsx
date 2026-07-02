@@ -5,7 +5,7 @@ export async function generateMetadata({ params }: { params: { handle: string } 
   const h = decodeURIComponent(params.handle);
   return {
     title: `@${h} on SixCentral`,
-    description: `@${h}'s profile on The Come-Up — rank, Respect, and verified finds.`,
+    description: `@${h} on The Come-Up. Rank, Respect and verified finds.`,
     alternates: { canonical: `/u/${h}` },
   };
 }

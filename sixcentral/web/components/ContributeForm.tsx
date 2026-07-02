@@ -54,7 +54,7 @@ export default function ContributeForm() {
     if (!sb || !session || state === 'busy') return;
     if (details.trim().length < 20) {
       setState('error');
-      setMsg('Give the mods something to verify — at least a sentence or two.');
+      setMsg('Give the mods something to verify. A sentence or two at least.');
       return;
     }
     setState('busy');
@@ -70,7 +70,7 @@ export default function ContributeForm() {
     });
     if (error) {
       setState('error');
-      setMsg('Could not submit — try again.');
+      setMsg('Could not submit. Try again.');
     } else {
       setState('done');
     }
@@ -86,8 +86,8 @@ export default function ContributeForm() {
         <div className="kicker">Contribute</div>
         <h2 className="panel__title">Sign in to submit</h2>
         <p className="panel__muted" style={{ maxWidth: '54ch' }}>
-          Contributions are tied to your profile — confirmed submissions bank Respect on The
-          Come-Up. Takes thirty seconds and just an email address.
+          Contributions are tied to your profile, and confirmed submissions bank Respect on
+          The Come-Up. Takes thirty seconds.
         </p>
         <Link href="/account" className="btn-crew" style={{ marginTop: 16 }}>
           Sign in / create account
@@ -103,7 +103,7 @@ export default function ContributeForm() {
         <h2 className="panel__title">In the queue ✓</h2>
         <p className="panel__muted" style={{ maxWidth: '54ch' }}>
           A moderator will verify it. If it holds up, {selected ? `+${selected.points} Respect` : 'Respect'} lands
-          on your profile automatically — the board only ever rewards confirmed contributions.
+          on your profile automatically. The board only ever pays out for confirmed work.
         </p>
         <button
           className="btn-signout"
@@ -125,8 +125,8 @@ export default function ContributeForm() {
       <div className="kicker">Contribute</div>
       <h2 className="panel__title">Submit intel or a correction</h2>
       <p className="panel__muted" style={{ maxWidth: '58ch' }}>
-        Everything goes through verification before it counts — that gate is what keeps SixCentral
-        trustworthy and the leaderboard honest.
+        Everything goes through verification before it counts. That gate keeps SixCentral
+        trustworthy and the board honest.
       </p>
 
       <div className="acct__field">
@@ -139,7 +139,7 @@ export default function ContributeForm() {
       </div>
 
       <div className="acct__field">
-        <label htmlFor="cabout">What is it about? (article link, topic — optional)</label>
+        <label htmlFor="cabout">What is it about? Article link or topic, optional</label>
         <input
           id="cabout"
           className="nl__input"

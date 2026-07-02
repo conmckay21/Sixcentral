@@ -47,7 +47,7 @@ export async function getRumours(limit = 6): Promise<Article[]> {
   return byNewest(MOCK_ARTICLES.filter((a) => a.isRumour)).slice(0, limit);
 }
 
-/** Every article, facts and rumours — for routing, sitemaps and lookups. */
+/** Every article, facts and rumours: for routing, sitemaps and lookups. */
 export async function getAllArticles(): Promise<Article[]> {
   return byNewest(MOCK_ARTICLES);
 }

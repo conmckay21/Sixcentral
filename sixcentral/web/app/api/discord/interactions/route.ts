@@ -13,9 +13,9 @@ type Interaction = {
   user?: { id: string };
 };
 
-/** Stored verbatim as the consent record — matches the #welcome gate message. */
+/** Stored verbatim as the consent record. Matches the #welcome gate message. */
 const DISCORD_CONSENT =
-  'The launch list (optional): pre-order intel, the launch-day checklist, and first access when the tracker goes live — sent to the email on your SixCentral account. Never shown here, unsubscribe any time.';
+  'The launch list (optional): pre-order intel, the launch-day checklist, and first access when the tracker goes live. Sent to the email on your SixCentral account, never shown here, unsubscribe any time.';
 
 const EPHEMERAL = 64;
 
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
   if (interaction.type === 1) return Response.json({ type: 1 });
 
   const discordId = interaction.member?.user?.id ?? interaction.user?.id;
-  if (!discordId) return reply('Could not identify you — try again.');
+  if (!discordId) return reply('Could not identify you. Try again.');
 
   if (interaction.type === 2) {
     const command = interaction.data?.name;
@@ -66,19 +66,19 @@ async function handleAgreeRules(discordId: string) {
   try {
     const roles = (await discordApi('GET', `/guilds/${GUILD_ID}/roles`)) as { id: string; name: string }[];
     const crew = roles.find((r) => r.name === 'Crew');
-    if (!crew) return reply('The Crew role is missing — tell a moderator.');
+    if (!crew) return reply('The Crew role is missing. Tell a moderator.');
     await discordApi('PUT', `/guilds/${GUILD_ID}/members/${discordId}/roles/${crew.id}`);
     return reply(
-      'Welcome to the crew ✓ The server’s open — start in #gta6-news, and if you know something worth verifying, /submit earns Respect.',
+      'Welcome to the crew ✓ The server is open. Start in #gta6-news, and if you know something worth verifying, /submit earns Respect.',
     );
   } catch {
-    return reply('Something hiccuped — try the button again in a moment.');
+    return reply('Something hiccuped. Try the button again in a moment.');
   }
 }
 
 async function handleNewsletterOptin(discordId: string) {
   const sb = serviceClient();
-  if (!sb) return reply('The launch list is briefly offline — try again shortly.');
+  if (!sb) return reply('The launch list is briefly offline. Try again shortly.');
 
   const { data: profile } = await sb
     .from('profiles')
@@ -88,13 +88,13 @@ async function handleNewsletterOptin(discordId: string) {
 
   if (!profile) {
     return reply(
-      'One step first: the launch list uses the email on your SixCentral account, so sign in with Discord at https://sixcentral.co.uk/account (thirty seconds, links automatically) — then tap this again.',
+      'One step first: the launch list uses the email on your SixCentral account. Sign in with Discord at https://sixcentral.co.uk/account (thirty seconds, links itself), then tap this again.',
     );
   }
 
   const { data: userRes } = await sb.auth.admin.getUserById(profile.id);
   const email = userRes?.user?.email?.toLowerCase();
-  if (!email) return reply('Could not find an email on your account — add one at https://sixcentral.co.uk/account.');
+  if (!email) return reply('Could not find an email on your account. Add one at https://sixcentral.co.uk/account.');
 
   const { error } = await sb
     .from('subscribers')
@@ -103,15 +103,15 @@ async function handleNewsletterOptin(discordId: string) {
   if (error && error.code === '23505') {
     return reply('You’re already on the launch list ✓');
   }
-  if (error) return reply('Could not add you just now — try again in a moment.');
+  if (error) return reply('Could not add you just now. Try again in a moment.');
   return reply(
-    'On the list ✓ Launch-critical updates go to the email on your SixCentral account — it’s never shown here, and you can unsubscribe any time.',
+    'On the list ✓ Launch-critical updates go to the email on your SixCentral account. Never shown here, unsubscribe any time.',
   );
 }
 
 async function handleRank(discordId: string) {
   const sb = serviceClient();
-  if (!sb) return reply('The Come-Up is briefly offline — try again shortly.');
+  if (!sb) return reply('The Come-Up is briefly offline. Try again shortly.');
 
   const { data: profile } = await sb
     .from('profiles')
@@ -121,12 +121,12 @@ async function handleRank(discordId: string) {
 
   if (!profile) {
     return reply(
-      'Your Discord isn’t linked to a SixCentral profile yet. Sign in with Discord at https://sixcentral.co.uk/account and it links automatically — then your Respect shows up here.',
+      'Your Discord is not linked to a SixCentral profile yet. Sign in with Discord at https://sixcentral.co.uk/account, it links itself, and your Respect shows up here.',
     );
   }
 
   if (profile.is_staff) {
-    return reply(`**@${profile.handle}** — **${profile.title ?? 'Staff'}** · above the ladder.`);
+    return reply(`**@${profile.handle}** · **${profile.title ?? 'Staff'}** · above the ladder.`);
   }
 
   const { data: ranks } = await sb.from('ranks').select('id, name, min_respect, perk').order('id');
@@ -134,7 +134,7 @@ async function handleRank(discordId: string) {
   const next = ranks?.find((r) => r.id === profile.rank_id + 1);
 
   const lines = [
-    `**@${profile.handle}** — **${rank?.name ?? 'Fresh off the Bus'}**`,
+    `**@${profile.handle}** · **${rank?.name ?? 'Fresh off the Bus'}**`,
     `Respect: **${profile.respect.toLocaleString('en-GB')}**`,
   ];
   if (next) {
@@ -142,7 +142,7 @@ async function handleRank(discordId: string) {
       `Next: **${next.name}** at ${next.min_respect.toLocaleString('en-GB')} (${Math.max(
         next.min_respect - profile.respect,
         0,
-      ).toLocaleString('en-GB')} to go)${next.perk ? ` — unlocks: ${next.perk}` : ''}`,
+      ).toLocaleString('en-GB')} to go)${next.perk ? `. Unlocks: ${next.perk}` : ''}`,
     );
   } else {
     lines.push('Top of the ladder. City Legend.');
@@ -152,7 +152,7 @@ async function handleRank(discordId: string) {
 
 async function handleSubmit(interaction: Interaction, discordId: string) {
   const sb = serviceClient();
-  if (!sb) return reply('Submissions are briefly offline — try again shortly.');
+  if (!sb) return reply('Submissions are briefly offline. Try again shortly.');
 
   const opts = new Map((interaction.data?.options ?? []).map((o) => [o.name, o.value ?? '']));
   const typeKey = opts.get('type') === 'intel' ? 'intel' : 'verified_correction';
@@ -161,7 +161,7 @@ async function handleSubmit(interaction: Interaction, discordId: string) {
   const about = (opts.get('about') ?? '').trim();
 
   if (details.length < 20) {
-    return reply('Give the mods something to verify — at least a sentence or two of detail.');
+    return reply('Give the mods something to verify. A sentence or two of detail at least.');
   }
 
   const { data: profile } = await sb
@@ -172,7 +172,7 @@ async function handleSubmit(interaction: Interaction, discordId: string) {
 
   if (!profile) {
     return reply(
-      'Almost — submissions need a linked SixCentral profile so the Respect lands somewhere. Sign in with Discord at https://sixcentral.co.uk/account (thirty seconds), then run /submit again.',
+      'Almost there. Submissions need a linked SixCentral profile so the Respect lands somewhere. Sign in with Discord at https://sixcentral.co.uk/account (thirty seconds), then run /submit again.',
     );
   }
 
@@ -182,7 +182,7 @@ async function handleSubmit(interaction: Interaction, discordId: string) {
     status: 'pending',
     payload: { details, source: source || null, about: about || null, via: 'discord' },
   });
-  if (error) return reply('Could not submit — try again in a moment.');
+  if (error) return reply('Could not submit. Try again in a moment.');
 
   const { data: ctype } = await sb
     .from('contribution_types')
@@ -191,6 +191,6 @@ async function handleSubmit(interaction: Interaction, discordId: string) {
     .single();
 
   return reply(
-    `In the queue, @${profile.handle} ✓ A moderator will verify it — if it holds up, **+${ctype?.points ?? ''} Respect** lands automatically and #verified-log announces it.`,
+    `In the queue, @${profile.handle} ✓ A moderator will check it, and if it holds up **+${ctype?.points ?? ''} Respect** lands automatically and #verified-log announces it.`,
   );
 }

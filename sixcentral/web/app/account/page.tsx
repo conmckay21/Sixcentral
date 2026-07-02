@@ -3,7 +3,7 @@ import AccountPanel from '@/components/AccountPanel';
 
 export const metadata: Metadata = {
   title: 'Your account',
-  description: 'Sign in to SixCentral — your handle, your Respect, your progress.',
+  description: 'Sign in to SixCentral. Your handle, your Respect, your progress.',
   robots: { index: false },
 };
 

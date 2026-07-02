@@ -14,7 +14,7 @@ const RULES = `# The house rules
 
 **1. Respect people.** No harassment, hate, slurs, or dogpiling. Argue about the game, not each other.
 
-**2. No leaked or hacked material. Ever.** No 2022-hack footage, no stolen builds, no datamined files from illegitimate sources. Posting it is an instant ban — it puts the whole community at legal risk. Rumours are welcome in #rumour-mill, clearly discussed as rumours.
+**2. No leaked or hacked material. Ever.** No 2022-hack footage, no stolen builds, no datamined files from illegitimate sources. Posting it is an instant ban. It puts the whole community at legal risk. Rumours are welcome in #rumour-mill, clearly discussed as rumours.
 
 **3. Contribute honestly.** Fabricated intel or plagiarised finds = ban. Respect is earned by being right, with receipts.
 
@@ -32,7 +32,7 @@ Before the server opens up, two things:
 
 **The rules** (the long version is in #start-here once you're in): respect people, no leaked/hacked material ever, contribute honestly, keep it PG-13, no spam. Mod decisions are final.
 
-**The launch list** (optional): pre-order intel, the launch-day checklist, and first access when the tracker goes live — sent to the email on your SixCentral account. Never shown here, unsubscribe any time.`;
+**The launch list** (optional): pre-order intel, the launch-day checklist, and first access when the tracker goes live. Sent to the email on your SixCentral account, never shown here, unsubscribe any time.`;
 
 async function api(method, path, body) {
   const res = await fetch(`${API}${path}`, { method, headers: H, body: body ? JSON.stringify(body) : undefined });

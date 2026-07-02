@@ -72,7 +72,7 @@ export default async function HomePage() {
             <Link href="/guides">What&rsquo;s coming &rarr;</Link>
           </div>
           <Link href="/guides" className="card" style={{ padding: 28, display: 'block' }}>
-            <div className="kicker" style={{ color: 'var(--green)' }}>Live from day one</div>
+            <div className="kicker" style={{ color: 'var(--green)' }}>The plan</div>
             <div
               style={{
                 fontFamily: 'var(--display)',
@@ -81,13 +81,12 @@ export default async function HomePage() {
                 margin: '8px 0',
               }}
             >
-              Everything from A to Z &mdash; the moment there is a game to guide
+              Everything from A to Z, the moment there is a game to guide
             </div>
             <p style={{ color: 'var(--muted)', maxWidth: '66ch' }}>
               Spoiler-safe story walkthrough, the 100% checklist, every collectible on our own
               community-verified map, money &amp; businesses, trophies live the day the list
-              publishes. Nothing publishes before it can be verified in-game &mdash; that is the
-              whole point.
+              publishes. Nothing gets published before we can verify it in-game. That is the promise.
             </p>
           </Link>
         </div>
@@ -116,7 +115,7 @@ export default async function HomePage() {
             <h2>
               The <span className="r">rumour mill</span>
             </h2>
-            <span className="rumour-note">Unconfirmed by design — never mixed with the facts.</span>
+            <span className="rumour-note">Unconfirmed by design. Never mixed with the facts.</span>
           </div>
           <div className="rows">
             {rumours.map((a) => (
@@ -186,8 +185,8 @@ export default async function HomePage() {
               </h2>
               <p style={{ color: 'var(--muted)', maxWidth: '52ch' }}>
                 The Discord is where SixCentral gets built: founding contributors, pre-order intel,
-                and first access to everything. Confirmed contributions earn Respect on The Come-Up
-                &mdash; climb the ladder and Premium comes free at Lieutenant.
+                and first access to everything. Confirmed contributions earn Respect on The Come-Up.
+                Climb the ladder and Premium comes free at Lieutenant.
               </p>
               {DISCORD_INVITE ? (
                 <a className="btn-crew" href={DISCORD_INVITE} target="_blank" rel="noopener noreferrer">
@@ -211,7 +210,7 @@ export default async function HomePage() {
             <h2>
               The <span className="r">rumour mill</span>
             </h2>
-            <span className="rumour-note">Unconfirmed by design — never mixed with the facts.</span>
+            <span className="rumour-note">Unconfirmed by design. Never mixed with the facts.</span>
           </div>
           <div className="rows">
             {rumours.map((a) => (

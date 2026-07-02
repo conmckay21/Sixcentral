@@ -1,12 +1,12 @@
 /**
  * Discord REST + interaction-verification helpers. Server-side only.
- * The bot has no gateway connection — everything is HTTPS: Discord calls
+ * The bot has no gateway connection, everything is HTTPS: Discord calls
  * our interactions endpoint; we call Discord's REST API.
  */
 
 const API = 'https://discord.com/api/v10';
 
-/** Public key — safe to bake; env var can override. */
+/** Public key. Safe to bake; env var can override. */
 export const DISCORD_PUBLIC_KEY =
   process.env.DISCORD_PUBLIC_KEY ??
   '66e3ed2a09d21cdb6554ae60f4a374c809a5d55cb5014a679d21e5bf7f4d2e9a';
@@ -33,7 +33,7 @@ function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
   return out;
 }
 
-/** Ed25519 signature check — Discord signs timestamp+body; we verify. */
+/** Ed25519 signature check. Discord signs timestamp+body; we verify. */
 export async function verifyDiscordRequest(
   rawBody: string,
   signature: string,
@@ -112,7 +112,7 @@ export async function setMemberRankRole(
   try {
     member = (await discordApi('GET', `/guilds/${GUILD_ID}/members/${discordUserId}`)) as Member;
   } catch {
-    return; // not in the server — nothing to sync
+    return; // not in the server, nothing to sync
   }
 
   const next = Array.from(

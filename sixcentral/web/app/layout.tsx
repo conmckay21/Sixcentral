@@ -5,14 +5,14 @@ import SiteFooter from '@/components/SiteFooter';
 
 export const metadata: Metadata = {
   title: {
-    default: 'SixCentral — GTA 6 guides, news & tools (UK)',
+    default: 'SixCentral | GTA 6 guides, news & tools (UK)',
     template: '%s · SixCentral',
   },
   description:
-    'The UK companion for Grand Theft Auto VI. Verified guides, news and an interactive tracker — built by fans.',
+    'The UK companion for Grand Theft Auto VI. Verified guides, real news and an interactive tracker, built by fans who check their facts.',
   metadataBase: new URL('https://sixcentral.co.uk'),
   openGraph: {
-    title: 'SixCentral — GTA 6 guides, news & tools',
+    title: 'SixCentral | GTA 6 guides, news & tools',
     description: 'The UK companion for Grand Theft Auto VI.',
     siteName: 'SixCentral',
     locale: 'en_GB',
