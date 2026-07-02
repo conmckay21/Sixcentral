@@ -91,6 +91,9 @@ export default function AccountPanel() {
   const [detailsState, setDetailsState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
   const [detailsMsg, setDetailsMsg] = useState('');
   const [newsletter2, setNewsletter2] = useState<'unknown' | 'on' | 'off' | 'busy'>('unknown');
+  const [newPw, setNewPw] = useState('');
+  const [pwState, setPwState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
+  const [pwMsg, setPwMsg] = useState('');
 
   const loadProfile = useCallback(
     async (uid: string) => {
@@ -303,6 +306,25 @@ export default function AccountPanel() {
     } else {
       const { error } = await sb.from('subscribers').delete().eq('email', email);
       setNewsletter2(error ? 'on' : 'off');
+    }
+  }
+
+  async function savePassword() {
+    if (!sb || pwState === 'busy') return;
+    if (newPw.length < 8) {
+      setPwState('error');
+      setPwMsg('Passwords need at least 8 characters.');
+      return;
+    }
+    setPwState('busy');
+    const { error } = await sb.auth.updateUser({ password: newPw });
+    if (error) {
+      setPwState('error');
+      setPwMsg('Could not set that password. Try again.');
+    } else {
+      setPwState('done');
+      setNewPw('');
+      setTimeout(() => setPwState('idle'), 2500);
     }
   }
 
@@ -821,6 +843,33 @@ export default function AccountPanel() {
                 access when the tracker goes live. Unsubscribe any time. That’s this box.
               </span>
             </label>
+          </div>
+
+          <div className="acct__field" style={{ marginTop: 22 }}>
+            <label htmlFor="newpw">Set or change your password</label>
+            <input
+              id="newpw"
+              type="password"
+              className="nl__input"
+              placeholder="At least 8 characters"
+              value={newPw}
+              onChange={(e) => setNewPw(e.target.value)}
+            />
+            <p className="panel__hint">
+              Adds email and password sign-in alongside Discord, using your account email
+              {session?.user.email ? ` (${session.user.email})` : ''}. Sign in either way after
+              this.
+            </p>
+            <button
+              className="btn-signout"
+              style={{ marginTop: 8 }}
+              onClick={savePassword}
+              disabled={pwState === 'busy'}
+              type="button"
+            >
+              {pwState === 'busy' ? 'Saving…' : pwState === 'done' ? 'Password set ✓' : 'Save password'}
+            </button>
+            {pwState === 'error' && <p className="panel__err">{pwMsg}</p>}
           </div>
 
           <p style={{ margin: '18px 0 4px' }}>
