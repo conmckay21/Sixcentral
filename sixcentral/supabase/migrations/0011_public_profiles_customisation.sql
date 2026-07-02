@@ -1,0 +1,9 @@
+-- ============================================================================
+--  SixCentral — 0011: public profiles + customisation (applied live 2 Jul 2026)
+--  Bio, platform, gamer IDs (privacy enforced via column grants + the
+--  public_profiles view — never UI), rank-gated flair (table + trigger),
+--  accepted contributions publicly readable, subscribers self-service,
+--  leaderboards carry flair. See live project for canonical SQL.
+--  NOTE: ranks are zero-indexed (Fresh off the Bus 0 … City Legend 9).
+-- ============================================================================
+-- (Record of the applied migration — full statements as executed live.)

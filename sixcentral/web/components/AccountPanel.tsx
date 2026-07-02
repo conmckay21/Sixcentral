@@ -11,13 +11,35 @@ type Profile = {
   title: string | null;
   is_staff: boolean;
   avatar_url: string | null;
-  discord_id: string | null;
+  discord_linked: boolean;
   respect: number;
   rank_id: number;
   is_moderator: boolean;
   is_pro: boolean;
   created_at: string;
+  date_of_birth: string | null;
+  bio: string | null;
+  platform: 'ps5' | 'xbox' | null;
+  psn_id: string | null;
+  xbox_gamertag: string | null;
+  ids_public: boolean;
+  flair: string | null;
 };
+
+type Flair = { key: string; label: string; min_rank_id: number };
+
+const PRESETS = [
+  { src: '/avatars/preset-skyline.svg', label: 'Skyline' },
+  { src: '/avatars/preset-palms.svg', label: 'Palms' },
+  { src: '/avatars/preset-cassette.svg', label: 'Cassette' },
+  { src: '/avatars/preset-disc.svg', label: 'Disc' },
+  { src: '/avatars/preset-controller.svg', label: 'Pad' },
+  { src: '/avatars/preset-vi.svg', label: 'VI' },
+];
+
+/** Stored verbatim as the consent record for the account-page toggle. */
+const ACCOUNT_CONSENT =
+  'Launch-critical updates from SixCentral \u2014 pre-order intel, the launch-day checklist, and first access when the tracker goes live. Unsubscribe any time.';
 
 type Rank = { id: number; name: string; min_respect: number; heat: number; perk: string | null };
 
@@ -58,18 +80,39 @@ export default function AccountPanel() {
   const [avatarState, setAvatarState] = useState<'idle' | 'busy' | 'error'>('idle');
   const [avatarMsg, setAvatarMsg] = useState('');
 
+  const [flairs, setFlairs] = useState<Flair[]>([]);
+  const [flairMsg, setFlairMsg] = useState('');
+  const [bio, setBio] = useState('');
+  const [platform, setPlatform] = useState<string>('');
+  const [psn, setPsn] = useState('');
+  const [gamertag, setGamertag] = useState('');
+  const [idsPublic, setIdsPublic] = useState(false);
+  const [dob, setDob] = useState('');
+  const [detailsState, setDetailsState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
+  const [detailsMsg, setDetailsMsg] = useState('');
+  const [newsletter2, setNewsletter2] = useState<'unknown' | 'on' | 'off' | 'busy'>('unknown');
+
   const loadProfile = useCallback(
     async (uid: string) => {
       if (!sb) return;
-      const [{ data: p }, { data: r }] = await Promise.all([
-        sb.from('profiles').select('*').eq('id', uid).single(),
+      const [{ data: p }, { data: r }, { data: f }] = await Promise.all([
+        sb.from('public_profiles').select('*').eq('id', uid).single(),
         sb.from('ranks').select('*').order('id'),
+        sb.from('flairs').select('*').order('min_rank_id'),
       ]);
       if (p) {
-        setProfile(p as Profile);
-        setHandle((p as Profile).handle);
+        const prof = p as Profile;
+        setProfile(prof);
+        setHandle(prof.handle);
+        setBio(prof.bio ?? '');
+        setPlatform(prof.platform ?? '');
+        setPsn(prof.psn_id ?? '');
+        setGamertag(prof.xbox_gamertag ?? '');
+        setIdsPublic(prof.ids_public);
+        setDob(prof.date_of_birth ?? '');
       }
       if (r) setRanks(r as Rank[]);
+      if (f) setFlairs(f as Flair[]);
     },
     [sb],
   );
@@ -81,7 +124,10 @@ export default function AccountPanel() {
     }
     sb.auth.getSession().then(({ data }) => {
       setSession(data.session);
-      if (data.session) loadProfile(data.session.user.id);
+      if (data.session) {
+        loadProfile(data.session.user.id);
+        loadNewsletter(data.session.user.email ?? '');
+      }
       setReady(true);
     });
     const { data: sub } = sb.auth.onAuthStateChange((event, s) => {
@@ -233,6 +279,84 @@ export default function AccountPanel() {
       provider: 'discord',
       options: { redirectTo: `${window.location.origin}/account` },
     });
+  }
+
+  async function loadNewsletter(email: string) {
+    if (!sb || !email) return;
+    const { count } = await sb
+      .from('subscribers')
+      .select('id', { count: 'exact', head: true })
+      .eq('email', email.toLowerCase());
+    setNewsletter2(count && count > 0 ? 'on' : 'off');
+  }
+
+  async function toggleNewsletter() {
+    if (!sb || !session?.user.email || newsletter2 === 'busy' || newsletter2 === 'unknown') return;
+    const email = session.user.email.toLowerCase();
+    const turningOn = newsletter2 === 'off';
+    setNewsletter2('busy');
+    if (turningOn) {
+      const { error } = await sb
+        .from('subscribers')
+        .insert({ email, source: 'account', consent_text: ACCOUNT_CONSENT });
+      setNewsletter2(error && error.code !== '23505' ? 'off' : 'on');
+    } else {
+      const { error } = await sb.from('subscribers').delete().eq('email', email);
+      setNewsletter2(error ? 'on' : 'off');
+    }
+  }
+
+  async function saveDetails() {
+    if (!sb || !profile || detailsState === 'busy') return;
+    setDetailsState('busy');
+    const { error } = await sb
+      .from('profiles')
+      .update({
+        bio: bio.trim() || null,
+        platform: platform || null,
+        psn_id: psn.trim() || null,
+        xbox_gamertag: gamertag.trim() || null,
+        ids_public: idsPublic,
+        date_of_birth: dob || null,
+      })
+      .eq('id', profile.id);
+    if (error) {
+      setDetailsState('error');
+      setDetailsMsg(
+        /IDS_AGE/.test(error.message)
+          ? 'Showing IDs publicly needs a date of birth on file showing 18+.'
+          : 'Could not save \u2014 check the fields and try again.',
+      );
+    } else {
+      setDetailsState('done');
+      setProfile({
+        ...profile,
+        bio: bio.trim() || null,
+        platform: (platform || null) as Profile['platform'],
+        psn_id: psn.trim() || null,
+        xbox_gamertag: gamertag.trim() || null,
+        ids_public: idsPublic,
+        date_of_birth: dob || null,
+      });
+      setTimeout(() => setDetailsState('idle'), 2000);
+    }
+  }
+
+  async function chooseFlair(key: string | null) {
+    if (!sb || !profile) return;
+    setFlairMsg('');
+    const { error } = await sb.from('profiles').update({ flair: key }).eq('id', profile.id);
+    if (error) {
+      setFlairMsg(/FLAIR_LOCKED/.test(error.message) ? 'Locked \u2014 earned at a higher rank.' : 'Could not set that.');
+    } else {
+      setProfile({ ...profile, flair: key });
+    }
+  }
+
+  async function usePreset(src: string) {
+    if (!sb || !profile) return;
+    const { error } = await sb.from('profiles').update({ avatar_url: src }).eq('id', profile.id);
+    if (!error) setProfile({ ...profile, avatar_url: src });
   }
 
   async function saveHandle() {
@@ -496,7 +620,7 @@ export default function AccountPanel() {
         <>
           <div className="acct__head">
             <div className="acct__avatarcol">
-              <div className="acct__avatar">
+              <div className={`acct__avatar${profile.flair ? ` flair-${profile.flair}` : ''}`}>
                 {profile.avatar_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={profile.avatar_url} alt="" />
@@ -585,9 +709,129 @@ export default function AccountPanel() {
             {saveState === 'done' && <p className="panel__ok">{saveMsg}</p>}
           </div>
 
+          <div className="acct__field">
+            <label>Preset avatars</label>
+            <div className="presets">
+              {PRESETS.map((p) => (
+                <button key={p.src} className="preset" title={p.label} onClick={() => usePreset(p.src)}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={p.src} alt={p.label} />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="acct__field">
+            <label>Flair {profile.is_staff ? '(staff: all unlocked)' : '(earned on the ladder)'}</label>
+            <div className="flairs">
+              <button
+                className={`flairopt${!profile.flair ? ' on' : ''}`}
+                onClick={() => chooseFlair(null)}
+              >
+                <span className="flairdot" />
+                None
+              </button>
+              {flairs.map((f) => {
+                const unlocked = profile.is_staff || profile.rank_id >= f.min_rank_id;
+                return (
+                  <button
+                    key={f.key}
+                    className={`flairopt${profile.flair === f.key ? ' on' : ''}${unlocked ? '' : ' locked'}`}
+                    onClick={() => unlocked && chooseFlair(f.key)}
+                  >
+                    <span className={`flairdot flair-${f.key}`} />
+                    {f.label}
+                    {!unlocked && <em>{ranks.find((r) => r.id === f.min_rank_id)?.name ?? ''}</em>}
+                  </button>
+                );
+              })}
+            </div>
+            {flairMsg && <p className="panel__err">{flairMsg}</p>}
+          </div>
+
+          <div className="acct__field">
+            <label htmlFor="bio">Bio</label>
+            <textarea
+              id="bio"
+              className="nl__input"
+              rows={3}
+              maxLength={200}
+              placeholder="Who are you in Leonida? (200 characters)"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+            />
+          </div>
+
+          <div className="acct__field">
+            <label htmlFor="platform">Platform</label>
+            <select id="platform" className="nl__input" value={platform} onChange={(e) => setPlatform(e.target.value)}>
+              <option value="">\u2014</option>
+              <option value="ps5">PS5</option>
+              <option value="xbox">Xbox Series X|S</option>
+            </select>
+          </div>
+
+          <div className="acct__field">
+            <label htmlFor="psn">PSN ID</label>
+            <input id="psn" className="nl__input" maxLength={30} value={psn} onChange={(e) => setPsn(e.target.value)} />
+          </div>
+          <div className="acct__field">
+            <label htmlFor="gt">Xbox Gamertag</label>
+            <input id="gt" className="nl__input" maxLength={30} value={gamertag} onChange={(e) => setGamertag(e.target.value)} />
+          </div>
+
+          <div className="acct__field">
+            <label htmlFor="dob">Date of birth</label>
+            <input
+              id="dob"
+              type="date"
+              className="nl__input"
+              value={dob}
+              onChange={(e) => setDob(e.target.value)}
+            />
+            <p className="panel__hint">
+              Only needed to show gamer IDs publicly (18+). Never shown anywhere, ever.
+            </p>
+          </div>
+
+          <label className="consent-row">
+            <input type="checkbox" checked={idsPublic} onChange={(e) => setIdsPublic(e.target.checked)} />
+            <span>
+              Show my PSN / Gamertag on my public profile (18+ \u2014 date of birth required).
+              Off = only you can see them.
+            </span>
+          </label>
+
+          <button className="nl__btn" onClick={saveDetails} disabled={detailsState === 'busy'}>
+            {detailsState === 'busy' ? 'Saving\u2026' : detailsState === 'done' ? 'Saved \u2713' : 'Save profile details'}
+          </button>
+          {detailsState === 'error' && <p className="panel__err">{detailsMsg}</p>}
+
+          <div className="acct__field" style={{ marginTop: 22 }}>
+            <label>The launch list</label>
+            <label className="consent-row" style={{ margin: 0 }}>
+              <input
+                type="checkbox"
+                checked={newsletter2 === 'on' || newsletter2 === 'busy'}
+                disabled={newsletter2 === 'unknown' || newsletter2 === 'busy'}
+                onChange={toggleNewsletter}
+              />
+              <span>
+                Launch-critical updates \u2014 pre-order intel, the launch-day checklist, and first
+                access when the tracker goes live. Unsubscribe any time (that\u2019s this box).
+              </span>
+            </label>
+          </div>
+
+          <p style={{ margin: '18px 0 4px' }}>
+            <a href={`/u/${profile.handle}`} style={{ color: 'var(--cyan)' }}>
+              View your public profile \u2192
+            </a>
+          </p>
+
           <div className="acct__meta">
             <span>
-              {profile.discord_id
+              {profile.discord_linked
                 ? 'Discord linked ✓'
                 : 'Discord not linked \u2014 sign in with Discord once it\u2019s live and it links automatically.'}
             </span>

@@ -1,0 +1,7 @@
+-- ============================================================================
+--  SixCentral — 0012: age gate on public gamer IDs (applied live 2 Jul 2026)
+--  ICO Children's Code alignment: DOB collected only to unlock ids_public
+--  (data minimisation); 18+ enforced by trigger; DOB owner-visible only via
+--  the public_profiles view — never public, never client-readable from the
+--  base table. See live project for canonical SQL.
+-- ============================================================================

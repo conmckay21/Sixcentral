@@ -6,7 +6,7 @@ import { getBrowserSupabase } from '@/lib/supabase-browser';
 
 type Rank = { id: number; name: string; min_respect: number; heat: number; perk: string | null };
 type EarnType = { key: string; label: string; points: number };
-type BoardRow = { id: string; handle: string; avatar_url: string | null; respect?: number; respect_week?: number; rank_name?: string; title?: string | null };
+type BoardRow = { id: string; handle: string; avatar_url: string | null; respect?: number; respect_week?: number; rank_name?: string; title?: string | null; flair?: string | null };
 
 export default function TheComeUp() {
   const sb = getBrowserSupabase();
@@ -120,9 +120,9 @@ export default function TheComeUp() {
           ) : (
             <div className="lb">
               {rows.map((r, i) => (
-                <div key={r.id} className="lb__row">
+                <Link key={r.id} href={`/u/${r.handle}`} className="lb__row lb__row--link">
                   <span className="lb__pos">{i + 1}</span>
-                  <span className="lb__avatar">
+                  <span className={`lb__avatar${r.flair ? ` flair-${r.flair}` : ''}`}>
                     {r.avatar_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={r.avatar_url} alt="" />
@@ -143,7 +143,7 @@ export default function TheComeUp() {
                   <span className="lb__pts">
                     {(board === 'all' ? r.respect ?? 0 : r.respect_week ?? 0).toLocaleString('en-GB')}
                   </span>
-                </div>
+                </Link>
               ))}
             </div>
           )}
