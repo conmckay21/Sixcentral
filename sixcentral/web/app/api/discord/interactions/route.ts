@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { verifyDiscordRequest } from '@/lib/discord';
+import { discordApi, verifyDiscordRequest, GUILD_ID } from '@/lib/discord';
 
 export const runtime = 'nodejs';
 
@@ -8,10 +8,14 @@ export const runtime = 'nodejs';
 type Option = { name: string; value?: string };
 type Interaction = {
   type: number;
-  data?: { name?: string; options?: Option[] };
+  data?: { name?: string; options?: Option[]; custom_id?: string };
   member?: { user?: { id: string } };
   user?: { id: string };
 };
+
+/** Stored verbatim as the consent record — matches the #welcome gate message. */
+const DISCORD_CONSENT =
+  'The launch list (optional): pre-order intel, the launch-day checklist, and first access when the tracker goes live \u2014 sent to the email on your SixCentral account. Never shown here, unsubscribe any time.';
 
 const EPHEMERAL = 64;
 
@@ -39,16 +43,70 @@ export async function POST(req: Request) {
   // Discord's liveness check
   if (interaction.type === 1) return Response.json({ type: 1 });
 
+  const discordId = interaction.member?.user?.id ?? interaction.user?.id;
+  if (!discordId) return reply('Could not identify you — try again.');
+
   if (interaction.type === 2) {
     const command = interaction.data?.name;
-    const discordId = interaction.member?.user?.id ?? interaction.user?.id;
-    if (!discordId) return reply('Could not identify you — try again.');
-
     if (command === 'rank') return handleRank(discordId);
     if (command === 'submit') return handleSubmit(interaction, discordId);
   }
 
+  // Button presses from the #welcome gate
+  if (interaction.type === 3) {
+    const button = interaction.data?.custom_id;
+    if (button === 'agree_rules') return handleAgreeRules(discordId);
+    if (button === 'newsletter_optin') return handleNewsletterOptin(discordId);
+  }
+
   return reply('Unknown command.');
+}
+
+async function handleAgreeRules(discordId: string) {
+  try {
+    const roles = (await discordApi('GET', `/guilds/${GUILD_ID}/roles`)) as { id: string; name: string }[];
+    const crew = roles.find((r) => r.name === 'Crew');
+    if (!crew) return reply('The Crew role is missing \u2014 tell a moderator.');
+    await discordApi('PUT', `/guilds/${GUILD_ID}/members/${discordId}/roles/${crew.id}`);
+    return reply(
+      'Welcome to the crew \u2713 The server\u2019s open \u2014 start in #gta6-news, and if you know something worth verifying, /submit earns Respect.',
+    );
+  } catch {
+    return reply('Something hiccuped \u2014 try the button again in a moment.');
+  }
+}
+
+async function handleNewsletterOptin(discordId: string) {
+  const sb = serviceClient();
+  if (!sb) return reply('The launch list is briefly offline \u2014 try again shortly.');
+
+  const { data: profile } = await sb
+    .from('profiles')
+    .select('id, handle')
+    .eq('discord_id', discordId)
+    .maybeSingle();
+
+  if (!profile) {
+    return reply(
+      'One step first: the launch list uses the email on your SixCentral account, so sign in with Discord at https://sixcentral.co.uk/account (thirty seconds, links automatically) \u2014 then tap this again.',
+    );
+  }
+
+  const { data: userRes } = await sb.auth.admin.getUserById(profile.id);
+  const email = userRes?.user?.email?.toLowerCase();
+  if (!email) return reply('Could not find an email on your account \u2014 add one at https://sixcentral.co.uk/account.');
+
+  const { error } = await sb
+    .from('subscribers')
+    .insert({ email, source: 'discord', consent_text: DISCORD_CONSENT });
+
+  if (error && error.code === '23505') {
+    return reply('You\u2019re already on the launch list \u2713');
+  }
+  if (error) return reply('Could not add you just now \u2014 try again in a moment.');
+  return reply(
+    'On the list \u2713 Launch-critical updates go to the email on your SixCentral account \u2014 it\u2019s never shown here, and you can unsubscribe any time.',
+  );
 }
 
 async function handleRank(discordId: string) {

@@ -61,9 +61,12 @@ const RANK_ROLES = [
   { name: 'City Legend',       color: 0xff2e88 },
 ];
 const SPECIAL_ROLES = [
-  { name: 'Founding Contributor', color: 0x9b5cff },
-  { name: 'Moderator',            color: 0xf4efe8 },
-  { name: 'Founder',              color: 0xffffff },
+  { name: 'Founding Contributor', color: 0x9b5cff, hoist: true,  mentionable: true },
+  { name: 'Moderator',            color: 0xf4efe8, hoist: true,  mentionable: true },
+  { name: 'Founder',              color: 0xffffff, hoist: true,  mentionable: true },
+  // The membership role: granted by the welcome-gate button. Not hoisted —
+  // the sidebar belongs to the rank ladder.
+  { name: 'Crew',                 color: 0,        hoist: false, mentionable: false },
 ];
 
 // ---- channel plan ----
@@ -71,6 +74,7 @@ const SPECIAL_ROLES = [
 //       | 'staff' (invisible to everyone but Moderator)
 const PLAN = [
   { category: 'START', channels: [
+    { name: 'welcome',       mode: 'gate',     topic: 'Agree to the house rules to unlock the server.' },
     { name: 'start-here',    mode: 'readonly', topic: 'What SixCentral is, how Respect works, the rules. Read me first.' },
     { name: 'announcements', mode: 'readonly', topic: 'Official drops: news, site posts, milestones.' },
   ]},
@@ -116,9 +120,9 @@ async function main() {
     const created = await api('POST', `/guilds/${GUILD}/roles`, {
       name: spec.name,
       color: spec.color,
-      hoist: true,                 // ranks group the member sidebar into the ladder
-      mentionable: !isRank,        // @Moderator / @Founding Contributor pingable
-      permissions: '0',            // roles carry status, not powers (mod powers set once, by hand)
+      hoist: 'hoist' in spec ? spec.hoist : true,
+      mentionable: 'mentionable' in spec ? spec.mentionable : !isRank,
+      permissions: '0',
     });
     roleIds[spec.name] = created.id;
     console.log(`role created:  ${spec.name}`);
@@ -137,21 +141,45 @@ async function main() {
     catIds[group.category] = cat.id;
 
     for (const ch of group.channels) {
-      const found = existingChannels.find((c) => c.type === 0 && c.name === ch.name);
-      if (found) {
-        console.log(`  channel exists:  #${ch.name}`);
-        continue;
-      }
+      // Declarative permission model — the whole server sits behind the
+      // Crew role, granted by the welcome-gate button:
+      //   gate      @everyone sees it (read-only); Crew no longer does
+      //   open      Crew view + talk; invisible pre-agreement
+      //   readonly  Crew view; staff + bot post
+      //   staff     Moderator + bot only
       const overwrites = [];
+      const crew = roleIds['Crew'];
+      const mod = roleIds['Moderator'];
+      if (ch.mode === 'gate') {
+        overwrites.push({ id: everyone.id, type: 0, allow: P(VIEW), deny: P(SEND) });
+        overwrites.push({ id: crew, type: 0, deny: P(VIEW) });
+        overwrites.push({ id: mod, type: 0, allow: P(VIEW | SEND) });
+      }
+      if (ch.mode === 'open') {
+        overwrites.push({ id: everyone.id, type: 0, deny: P(VIEW) });
+        overwrites.push({ id: crew, type: 0, allow: P(VIEW) });
+        overwrites.push({ id: mod, type: 0, allow: P(VIEW | SEND) });
+      }
       if (ch.mode === 'readonly') {
-        overwrites.push({ id: everyone.id, type: 0, deny: P(SEND) });
-        overwrites.push({ id: roleIds['Moderator'], type: 0, allow: P(SEND) });
-        if (botRole) overwrites.push({ id: botRole.id, type: 0, allow: P(VIEW | SEND) });
+        overwrites.push({ id: everyone.id, type: 0, deny: P(VIEW | SEND) });
+        overwrites.push({ id: crew, type: 0, allow: P(VIEW) });
+        overwrites.push({ id: mod, type: 0, allow: P(VIEW | SEND) });
       }
       if (ch.mode === 'staff') {
         overwrites.push({ id: everyone.id, type: 0, deny: P(VIEW) });
-        overwrites.push({ id: roleIds['Moderator'], type: 0, allow: P(VIEW | SEND) });
-        if (botRole) overwrites.push({ id: botRole.id, type: 0, allow: P(VIEW | SEND) });
+        overwrites.push({ id: mod, type: 0, allow: P(VIEW | SEND) });
+      }
+      if (botRole) overwrites.push({ id: botRole.id, type: 0, allow: P(VIEW | SEND) });
+
+      const found = existingChannels.find((c) => c.type === 0 && c.name === ch.name);
+      if (found) {
+        await api('PATCH', `/channels/${found.id}`, {
+          topic: ch.topic,
+          rate_limit_per_user: ch.slowmode ?? 0,
+          permission_overwrites: overwrites,
+        });
+        console.log(`  channel updated: #${ch.name}`);
+        continue;
       }
       await api('POST', `/guilds/${GUILD}/channels`, {
         name: ch.name,
@@ -170,6 +198,8 @@ async function main() {
   console.log('  • Server Settings → Safety: verification level Medium, enable AutoMod presets');
   console.log('  • Server Settings → Moderation: require 2FA for moderator actions');
   console.log('  • Drag the SixCentral bot role above the rank roles if it is not already');
+  console.log('  • Run `node discord/post-welcome.mjs` once to post the rules + gate buttons');
+  console.log('  • Existing members (including you) must press the agree button to get Crew');
 }
 
 main().catch((e) => {
