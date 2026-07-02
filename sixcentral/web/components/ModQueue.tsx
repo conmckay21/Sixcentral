@@ -35,6 +35,7 @@ export default function ModQueue() {
   const [isMod, setIsMod] = useState<boolean | null>(null);
   const [pending, setPending] = useState<Row[]>([]);
   const [clipQueue, setClipQueue] = useState<ClipRow[]>([]);
+  const [actionErr, setActionErr] = useState('');
   const [recent, setRecent] = useState<Row[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -83,11 +84,16 @@ export default function ModQueue() {
   async function reviewClip(id: string, status: 'approved' | 'rejected') {
     if (!sb || !session || busy) return;
     setBusy(id);
+    setActionErr('');
     const { error } = await sb
       .from('clip_submissions')
       .update({ status, reviewed_by: session.user.id })
       .eq('id', id);
-    if (!error) setClipQueue((rows) => rows.filter((r) => r.id !== id));
+    if (error) {
+      setActionErr(`That did not go through: ${error.message.slice(0, 140)}`);
+    } else {
+      setClipQueue((rows) => rows.filter((r) => r.id !== id));
+    }
     setBusy(null);
   }
 
@@ -98,7 +104,10 @@ export default function ModQueue() {
       .from('contributions')
       .update({ status, reviewed_by: session.user.id })
       .eq('id', id);
-    if (!error) {
+    if (error) {
+      setActionErr(`That did not go through: ${error.message.slice(0, 140)}`);
+    } else {
+      setActionErr('');
       setPending((rows) => rows.filter((r) => r.id !== id));
       load();
     }
@@ -176,6 +185,7 @@ export default function ModQueue() {
         </div>
       )}
 
+      {actionErr && <p className="panel__err" style={{ marginTop: 10 }}>{actionErr}</p>}
       <div className="section__head" style={{ margin: '30px 0 12px' }}>
         <h2 style={{ fontSize: '1.1rem' }}>Clip queue</h2>
         <span className="rumour-note">{clipQueue.length} pending</span>
