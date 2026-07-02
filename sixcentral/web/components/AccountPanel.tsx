@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { getBrowserSupabase } from '@/lib/supabase-browser';
 import { DISCORD_AUTH_READY } from '@/lib/site';
@@ -28,14 +28,26 @@ export default function AccountPanel() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [ranks, setRanks] = useState<Rank[]>([]);
 
+  // ---- auth form state ----
+  const [mode, setMode] = useState<'signin' | 'signup'>('signup');
+  const [handleField, setHandleField] = useState('');
+  const [avail, setAvail] = useState<'idle' | 'checking' | 'free' | 'taken' | 'invalid'>('idle');
+  const availTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [authState, setAuthState] = useState<'idle' | 'busy' | 'sent' | 'error'>('idle');
   const [authMsg, setAuthMsg] = useState('');
 
+  // ---- password recovery ----
+  const [recovery, setRecovery] = useState(false);
+  const [newPass, setNewPass] = useState('');
+  const [recoveryState, setRecoveryState] = useState<'idle' | 'busy' | 'error'>('idle');
+  const [recoveryMsg, setRecoveryMsg] = useState('');
+
+  // ---- profile edit state ----
   const [handle, setHandle] = useState('');
   const [saveState, setSaveState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
   const [saveMsg, setSaveMsg] = useState('');
-
   const [avatarState, setAvatarState] = useState<'idle' | 'busy' | 'error'>('idle');
   const [avatarMsg, setAvatarMsg] = useState('');
 
@@ -65,27 +77,136 @@ export default function AccountPanel() {
       if (data.session) loadProfile(data.session.user.id);
       setReady(true);
     });
-    const { data: sub } = sb.auth.onAuthStateChange((_e, s) => {
+    const { data: sub } = sb.auth.onAuthStateChange((event, s) => {
       setSession(s);
+      if (event === 'PASSWORD_RECOVERY') setRecovery(true);
       if (s) loadProfile(s.user.id);
       else setProfile(null);
     });
     return () => sub.subscription.unsubscribe();
   }, [sb, loadProfile]);
 
-  async function sendMagicLink(e: React.FormEvent) {
+  // live handle availability
+  function onHandleChange(v: string) {
+    setHandleField(v);
+    if (availTimer.current) clearTimeout(availTimer.current);
+    if (!v) {
+      setAvail('idle');
+      return;
+    }
+    if (!HANDLE_RE.test(v)) {
+      setAvail('invalid');
+      return;
+    }
+    setAvail('checking');
+    availTimer.current = setTimeout(async () => {
+      if (!sb) return;
+      const { count } = await sb
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .ilike('handle', v);
+      setAvail(count && count > 0 ? 'taken' : 'free');
+    }, 350);
+  }
+
+  async function signUp(e: React.FormEvent) {
+    e.preventDefault();
+    if (!sb || authState === 'busy') return;
+    if (!HANDLE_RE.test(handleField)) {
+      setAuthState('error');
+      setAuthMsg('Handle: 3\u201320 characters, letters, numbers and underscores.');
+      return;
+    }
+    if (avail === 'taken') {
+      setAuthState('error');
+      setAuthMsg('That handle is taken \u2014 pick another.');
+      return;
+    }
+    if (password.length < 8) {
+      setAuthState('error');
+      setAuthMsg('Password needs at least 8 characters.');
+      return;
+    }
+    setAuthState('busy');
+    const { data, error } = await sb.auth.signUp({
+      email: email.trim().toLowerCase(),
+      password,
+      options: {
+        data: { user_name: handleField },
+        emailRedirectTo: `${window.location.origin}/account`,
+      },
+    });
+    if (error) {
+      setAuthState('error');
+      setAuthMsg(
+        /already registered/i.test(error.message)
+          ? 'That email already has an account \u2014 sign in instead.'
+          : error.message,
+      );
+    } else if (!data.session) {
+      setAuthState('sent');
+      setAuthMsg('Check your inbox to confirm your email, then sign in.');
+    } else {
+      setAuthState('idle');
+    }
+  }
+
+  async function signIn(e: React.FormEvent) {
     e.preventDefault();
     if (!sb || authState === 'busy') return;
     setAuthState('busy');
-    const { error } = await sb.auth.signInWithOtp({
+    const { error } = await sb.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
-      options: { emailRedirectTo: `${window.location.origin}/account` },
+      password,
+    });
+    if (error) {
+      setAuthState('error');
+      setAuthMsg(
+        /invalid login credentials/i.test(error.message)
+          ? 'Wrong email or password.'
+          : error.message,
+      );
+    } else {
+      setAuthState('idle');
+    }
+  }
+
+  async function forgotPassword() {
+    if (!sb || !email) {
+      setAuthState('error');
+      setAuthMsg('Enter your email above first, then hit forgot password.');
+      return;
+    }
+    setAuthState('busy');
+    const { error } = await sb.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+      redirectTo: `${window.location.origin}/account`,
     });
     if (error) {
       setAuthState('error');
       setAuthMsg(error.message);
     } else {
       setAuthState('sent');
+      setAuthMsg('Reset link sent \u2014 check your inbox. It brings you back here to set a new password.');
+    }
+  }
+
+  async function setNewPassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (!sb || recoveryState === 'busy') return;
+    if (newPass.length < 8) {
+      setRecoveryState('error');
+      setRecoveryMsg('At least 8 characters.');
+      return;
+    }
+    setRecoveryState('busy');
+    const { error } = await sb.auth.updateUser({ password: newPass });
+    if (error) {
+      setRecoveryState('error');
+      setRecoveryMsg(error.message);
+    } else {
+      setRecovery(false);
+      setRecoveryState('idle');
+      setNewPass('');
     }
   }
 
@@ -102,14 +223,14 @@ export default function AccountPanel() {
     const next = handle.trim();
     if (!HANDLE_RE.test(next)) {
       setSaveState('error');
-      setSaveMsg('3–20 characters: letters, numbers and underscores only.');
+      setSaveMsg('3\u201320 characters: letters, numbers and underscores only.');
       return;
     }
     setSaveState('busy');
     const { error } = await sb.from('profiles').update({ handle: next }).eq('id', profile.id);
     if (error) {
       setSaveState('error');
-      setSaveMsg(error.code === '23505' ? 'That handle is taken.' : 'Could not save — try again.');
+      setSaveMsg(error.code === '23505' ? 'That handle is taken.' : 'Could not save \u2014 try again.');
     } else {
       setSaveState('done');
       setSaveMsg('Saved.');
@@ -118,7 +239,6 @@ export default function AccountPanel() {
     }
   }
 
-  /** Client-side resize to a 256px cover-cropped jpeg (~15KB), then upsert. */
   function resizeToJpeg(file: File): Promise<Blob> {
     return new Promise((resolve, reject) => {
       const url = URL.createObjectURL(file);
@@ -166,7 +286,7 @@ export default function AccountPanel() {
       setAvatarState('idle');
     } catch (err) {
       setAvatarState('error');
-      setAvatarMsg(err instanceof Error ? err.message : 'Upload failed — try again.');
+      setAvatarMsg(err instanceof Error ? err.message : 'Upload failed \u2014 try again.');
     }
   }
 
@@ -185,48 +305,143 @@ export default function AccountPanel() {
   }
 
   if (!sb) {
-    return <div className="panel"><p className="panel__muted">Accounts come online once the site is connected to its database.</p></div>;
-  }
-  if (!ready) {
-    return <div className="panel"><p className="panel__muted">Loading…</p></div>;
-  }
-
-  // ---------- signed out ----------
-  if (!session) {
     return (
       <div className="panel">
-        <div className="kicker">Join the crew</div>
-        <h2 className="panel__title">Sign in to SixCentral</h2>
-        <p className="panel__muted" style={{ maxWidth: '52ch' }}>
-          One account for your handle, your Respect on The Come-Up, and — when the tracker lands —
-          your progress. No passwords: we email you a sign-in link.
-        </p>
+        <p className="panel__muted">Accounts come online once the site is connected to its database.</p>
+      </div>
+    );
+  }
+  if (!ready) {
+    return (
+      <div className="panel">
+        <p className="panel__muted">Loading\u2026</p>
+      </div>
+    );
+  }
+
+  // ---------- signed out: sign in / create account ----------
+  if (!session) {
+    const isUp = mode === 'signup';
+    return (
+      <div className="panel">
+        <div className="authtabs">
+          <button className={isUp ? 'on' : ''} onClick={() => { setMode('signup'); setAuthState('idle'); }}>
+            Create account
+          </button>
+          <button className={!isUp ? 'on' : ''} onClick={() => { setMode('signin'); setAuthState('idle'); }}>
+            Sign in
+          </button>
+        </div>
+
+        <h2 className="panel__title">{isUp ? 'Join the crew' : 'Welcome back'}</h2>
+        {isUp && (
+          <p className="panel__muted" style={{ maxWidth: '54ch' }}>
+            One account for your handle, your Respect on The Come-Up, and \u2014 when the tracker
+            lands \u2014 your progress.
+          </p>
+        )}
+
         {authState === 'sent' ? (
-          <p className="panel__ok">Check your inbox — your sign-in link is on the way. It opens right back here.</p>
+          <p className="panel__ok">{authMsg}</p>
         ) : (
-          <form className="nl__row" style={{ marginTop: 16 }} onSubmit={sendMagicLink}>
-            <input
-              className="nl__input"
-              type="email"
-              required
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              aria-label="Email address"
-            />
+          <form onSubmit={isUp ? signUp : signIn}>
+            {isUp && (
+              <div className="acct__field">
+                <label htmlFor="a-handle">Username</label>
+                <input
+                  id="a-handle"
+                  className="nl__input"
+                  value={handleField}
+                  maxLength={20}
+                  autoComplete="username"
+                  placeholder="your_handle"
+                  onChange={(e) => onHandleChange(e.target.value)}
+                />
+                {avail === 'checking' && <p className="panel__hint">Checking\u2026</p>}
+                {avail === 'free' && <p className="panel__ok" style={{ marginTop: 8 }}>@{handleField} is free ✓</p>}
+                {avail === 'taken' && <p className="panel__err">Taken \u2014 try another.</p>}
+                {avail === 'invalid' && (
+                  <p className="panel__err">3\u201320 characters: letters, numbers, underscores.</p>
+                )}
+              </div>
+            )}
+
+            <div className="acct__field">
+              <label htmlFor="a-email">Email</label>
+              <input
+                id="a-email"
+                className="nl__input"
+                type="email"
+                required
+                autoComplete="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+
+            <div className="acct__field">
+              <label htmlFor="a-pass">Password</label>
+              <input
+                id="a-pass"
+                className="nl__input"
+                type="password"
+                required
+                minLength={8}
+                autoComplete={isUp ? 'new-password' : 'current-password'}
+                placeholder={isUp ? 'At least 8 characters' : 'Your password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+
+            {authState === 'error' && <p className="panel__err">{authMsg}</p>}
+
             <button className="nl__btn" type="submit" disabled={authState === 'busy'}>
-              {authState === 'busy' ? 'Sending…' : 'Email me a link'}
+              {authState === 'busy' ? 'One moment\u2026' : isUp ? 'Create account' : 'Sign in'}
             </button>
+
+            {!isUp && (
+              <button type="button" className="linklike" onClick={forgotPassword}>
+                Forgot password?
+              </button>
+            )}
           </form>
         )}
-        {authState === 'error' && <p className="panel__err">{authMsg}</p>}
-        {DISCORD_AUTH_READY ? (
+
+        {DISCORD_AUTH_READY && (
           <button className="btn-discord" onClick={signInDiscord}>
             Continue with Discord
           </button>
-        ) : (
-          <p className="panel__hint">Discord sign-in is coming online shortly — email works today.</p>
         )}
+      </div>
+    );
+  }
+
+  // ---------- password recovery ----------
+  if (recovery) {
+    return (
+      <div className="panel">
+        <div className="kicker">Reset</div>
+        <h2 className="panel__title">Choose a new password</h2>
+        <form onSubmit={setNewPassword}>
+          <div className="acct__field">
+            <label htmlFor="np">New password</label>
+            <input
+              id="np"
+              className="nl__input"
+              type="password"
+              minLength={8}
+              autoComplete="new-password"
+              value={newPass}
+              onChange={(e) => setNewPass(e.target.value)}
+            />
+          </div>
+          {recoveryState === 'error' && <p className="panel__err">{recoveryMsg}</p>}
+          <button className="nl__btn" type="submit" disabled={recoveryState === 'busy'}>
+            {recoveryState === 'busy' ? 'Saving\u2026' : 'Save password'}
+          </button>
+        </form>
       </div>
     );
   }
@@ -236,13 +451,16 @@ export default function AccountPanel() {
   const nextRank = ranks.find((r) => r.id === (profile?.rank_id ?? 0) + 1);
   const progress =
     profile && rank && nextRank
-      ? Math.min(100, Math.round(((profile.respect - rank.min_respect) / (nextRank.min_respect - rank.min_respect)) * 100))
+      ? Math.min(
+          100,
+          Math.round(((profile.respect - rank.min_respect) / (nextRank.min_respect - rank.min_respect)) * 100),
+        )
       : 100;
 
   return (
     <div className="panel">
       {!profile ? (
-        <p className="panel__muted">Setting up your profile…</p>
+        <p className="panel__muted">Setting up your profile\u2026</p>
       ) : (
         <>
           <div className="acct__head">
@@ -256,7 +474,7 @@ export default function AccountPanel() {
                 )}
               </div>
               <label className="avatar-btn" htmlFor="avatar-file">
-                {avatarState === 'busy' ? 'Uploading…' : 'Change photo'}
+                {avatarState === 'busy' ? 'Uploading\u2026' : 'Change photo'}
               </label>
               <input
                 id="avatar-file"
@@ -292,6 +510,8 @@ export default function AccountPanel() {
             </div>
           </div>
 
+          {avatarState === 'error' && <p className="panel__err">{avatarMsg}</p>}
+
           {nextRank ? (
             <div className="xp">
               <div className="xp__label">
@@ -319,8 +539,12 @@ export default function AccountPanel() {
                 onChange={(e) => setHandle(e.target.value)}
                 maxLength={20}
               />
-              <button className="nl__btn" onClick={saveHandle} disabled={saveState === 'busy' || handle === profile.handle}>
-                {saveState === 'busy' ? 'Saving…' : 'Save'}
+              <button
+                className="nl__btn"
+                onClick={saveHandle}
+                disabled={saveState === 'busy' || handle === profile.handle}
+              >
+                {saveState === 'busy' ? 'Saving\u2026' : 'Save'}
               </button>
             </div>
             {saveState === 'error' && <p className="panel__err">{saveMsg}</p>}
@@ -328,8 +552,15 @@ export default function AccountPanel() {
           </div>
 
           <div className="acct__meta">
-            <span>{profile.discord_id ? 'Discord linked ✓' : 'Discord not linked — sign in with Discord once it\u2019s live and it links automatically.'}</span>
-            <span>Member since {new Date(profile.created_at).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}</span>
+            <span>
+              {profile.discord_id
+                ? 'Discord linked ✓'
+                : 'Discord not linked \u2014 sign in with Discord once it\u2019s live and it links automatically.'}
+            </span>
+            <span>
+              Member since{' '}
+              {new Date(profile.created_at).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+            </span>
           </div>
 
           <button className="btn-signout" onClick={signOut}>

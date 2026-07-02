@@ -427,3 +427,17 @@ select.nl__input { appearance: none; }
 .modq__item--slim { display: flex; gap: 14px; align-items: center; padding: 10px 16px; }
 .modq__ok { color: var(--green); font-family: var(--mono); font-size: 0.66rem; text-transform: uppercase; }
 .modq__no { color: var(--dim); font-family: var(--mono); font-size: 0.66rem; text-transform: uppercase; }
+
+/* ---- Auth tabs ---- */
+.authtabs { display: flex; gap: 8px; margin-bottom: 18px; }
+.authtabs button {
+  background: transparent; border: 1px solid var(--line2); color: var(--muted);
+  border-radius: 8px; padding: 8px 16px; font-family: var(--mono); font-size: 0.7rem;
+  text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer;
+}
+.authtabs button.on { background: var(--pink); border-color: var(--pink); color: #fff; }
+.linklike {
+  display: block; background: none; border: 0; color: var(--dim); margin-top: 12px;
+  font-family: var(--mono); font-size: 0.7rem; text-decoration: underline; cursor: pointer; padding: 0;
+}
+.linklike:hover { color: var(--cyan); }
