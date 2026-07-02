@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getBrowserSupabase } from '@/lib/supabase-browser';
+import FriendSearch from '@/components/FriendSearch';
 
 type Rank = { id: number; name: string; min_respect: number; heat: number; perk: string | null };
 type EarnType = { key: string; label: string; points: number };
@@ -209,6 +210,13 @@ export default function TheComeUp() {
               ))}
             </div>
           )}
+          <div className="findfriends">
+            <div className="kicker" style={{ color: 'var(--pink-l)' }}>Find your friends</div>
+            <p className="panel__hint" style={{ margin: '6px 0 10px' }}>
+              Search any handle, add them, and the Friends tab becomes your private rivalry table.
+            </p>
+            <FriendSearch />
+          </div>
         </div>
       </section>
     </>

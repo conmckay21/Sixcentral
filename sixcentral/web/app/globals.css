@@ -603,3 +603,13 @@ select.nl__input { appearance: none; }
 .reactbtn:hover { border-color: var(--cyan); transform: translateY(-1px); }
 .reactbtn.on { border-color: var(--gold); background: linear-gradient(135deg, rgba(255,200,61,0.15), var(--bg2)); }
 .reactbtn i { font-style: normal; font-family: var(--mono); font-size: 0.66rem; color: var(--muted); }
+
+/* friend search */
+.findfriends { margin-top: 30px; max-width: 520px; }
+.frsearch { position: relative; }
+.frsearch__results { margin-top: 8px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--bg2); }
+.frsearch__row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.frsearch__row:last-child { border-bottom: 0; }
+.frsearch__who { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.frsearch__who a { color: var(--cyan); font-size: 0.9rem; }
+.frsearch__who em { font-style: normal; font-family: var(--mono); font-size: 0.6rem; color: var(--gold); text-transform: uppercase; letter-spacing: 0.06em; }

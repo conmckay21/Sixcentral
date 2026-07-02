@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { getBrowserSupabase } from '@/lib/supabase-browser';
+import FriendSearch from '@/components/FriendSearch';
 import { DISCORD_AUTH_READY } from '@/lib/site';
 
 type Profile = {
@@ -885,6 +886,7 @@ export default function AccountPanel() {
               {friendEdges.filter((e) => e.status === 'pending' && e.addressee === profile.id).length > 0 &&
                 ` (${friendEdges.filter((e) => e.status === 'pending' && e.addressee === profile.id).length} waiting)`}
             </label>
+            <FriendSearch />
             {friendEdges.length === 0 ? (
               <p className="panel__hint" style={{ marginTop: 4 }}>
                 No friends yet. Open anyone&rsquo;s profile from the board and hit Add friend.
