@@ -1,75 +1,150 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
-import { Chip } from '@/components/ui';
 
-const PINS = [
-  { top: '18%', left: '22%', c: C.pink },
-  { top: '34%', left: '64%', c: C.cyan },
-  { top: '52%', left: '38%', c: C.gold },
-  { top: '66%', left: '72%', c: C.pink },
-  { top: '74%', left: '18%', c: C.cyan },
-  { top: '28%', left: '84%', c: C.gold },
-] as const;
+/**
+ * Coordinate convention for map_pins: lat = y and lng = x, both normalised
+ * 0..1 against the map canvas (top-left origin). Holds across base-map swaps.
+ */
+
+type Pin = { id: string; name: string; region: string | null; lat: number; lng: number; collectible_type: string };
+type CType = { id: string; slug: string; name: string; colour: string | null };
+
+const MAP = require('../../../assets/images/leonida-schematic.png');
+const TOTAL = 305;
 
 export default function MapTab() {
+  const [size, setSize] = useState(0);
+  const [pins, setPins] = useState<Pin[]>([]);
+  const [types, setTypes] = useState<CType[]>([]);
+  const [filter, setFilter] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Pin | null>(null);
+
+  const scale = useSharedValue(1);
+  const saved = useSharedValue(1);
+  const tx = useSharedValue(0);
+  const ty = useSharedValue(0);
+  const stx = useSharedValue(0);
+  const sty = useSharedValue(0);
+
+  useEffect(() => {
+    supabase.from('collectible_types').select('id, slug, name, colour').then(({ data }) => {
+      if (data) setTypes(data as CType[]);
+    });
+    supabase
+      .from('map_pins')
+      .select('id, name, region, lat, lng, collectible_type')
+      .in('status', ['accepted', 'approved', 'confirmed'])
+      .then(({ data }) => {
+        if (data) setPins(data as Pin[]);
+      });
+  }, []);
+
+  const pinch = Gesture.Pinch()
+    .onUpdate((e) => {
+      const next = saved.value * e.scale;
+      scale.value = Math.min(5, Math.max(1, next));
+    })
+    .onEnd(() => {
+      saved.value = scale.value;
+    });
+
+  const pan = Gesture.Pan()
+    .onUpdate((e) => {
+      const bound = ((scale.value - 1) * size) / 2;
+      tx.value = Math.min(bound, Math.max(-bound, stx.value + e.translationX));
+      ty.value = Math.min(bound, Math.max(-bound, sty.value + e.translationY));
+    })
+    .onEnd(() => {
+      stx.value = tx.value;
+      sty.value = ty.value;
+    });
+
+  const composed = Gesture.Simultaneous(pinch, pan);
+
+  const anim = useAnimatedStyle(() => ({
+    transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: scale.value }],
+  }));
+
+  const shown = useMemo(() => (filter ? pins.filter((p) => p.collectible_type === filter) : pins), [pins, filter]);
+  const colourOf = (typeId: string) => types.find((t) => t.id === typeId)?.colour ?? C.pink;
+
   return (
     <SafeAreaView style={st.safe}>
-      <ScrollView contentContainerStyle={st.wrap} showsVerticalScrollIndicator={false}>
+      <View style={st.head}>
         <Text style={st.h1}>Leonida</Text>
         <View style={st.statChip}>
-          <Text style={st.statText}>0 / 305 found · opens with the game</Text>
+          <Text style={st.statText}>
+            {pins.length} / {TOTAL} confirmed{pins.length === 0 ? ' · opens with the game' : ''}
+          </Text>
         </View>
+      </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.chips}>
-          <Chip label="Collectibles" active />
-          <Chip label="Stunt jumps" />
-          <Chip label="Businesses" />
-          <Chip label="Signal towers" />
-          <Chip label="Trophies" />
-        </ScrollView>
-
-        <View style={st.map}>
-          {[...Array(5)].map((_, i) => (
-            <View key={`h${i}`} style={[st.gridH, { top: `${(i + 1) * 16}%` }]} />
-          ))}
-          {[...Array(4)].map((_, i) => (
-            <View key={`v${i}`} style={[st.gridV, { left: `${(i + 1) * 20}%` }]} />
-          ))}
-          {PINS.map((p, i) => (
-            <View key={i} style={[st.pin, { top: p.top, left: p.left, backgroundColor: p.c, shadowColor: p.c }]} />
-          ))}
-          <View style={st.mapNoteWrap}>
-            <Text style={st.mapNoteTitle}>The map lands in Phase 3</Text>
-            <Text style={st.mapNoteBody}>
-              Every collectible, stunt jump, business and signal tower, pinned by the crew and
-              confirmed before it counts. The database behind it is already live.
-            </Text>
-          </View>
-        </View>
-
-        <View style={st.openBtn}>
-          <Text style={st.openBtnText}>Open full map ⛶ · with the game</Text>
-        </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.chips} contentContainerStyle={{ paddingHorizontal: 16 }}>
+        <Pressable style={[st.chip, !filter && st.chipOn]} onPress={() => setFilter(null)}>
+          <Text style={[st.chipText, !filter && st.chipTextOn]}>All</Text>
+        </Pressable>
+        {types.map((t) => (
+          <Pressable key={t.id} style={[st.chip, filter === t.id && st.chipOn]} onPress={() => setFilter(filter === t.id ? null : t.id)}>
+            <View style={[st.dot, { backgroundColor: t.colour ?? C.pink }]} />
+            <Text style={[st.chipText, filter === t.id && st.chipTextOn]}>{t.name}</Text>
+          </Pressable>
+        ))}
       </ScrollView>
+
+      {selected && (
+        <Pressable style={st.pinInfo} onPress={() => setSelected(null)}>
+          <Text style={st.pinInfoText}>
+            📍 {selected.name}
+            {selected.region ? ` · ${selected.region}` : ''} · tap to dismiss
+          </Text>
+        </Pressable>
+      )}
+
+      <View style={st.canvasWrap} onLayout={(e) => setSize(e.nativeEvent.layout.width)}>
+        {size > 0 && (
+          <GestureDetector gesture={composed}>
+            <Animated.View style={[{ width: size, height: size }, anim]}>
+              <Image source={MAP} style={{ width: size, height: size }} resizeMode="cover" />
+              {shown.map((p) => (
+                <Pressable
+                  key={p.id}
+                  style={[st.pin, { left: p.lng * size - 7, top: p.lat * size - 7, backgroundColor: colourOf(p.collectible_type), shadowColor: colourOf(p.collectible_type) }]}
+                  onPress={() => setSelected(p)}
+                />
+              ))}
+            </Animated.View>
+          </GestureDetector>
+        )}
+      </View>
+
+      <Text style={st.note}>
+        Pinch to zoom, drag to pan. Every find is community-pinned and confirmed before it
+        counts. Full cartography lands with the game.
+      </Text>
     </SafeAreaView>
   );
 }
 
 const st = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
-  wrap: { padding: 18, paddingBottom: 40 },
-  h1: { color: C.text, fontSize: 30, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 },
-  statChip: { alignSelf: 'flex-start', backgroundColor: C.bg2, borderColor: C.line2, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, marginTop: 10 },
-  statText: { color: C.cyan, fontWeight: '800', fontSize: 12 },
-  chips: { marginTop: 16, marginBottom: 16 },
-  map: { height: 340, backgroundColor: C.bg2, borderColor: C.line, borderWidth: 1, borderRadius: 18, overflow: 'hidden', justifyContent: 'flex-end' },
-  gridH: { position: 'absolute', left: 0, right: 0, height: 1, backgroundColor: C.line },
-  gridV: { position: 'absolute', top: 0, bottom: 0, width: 1, backgroundColor: C.line },
-  pin: { position: 'absolute', width: 10, height: 10, borderRadius: 5, shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 }, elevation: 4 },
-  mapNoteWrap: { padding: 16, backgroundColor: 'rgba(11,8,16,0.72)' },
-  mapNoteTitle: { color: C.pinkL, fontWeight: '900', fontSize: 15, textTransform: 'uppercase', letterSpacing: 1 },
-  mapNoteBody: { color: C.muted, marginTop: 6, lineHeight: 19, fontSize: 13 },
-  openBtn: { marginTop: 14, borderColor: C.line2, borderWidth: 1, borderRadius: 14, padding: 14, alignItems: 'center' },
-  openBtnText: { color: C.dim, fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 },
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 6 },
+  h1: { color: C.text, fontSize: 28, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 },
+  statChip: { backgroundColor: C.bg2, borderColor: C.line2, borderWidth: 1, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6 },
+  statText: { color: C.cyan, fontWeight: '800', fontSize: 10 },
+  chips: { marginTop: 12, maxHeight: 40 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderColor: C.line2, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, marginRight: 8 },
+  chipOn: { backgroundColor: C.pink, borderColor: C.pink },
+  chipText: { color: C.muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  chipTextOn: { color: '#fff' },
+  dot: { width: 7, height: 7, borderRadius: 4 },
+  pinInfo: { marginHorizontal: 16, marginTop: 10, backgroundColor: C.bg2, borderColor: C.gold, borderWidth: 1, borderRadius: 12, padding: 10 },
+  pinInfoText: { color: C.gold, fontSize: 12, fontWeight: '700' },
+  canvasWrap: { marginTop: 12, marginHorizontal: 16, borderRadius: 18, overflow: 'hidden', borderColor: C.line, borderWidth: 1, aspectRatio: 1 },
+  pin: { position: 'absolute', width: 14, height: 14, borderRadius: 7, borderColor: '#fff', borderWidth: 1.5, shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 }, elevation: 4 },
+  note: { color: C.dim, fontSize: 11, lineHeight: 16, margin: 16 },
 });

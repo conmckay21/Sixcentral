@@ -1,5 +1,6 @@
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
 import { C } from '@/lib/theme';
 
@@ -19,6 +20,7 @@ const SixTheme = {
 
 export default function RootLayout() {
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <ThemeProvider value={SixTheme}>
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg } }}>
         <Stack.Screen name="(tabs)" />
@@ -26,5 +28,6 @@ export default function RootLayout() {
         <Stack.Screen name="account" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
