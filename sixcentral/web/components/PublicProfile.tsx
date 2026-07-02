@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getBrowserSupabase } from '@/lib/supabase-browser';
+import FriendButton from '@/components/FriendButton';
 
 type PublicProfile = {
   id: string;
@@ -126,6 +127,9 @@ export default function PublicProfileView({ handle }: { handle: string }) {
               )
             )}
             {profile.is_moderator && <span className="mod-chip">Moderator</span>}
+          </div>
+          <div className="pp__friendrow">
+            <FriendButton profileId={profile.id} />
           </div>
           <div className="pp__meta">
             {profile.platform && (

@@ -28,6 +28,15 @@ type Profile = {
 
 type Flair = { key: string; label: string; min_rank_id: number };
 
+type FriendEdge = {
+  id: string;
+  requester: string;
+  addressee: string;
+  status: 'pending' | 'accepted';
+  requester_p: { handle: string } | null;
+  addressee_p: { handle: string } | null;
+};
+
 const PRESETS = [
   { src: '/avatars/preset-skyline.svg', label: 'Skyline' },
   { src: '/avatars/preset-palms.svg', label: 'Palms' },
@@ -91,6 +100,7 @@ export default function AccountPanel() {
   const [detailsState, setDetailsState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
   const [detailsMsg, setDetailsMsg] = useState('');
   const [newsletter2, setNewsletter2] = useState<'unknown' | 'on' | 'off' | 'busy'>('unknown');
+  const [friendEdges, setFriendEdges] = useState<FriendEdge[]>([]);
   const [newPw, setNewPw] = useState('');
   const [pwState, setPwState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
   const [pwMsg, setPwMsg] = useState('');
@@ -116,6 +126,7 @@ export default function AccountPanel() {
       }
       if (r) setRanks(r as Rank[]);
       if (f) setFlairs(f as Flair[]);
+      loadFriends();
     },
     [sb],
   );
@@ -282,6 +293,29 @@ export default function AccountPanel() {
       provider: 'discord',
       options: { redirectTo: `${window.location.origin}/account` },
     });
+  }
+
+  async function loadFriends() {
+    if (!sb) return;
+    const { data } = await sb
+      .from('friendships')
+      .select(
+        'id, requester, addressee, status, requester_p:profiles!friendships_requester_fkey(handle), addressee_p:profiles!friendships_addressee_fkey(handle)',
+      )
+      .order('created_at', { ascending: false });
+    if (data) setFriendEdges(data as unknown as FriendEdge[]);
+  }
+
+  async function acceptFriend(id: string) {
+    if (!sb) return;
+    await sb.from('friendships').update({ status: 'accepted', responded_at: new Date().toISOString() }).eq('id', id);
+    loadFriends();
+  }
+
+  async function removeFriend(id: string) {
+    if (!sb) return;
+    await sb.from('friendships').delete().eq('id', id);
+    loadFriends();
   }
 
   async function loadNewsletter(email: string) {
@@ -843,6 +877,47 @@ export default function AccountPanel() {
                 access when the tracker goes live. Unsubscribe any time. That’s this box.
               </span>
             </label>
+          </div>
+
+          <div className="acct__field" style={{ marginTop: 22 }}>
+            <label>
+              Friends
+              {friendEdges.filter((e) => e.status === 'pending' && e.addressee === profile.id).length > 0 &&
+                ` (${friendEdges.filter((e) => e.status === 'pending' && e.addressee === profile.id).length} waiting)`}
+            </label>
+            {friendEdges.length === 0 ? (
+              <p className="panel__hint" style={{ marginTop: 4 }}>
+                No friends yet. Open anyone&rsquo;s profile from the board and hit Add friend.
+              </p>
+            ) : (
+              <div className="frlist">
+                {friendEdges.map((e) => {
+                  const incoming = e.status === 'pending' && e.addressee === profile.id;
+                  const other = e.requester === profile.id ? e.addressee_p?.handle : e.requester_p?.handle;
+                  if (!other) return null;
+                  return (
+                    <div key={e.id} className="frlist__row">
+                      <a href={`/u/${other}`} className="frlist__handle">
+                        @{other}
+                      </a>
+                      <span className="frlist__state">
+                        {e.status === 'accepted' ? 'Friends' : incoming ? 'Wants to be friends' : 'Requested'}
+                      </span>
+                      <span className="frlist__actions">
+                        {incoming && (
+                          <button className="friend-btn friend-btn--add" onClick={() => acceptFriend(e.id)}>
+                            Accept
+                          </button>
+                        )}
+                        <button className="friend-btn" onClick={() => removeFriend(e.id)}>
+                          {e.status === 'accepted' ? 'Remove' : incoming ? 'Decline' : 'Cancel'}
+                        </button>
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="acct__field" style={{ marginTop: 22 }}>

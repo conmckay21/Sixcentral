@@ -1,0 +1,6 @@
+-- ============================================================================
+--  SixCentral — 0015: friends (applied live 2 Jul 2026)
+--  Mutual request/accept friendships. One edge per pair in either direction
+--  (unique on least/greatest). Edges visible only to the two people involved;
+--  only the addressee can accept; either side can delete. See live project.
+-- ============================================================================

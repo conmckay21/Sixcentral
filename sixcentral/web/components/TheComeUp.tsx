@@ -7,6 +7,7 @@ import { getBrowserSupabase } from '@/lib/supabase-browser';
 type Rank = { id: number; name: string; min_respect: number; heat: number; perk: string | null };
 type EarnType = { key: string; label: string; points: number };
 type BoardRow = { id: string; handle: string; avatar_url: string | null; respect?: number; respect_week?: number; rank_name?: string; title?: string | null; flair?: string | null };
+type FriendProfile = { id: string; handle: string; avatar_url: string | null; respect: number; rank_id: number; title: string | null; flair: string | null; is_staff: boolean };
 
 export default function TheComeUp() {
   const sb = getBrowserSupabase();
@@ -14,8 +15,10 @@ export default function TheComeUp() {
   const [earn, setEarn] = useState<EarnType[]>([]);
   const [allTime, setAllTime] = useState<BoardRow[]>([]);
   const [week, setWeek] = useState<BoardRow[]>([]);
-  const [board, setBoard] = useState<'all' | 'week'>('all');
+  const [board, setBoard] = useState<'all' | 'week' | 'friends'>('all');
   const [loaded, setLoaded] = useState(false);
+  const [friends, setFriends] = useState<BoardRow[]>([]);
+  const [friendsState, setFriendsState] = useState<'idle' | 'loading' | 'signedout' | 'ready'>('idle');
 
   useEffect(() => {
     if (!sb) {
@@ -36,7 +39,45 @@ export default function TheComeUp() {
     });
   }, [sb]);
 
-  const rows = board === 'all' ? allTime : week;
+  async function loadFriends() {
+    if (!sb || friendsState === 'loading' || friendsState === 'ready') return;
+    setFriendsState('loading');
+    const { data: sess } = await sb.auth.getSession();
+    const uid = sess.session?.user.id;
+    if (!uid) {
+      setFriendsState('signedout');
+      return;
+    }
+    const { data: edges } = await sb
+      .from('friendships')
+      .select('requester, addressee')
+      .eq('status', 'accepted');
+    const ids = new Set<string>([uid]);
+    (edges ?? []).forEach((e) => {
+      ids.add(e.requester as string);
+      ids.add(e.addressee as string);
+    });
+    const { data: profs } = await sb
+      .from('public_profiles')
+      .select('id, handle, avatar_url, respect, rank_id, title, flair, is_staff')
+      .in('id', Array.from(ids))
+      .order('respect', { ascending: false });
+    const rankName = (rid: number) => ranks.find((r) => r.id === rid)?.name;
+    setFriends(
+      ((profs ?? []) as FriendProfile[]).map((p) => ({
+        id: p.id,
+        handle: p.handle,
+        avatar_url: p.avatar_url,
+        respect: p.respect,
+        rank_name: p.is_staff ? undefined : rankName(p.rank_id),
+        title: p.title,
+        flair: p.flair,
+      })),
+    );
+    setFriendsState('ready');
+  }
+
+  const rows = board === 'friends' ? friends : board === 'all' ? allTime : week;
 
   return (
     <>
@@ -109,9 +150,30 @@ export default function TheComeUp() {
               <button className={board === 'week' ? 'on' : ''} onClick={() => setBoard('week')}>
                 This week
               </button>
+              <button
+                className={board === 'friends' ? 'on' : ''}
+                onClick={() => {
+                  setBoard('friends');
+                  loadFriends();
+                }}
+              >
+                Friends
+              </button>
             </div>
           </div>
-          {rows.length === 0 ? (
+          {board === 'friends' && friendsState === 'signedout' ? (
+            <p className="panel__muted">
+              <Link href="/account" style={{ color: 'var(--cyan)' }}>Sign in</Link> to build your
+              friends board. Add people from their profiles and the rivalry starts here.
+            </p>
+          ) : board === 'friends' && friendsState !== 'ready' ? (
+            <p className="panel__muted">Loading…</p>
+          ) : board === 'friends' && rows.length <= 1 ? (
+            <p className="panel__muted">
+              Just you so far. Tap any name on the board, hit Add friend on their profile, and
+              this becomes your private rivalry table.
+            </p>
+          ) : rows.length === 0 ? (
             <p className="panel__muted">
               {loaded
                 ? 'The board opens with the first crew members. Early names live here forever.'
@@ -141,7 +203,7 @@ export default function TheComeUp() {
                     )}
                   </span>
                   <span className="lb__pts">
-                    {(board === 'all' ? r.respect ?? 0 : r.respect_week ?? 0).toLocaleString('en-GB')}
+                    {(board === 'week' ? r.respect_week ?? 0 : r.respect ?? 0).toLocaleString('en-GB')}
                   </span>
                 </Link>
               ))}
