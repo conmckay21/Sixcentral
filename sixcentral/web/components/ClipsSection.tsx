@@ -11,6 +11,7 @@ type Clip = {
   caption: string | null;
   category: string | null;
   comp_entry: boolean | null;
+  votes: number;
   created_at: string;
   profiles: { handle: string } | null;
 };
@@ -23,6 +24,10 @@ type SharedClip = {
   clip: { video_id: string; caption: string | null } | null;
   from_p: { handle: string } | null;
 };
+
+type ReactKey = 'fire' | 'laugh' | 'wow' | 'trophy';
+const REACTS: ReactKey[] = ['fire', 'laugh', 'wow', 'trophy'];
+const EMOJI: Record<ReactKey, string> = { fire: '🔥', laugh: '😂', wow: '😮', trophy: '🏆' };
 
 /** Stored via terms_version + agreed_at. Shown verbatim at submission. */
 const LICENCE_SUMMARY =
@@ -40,6 +45,12 @@ export default function ClipsSection() {
   const [session, setSession] = useState<Session | null>(null);
   const [clips, setClips] = useState<Clip[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [feedSort, setFeedSort] = useState<'top' | 'new'>('top');
+
+  const [myVotes, setMyVotes] = useState<Record<string, 1 | -1>>({});
+  const [reactCounts, setReactCounts] = useState<Record<string, Partial<Record<ReactKey, number>>>>({});
+  const [myReacts, setMyReacts] = useState<Record<string, Partial<Record<ReactKey, boolean>>>>({});
+  const [hint, setHint] = useState('');
 
   const [link, setLink] = useState('');
   const [caption, setCaption] = useState('');
@@ -53,6 +64,23 @@ export default function ClipsSection() {
   const [pickerFor, setPickerFor] = useState<string | null>(null);
   const [sentTo, setSentTo] = useState<Record<string, string>>({});
   const [inbox, setInbox] = useState<SharedClip[]>([]);
+
+  async function loadFeed(sort: 'top' | 'new') {
+    if (!sb) {
+      setLoaded(true);
+      return;
+    }
+    let q = sb
+      .from('clip_submissions')
+      .select('id, video_id, caption, category, comp_entry, votes, created_at, profiles!clip_submissions_profile_id_fkey(handle)')
+      .eq('status', 'approved')
+      .gt('votes', -3)
+      .limit(24);
+    q = sort === 'top' ? q.order('votes', { ascending: false }).order('created_at', { ascending: false }) : q.order('created_at', { ascending: false });
+    const { data } = await q;
+    if (data) setClips(data as unknown as Clip[]);
+    setLoaded(true);
+  }
 
   useEffect(() => {
     if (!sb) {
@@ -77,18 +105,104 @@ export default function ClipsSection() {
           .then(() => {});
       }
     });
+    loadFeed('top');
     const { data: sub } = sb.auth.onAuthStateChange((_e, s) => setSession(s));
-    sb.from('clip_submissions')
-      .select('id, video_id, caption, category, comp_entry, created_at, profiles!clip_submissions_profile_id_fkey(handle)')
-      .eq('status', 'approved')
-      .order('created_at', { ascending: false })
-      .limit(24)
-      .then(({ data }) => {
-        if (data) setClips(data as unknown as Clip[]);
-        setLoaded(true);
-      });
     return () => sub.subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sb]);
+
+  // reactions for whatever the feed holds
+  useEffect(() => {
+    if (!sb || clips.length === 0) return;
+    const ids = clips.map((c) => c.id);
+    sb.from('clip_reactions')
+      .select('clip_id, emoji_key, profile_id')
+      .in('clip_id', ids)
+      .then(({ data }) => {
+        if (!data) return;
+        const counts: Record<string, Partial<Record<ReactKey, number>>> = {};
+        const mine: Record<string, Partial<Record<ReactKey, boolean>>> = {};
+        const uid = session?.user.id;
+        for (const r of data as { clip_id: string; emoji_key: ReactKey; profile_id: string }[]) {
+          counts[r.clip_id] = counts[r.clip_id] ?? {};
+          counts[r.clip_id][r.emoji_key] = (counts[r.clip_id][r.emoji_key] ?? 0) + 1;
+          if (uid && r.profile_id === uid) {
+            mine[r.clip_id] = mine[r.clip_id] ?? {};
+            mine[r.clip_id][r.emoji_key] = true;
+          }
+        }
+        setReactCounts(counts);
+        setMyReacts(mine);
+      });
+  }, [sb, clips, session]);
+
+  // my votes for the feed
+  useEffect(() => {
+    if (!sb || !session || clips.length === 0) return;
+    sb.from('clip_votes')
+      .select('clip_id, value')
+      .in('clip_id', clips.map((c) => c.id))
+      .then(({ data }) => {
+        if (!data) return;
+        const v: Record<string, 1 | -1> = {};
+        for (const row of data as { clip_id: string; value: 1 | -1 }[]) v[row.clip_id] = row.value;
+        setMyVotes(v);
+      });
+  }, [sb, session, clips.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function changeSort(s: 'top' | 'new') {
+    setFeedSort(s);
+    loadFeed(s);
+  }
+
+  async function vote(clipId: string, value: 1 | -1) {
+    if (!sb) return;
+    if (!session) {
+      setHint('Sign in to vote and react. Votes decide what the feed pushes up.');
+      return;
+    }
+    const prev = myVotes[clipId] ?? 0;
+    const next = prev === value ? 0 : value;
+    const delta = next - prev;
+    setClips((cs) => cs.map((c) => (c.id === clipId ? { ...c, votes: c.votes + delta } : c)));
+    setMyVotes((v) => {
+      const copy = { ...v };
+      if (next === 0) delete copy[clipId];
+      else copy[clipId] = next as 1 | -1;
+      return copy;
+    });
+    if (next === 0) {
+      await sb.from('clip_votes').delete().eq('clip_id', clipId).eq('profile_id', session.user.id);
+    } else {
+      await sb
+        .from('clip_votes')
+        .upsert({ clip_id: clipId, profile_id: session.user.id, value: next }, { onConflict: 'clip_id,profile_id' });
+    }
+  }
+
+  async function react(clipId: string, key: ReactKey) {
+    if (!sb) return;
+    if (!session) {
+      setHint('Sign in to vote and react. Votes decide what the feed pushes up.');
+      return;
+    }
+    const has = !!myReacts[clipId]?.[key];
+    setMyReacts((m) => ({ ...m, [clipId]: { ...m[clipId], [key]: !has } }));
+    setReactCounts((rc) => ({
+      ...rc,
+      [clipId]: { ...rc[clipId], [key]: Math.max(0, (rc[clipId]?.[key] ?? 0) + (has ? -1 : 1)) },
+    }));
+    if (has) {
+      await sb
+        .from('clip_reactions')
+        .delete()
+        .eq('clip_id', clipId)
+        .eq('profile_id', session.user.id)
+        .eq('emoji_key', key);
+    } else {
+      await sb.from('clip_reactions').insert({ clip_id: clipId, profile_id: session.user.id, emoji_key: key });
+    }
+  }
 
   async function openPicker(clipId: string) {
     if (!sb || !session) return;
@@ -112,7 +226,10 @@ export default function ClipsSection() {
     const { error } = await sb
       .from('clip_shares')
       .insert({ clip_id: clipId, from_profile: session.user.id, to_profile: friendId });
-    setSentTo((s) => ({ ...s, [clipId]: error?.code === '23505' ? `Already sent to @${handle}` : error ? 'Could not send' : `Sent to @${handle} ✓` }));
+    setSentTo((s) => ({
+      ...s,
+      [clipId]: error?.code === '23505' ? `Already sent to @${handle}` : error ? 'Could not send' : `Sent to @${handle} ✓`,
+    }));
     setPickerFor(null);
   }
 
@@ -193,11 +310,21 @@ export default function ClipsSection() {
               </div>
             </>
           )}
+
           <div className="section__head">
             <h2>
               The community <span className="c">feed</span>
             </h2>
+            <div className="lb-toggle">
+              <button className={feedSort === 'top' ? 'on' : ''} onClick={() => changeSort('top')}>
+                Top
+              </button>
+              <button className={feedSort === 'new' ? 'on' : ''} onClick={() => changeSort('new')}>
+                New
+              </button>
+            </div>
           </div>
+          {hint && <p className="panel__hint" style={{ marginBottom: 14 }}>{hint}</p>}
           {clips.length === 0 ? (
             <p className="panel__muted">
               {loaded
@@ -216,6 +343,37 @@ export default function ClipsSection() {
                       allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                     />
+                  </div>
+                  <div className="clipbar">
+                    <span className="votebar">
+                      <button
+                        className={`votebtn${myVotes[c.id] === 1 ? ' on' : ''}`}
+                        aria-label="Upvote"
+                        onClick={() => vote(c.id, 1)}
+                      >
+                        ▲
+                      </button>
+                      <span className="votescore">{c.votes}</span>
+                      <button
+                        className={`votebtn votebtn--down${myVotes[c.id] === -1 ? ' on' : ''}`}
+                        aria-label="Downvote"
+                        onClick={() => vote(c.id, -1)}
+                      >
+                        ▼
+                      </button>
+                    </span>
+                    <span className="reactbar">
+                      {REACTS.map((k) => (
+                        <button
+                          key={k}
+                          className={`reactbtn${myReacts[c.id]?.[k] ? ' on' : ''}`}
+                          onClick={() => react(c.id, k)}
+                        >
+                          {EMOJI[k]}
+                          {(reactCounts[c.id]?.[k] ?? 0) > 0 && <i>{reactCounts[c.id]?.[k]}</i>}
+                        </button>
+                      ))}
+                    </span>
                   </div>
                   <figcaption>
                     {c.caption && <span className="clipcard__cap">{c.caption}</span>}

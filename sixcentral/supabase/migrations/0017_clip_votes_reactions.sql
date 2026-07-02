@@ -1,0 +1,8 @@
+-- ============================================================================
+--  SixCentral — 0017: clip votes + reactions (applied live 2 Jul 2026)
+--  One vote per member per clip (+1/-1, changeable, removable); trigger
+--  maintains net score on clip_submissions.votes which ranks the feed and
+--  powers Clip of the Month. Reactions: fire/laugh/wow/trophy toggles.
+--  Votes rows are private (aggregate is public); reactions are public.
+--  See live project for canonical SQL.
+-- ============================================================================
