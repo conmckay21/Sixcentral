@@ -11,3 +11,10 @@
 export const DISCORD_INVITE: string | null = 'https://discord.gg/8xsC3tymm';
 
 export const SITE_URL = 'https://sixcentral.co.uk';
+
+/**
+ * Flip to true once the Discord provider is configured in Supabase
+ * (Auth -> Providers -> Discord). Until then the account page offers
+ * email magic-link sign-in only.
+ */
+export const DISCORD_AUTH_READY = false;
