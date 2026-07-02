@@ -37,12 +37,12 @@ const COVERAGE = [
   {
     k: 'Garage',
     t: 'Vehicles & customisation',
-    d: 'Every ride, every mod shop, and where to find what — built with the community\u2019s finds.',
+    d: 'Every ride, every mod shop, and where to find what — built with the community’s finds.',
   },
   {
     k: 'Online',
     t: 'GTA Online 2 — when it lands',
-    d: 'The weekly-update desk opens the day the online mode does: money methods, event coverage, what\u2019s worth your time each week.',
+    d: 'The weekly-update desk opens the day the online mode does: money methods, event coverage, what’s worth your time each week.',
   },
 ];
 

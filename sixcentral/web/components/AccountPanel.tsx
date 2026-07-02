@@ -39,7 +39,7 @@ const PRESETS = [
 
 /** Stored verbatim as the consent record for the account-page toggle. */
 const ACCOUNT_CONSENT =
-  'Launch-critical updates from SixCentral \u2014 pre-order intel, the launch-day checklist, and first access when the tracker goes live. Unsubscribe any time.';
+  'Launch-critical updates from SixCentral — pre-order intel, the launch-day checklist, and first access when the tracker goes live. Unsubscribe any time.';
 
 type Rank = { id: number; name: string; min_respect: number; heat: number; perk: string | null };
 
@@ -47,7 +47,7 @@ const HANDLE_RE = /^[A-Za-z0-9_]{3,20}$/;
 
 /** Stored verbatim as the consent record — must match the checkbox label. */
 const SIGNUP_CONSENT =
-  'Launch-critical updates from SixCentral \u2014 pre-order intel, the launch-day checklist, and first access when the tracker goes live. Unsubscribe any time.';
+  'Launch-critical updates from SixCentral — pre-order intel, the launch-day checklist, and first access when the tracker goes live. Unsubscribe any time.';
 
 export default function AccountPanel() {
   const sb = getBrowserSupabase();
@@ -167,12 +167,12 @@ export default function AccountPanel() {
     if (!sb || authState === 'busy') return;
     if (!HANDLE_RE.test(handleField)) {
       setAuthState('error');
-      setAuthMsg('Handle: 3\u201320 characters, letters, numbers and underscores.');
+      setAuthMsg('Handle: 3–20 characters, letters, numbers and underscores.');
       return;
     }
     if (avail === 'taken') {
       setAuthState('error');
-      setAuthMsg('That handle is taken \u2014 pick another.');
+      setAuthMsg('That handle is taken — pick another.');
       return;
     }
     if (password.length < 8) {
@@ -203,7 +203,7 @@ export default function AccountPanel() {
       setAuthState('error');
       setAuthMsg(
         /already registered/i.test(error.message)
-          ? 'That email already has an account \u2014 sign in instead.'
+          ? 'That email already has an account — sign in instead.'
           : error.message,
       );
     } else if (!data.session) {
@@ -249,7 +249,7 @@ export default function AccountPanel() {
       setAuthMsg(error.message);
     } else {
       setAuthState('sent');
-      setAuthMsg('Reset link sent \u2014 check your inbox. It brings you back here to set a new password.');
+      setAuthMsg('Reset link sent — check your inbox. It brings you back here to set a new password.');
     }
   }
 
@@ -325,7 +325,7 @@ export default function AccountPanel() {
       setDetailsMsg(
         /IDS_AGE/.test(error.message)
           ? 'Showing IDs publicly needs a date of birth on file showing 18+.'
-          : 'Could not save \u2014 check the fields and try again.',
+          : 'Could not save — check the fields and try again.',
       );
     } else {
       setDetailsState('done');
@@ -347,7 +347,7 @@ export default function AccountPanel() {
     setFlairMsg('');
     const { error } = await sb.from('profiles').update({ flair: key }).eq('id', profile.id);
     if (error) {
-      setFlairMsg(/FLAIR_LOCKED/.test(error.message) ? 'Locked \u2014 earned at a higher rank.' : 'Could not set that.');
+      setFlairMsg(/FLAIR_LOCKED/.test(error.message) ? 'Locked — earned at a higher rank.' : 'Could not set that.');
     } else {
       setProfile({ ...profile, flair: key });
     }
@@ -364,14 +364,14 @@ export default function AccountPanel() {
     const next = handle.trim();
     if (!HANDLE_RE.test(next)) {
       setSaveState('error');
-      setSaveMsg('3\u201320 characters: letters, numbers and underscores only.');
+      setSaveMsg('3–20 characters: letters, numbers and underscores only.');
       return;
     }
     setSaveState('busy');
     const { error } = await sb.from('profiles').update({ handle: next }).eq('id', profile.id);
     if (error) {
       setSaveState('error');
-      setSaveMsg(error.code === '23505' ? 'That handle is taken.' : 'Could not save \u2014 try again.');
+      setSaveMsg(error.code === '23505' ? 'That handle is taken.' : 'Could not save — try again.');
     } else {
       setSaveState('done');
       setSaveMsg('Saved.');
@@ -427,7 +427,7 @@ export default function AccountPanel() {
       setAvatarState('idle');
     } catch (err) {
       setAvatarState('error');
-      setAvatarMsg(err instanceof Error ? err.message : 'Upload failed \u2014 try again.');
+      setAvatarMsg(err instanceof Error ? err.message : 'Upload failed — try again.');
     }
   }
 
@@ -455,7 +455,7 @@ export default function AccountPanel() {
   if (!ready) {
     return (
       <div className="panel">
-        <p className="panel__muted">Loading\u2026</p>
+        <p className="panel__muted">Loading…</p>
       </div>
     );
   }
@@ -477,8 +477,8 @@ export default function AccountPanel() {
         <h2 className="panel__title">{isUp ? 'Join the crew' : 'Welcome back'}</h2>
         {isUp && (
           <p className="panel__muted" style={{ maxWidth: '54ch' }}>
-            One account for your handle, your Respect on The Come-Up, and \u2014 when the tracker
-            lands \u2014 your progress.
+            One account for your handle, your Respect on The Come-Up, and — when the tracker
+            lands — your progress.
           </p>
         )}
 
@@ -498,11 +498,11 @@ export default function AccountPanel() {
                   placeholder="your_handle"
                   onChange={(e) => onHandleChange(e.target.value)}
                 />
-                {avail === 'checking' && <p className="panel__hint">Checking\u2026</p>}
+                {avail === 'checking' && <p className="panel__hint">Checking…</p>}
                 {avail === 'free' && <p className="panel__ok" style={{ marginTop: 8 }}>@{handleField} is free ✓</p>}
-                {avail === 'taken' && <p className="panel__err">Taken \u2014 try another.</p>}
+                {avail === 'taken' && <p className="panel__err">Taken — try another.</p>}
                 {avail === 'invalid' && (
-                  <p className="panel__err">3\u201320 characters: letters, numbers, underscores.</p>
+                  <p className="panel__err">3–20 characters: letters, numbers, underscores.</p>
                 )}
               </div>
             )}
@@ -553,7 +553,7 @@ export default function AccountPanel() {
             {authState === 'error' && <p className="panel__err">{authMsg}</p>}
 
             <button className="nl__btn" type="submit" disabled={authState === 'busy'}>
-              {authState === 'busy' ? 'One moment\u2026' : isUp ? 'Create account' : 'Sign in'}
+              {authState === 'busy' ? 'One moment…' : isUp ? 'Create account' : 'Sign in'}
             </button>
 
             {!isUp && (
@@ -594,7 +594,7 @@ export default function AccountPanel() {
           </div>
           {recoveryState === 'error' && <p className="panel__err">{recoveryMsg}</p>}
           <button className="nl__btn" type="submit" disabled={recoveryState === 'busy'}>
-            {recoveryState === 'busy' ? 'Saving\u2026' : 'Save password'}
+            {recoveryState === 'busy' ? 'Saving…' : 'Save password'}
           </button>
         </form>
       </div>
@@ -615,7 +615,7 @@ export default function AccountPanel() {
   return (
     <div className="panel">
       {!profile ? (
-        <p className="panel__muted">Setting up your profile\u2026</p>
+        <p className="panel__muted">Setting up your profile…</p>
       ) : (
         <>
           <div className="acct__head">
@@ -629,7 +629,7 @@ export default function AccountPanel() {
                 )}
               </div>
               <label className="avatar-btn" htmlFor="avatar-file">
-                {avatarState === 'busy' ? 'Uploading\u2026' : 'Change photo'}
+                {avatarState === 'busy' ? 'Uploading…' : 'Change photo'}
               </label>
               <input
                 id="avatar-file"
@@ -655,7 +655,7 @@ export default function AccountPanel() {
                 {!profile.is_staff && rank && (
                   <>
                     <span className="rank-chip">
-                      {rank.name} <span className="heat heat--gold">{'\u25AE'.repeat(rank.heat)}</span>
+                      {rank.name} <span className="heat heat--gold">{'▮'.repeat(rank.heat)}</span>
                     </span>
                     <span className="acct__respect">{profile.respect.toLocaleString('en-GB')} Respect</span>
                   </>
@@ -702,7 +702,7 @@ export default function AccountPanel() {
                 onClick={saveHandle}
                 disabled={saveState === 'busy' || handle === profile.handle}
               >
-                {saveState === 'busy' ? 'Saving\u2026' : 'Save'}
+                {saveState === 'busy' ? 'Saving…' : 'Save'}
               </button>
             </div>
             {saveState === 'error' && <p className="panel__err">{saveMsg}</p>}
@@ -765,7 +765,7 @@ export default function AccountPanel() {
           <div className="acct__field">
             <label htmlFor="platform">Platform</label>
             <select id="platform" className="nl__input" value={platform} onChange={(e) => setPlatform(e.target.value)}>
-              <option value="">\u2014</option>
+              <option value="">—</option>
               <option value="ps5">PS5</option>
               <option value="xbox">Xbox Series X|S</option>
             </select>
@@ -797,13 +797,13 @@ export default function AccountPanel() {
           <label className="consent-row">
             <input type="checkbox" checked={idsPublic} onChange={(e) => setIdsPublic(e.target.checked)} />
             <span>
-              Show my PSN / Gamertag on my public profile (18+ \u2014 date of birth required).
+              Show my PSN / Gamertag on my public profile (18+ — date of birth required).
               Off = only you can see them.
             </span>
           </label>
 
           <button className="nl__btn" onClick={saveDetails} disabled={detailsState === 'busy'}>
-            {detailsState === 'busy' ? 'Saving\u2026' : detailsState === 'done' ? 'Saved \u2713' : 'Save profile details'}
+            {detailsState === 'busy' ? 'Saving…' : detailsState === 'done' ? 'Saved ✓' : 'Save profile details'}
           </button>
           {detailsState === 'error' && <p className="panel__err">{detailsMsg}</p>}
 
@@ -817,15 +817,15 @@ export default function AccountPanel() {
                 onChange={toggleNewsletter}
               />
               <span>
-                Launch-critical updates \u2014 pre-order intel, the launch-day checklist, and first
-                access when the tracker goes live. Unsubscribe any time (that\u2019s this box).
+                Launch-critical updates — pre-order intel, the launch-day checklist, and first
+                access when the tracker goes live. Unsubscribe any time (that’s this box).
               </span>
             </label>
           </div>
 
           <p style={{ margin: '18px 0 4px' }}>
             <a href={`/u/${profile.handle}`} style={{ color: 'var(--cyan)' }}>
-              View your public profile \u2192
+              View your public profile →
             </a>
           </p>
 
@@ -833,7 +833,7 @@ export default function AccountPanel() {
             <span>
               {profile.discord_linked
                 ? 'Discord linked ✓'
-                : 'Discord not linked \u2014 sign in with Discord once it\u2019s live and it links automatically.'}
+                : 'Discord not linked — sign in with Discord once it’s live and it links automatically.'}
             </span>
             <span>
               Member since{' '}

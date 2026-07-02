@@ -44,9 +44,9 @@ export async function POST(req: Request) {
   const who = profile.discord_id ? `<@${profile.discord_id}>` : `**@${profile.handle}**`;
   const label = ctype?.label ?? 'contribution';
   const points = ctype?.points ? `+${ctype.points} Respect` : 'Respect banked';
-  const content = `\u2705 **Verified: ${label}** \u2014 ${who} \u00b7 **${points}** \u2192 ${
+  const content = `✅ **Verified: ${label}** — ${who} · **${points}** → ${
     rank?.name ?? ''
-  } \u00b7 ${profile.respect.toLocaleString('en-GB')} total`;
+  } · ${profile.respect.toLocaleString('en-GB')} total`;
 
   try {
     const channelId = await findChannelId('verified-log');

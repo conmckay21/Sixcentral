@@ -217,6 +217,7 @@ export const MOCK_ARTICLES: Article[] = [
     credibility: 4,
     gradient: 'linear-gradient(150deg,#FF9E45,#8A4FFF)',
     motif: 'pc',
+    heroImage: { src: '/media/gtavi-vc-night-2.jpg', alt: 'Vice City at night', credit: 'Rockstar Games' },
     body: [
       { type: 'p', text: 'This is a Rumour Mill piece: nothing below is confirmed unless explicitly marked as such.' },
       { type: 'h2', text: 'The claim' },
@@ -242,6 +243,7 @@ export const MOCK_ARTICLES: Article[] = [
     credibility: 3,
     gradient: 'linear-gradient(150deg,#1FE5D6,#FF2E88)',
     motif: 'phone',
+    heroImage: { src: '/media/gtavi-real-dimez.jpg', alt: 'Real Dimez', credit: 'Rockstar Games' },
     body: [
       { type: 'p', text: 'This is a Rumour Mill piece: nothing below is confirmed unless explicitly marked as such.' },
       { type: 'h2', text: 'The claim' },
@@ -267,6 +269,7 @@ export const MOCK_ARTICLES: Article[] = [
     credibility: 3,
     gradient: 'linear-gradient(150deg,#8A4FFF,#1FE5D6)',
     motif: 'globe',
+    heroImage: { src: '/media/gtavi-keys-party.jpg', alt: 'Boat party in the Leonida Keys', credit: 'Rockstar Games' },
     body: [
       { type: 'p', text: 'This is a Rumour Mill piece: nothing below is confirmed unless explicitly marked as such.' },
       { type: 'h2', text: 'The claim' },
@@ -292,6 +295,7 @@ export const MOCK_ARTICLES: Article[] = [
     credibility: 2,
     gradient: 'linear-gradient(150deg,#FF2E88,#FF9E45)',
     motif: 'controller',
+    heroImage: { src: '/media/gtavi-kalaga-heli.jpg', alt: 'Helicopter over Mount Kalaga', credit: 'Rockstar Games' },
     body: [
       { type: 'p', text: 'This is a Rumour Mill piece: nothing below is confirmed unless explicitly marked as such.' },
       { type: 'h2', text: 'The claim' },
@@ -317,6 +321,7 @@ export const MOCK_ARTICLES: Article[] = [
     credibility: 2,
     gradient: 'linear-gradient(150deg,#35E27C,#1FE5D6 55%,#8A4FFF)',
     motif: 'map',
+    heroImage: { src: '/media/gtavi-vc-aerial.jpg', alt: 'Vice City from above', credit: 'Rockstar Games' },
     body: [
       { type: 'p', text: 'This is a Rumour Mill piece: nothing below is confirmed unless explicitly marked as such.' },
       { type: 'h2', text: 'The claim' },

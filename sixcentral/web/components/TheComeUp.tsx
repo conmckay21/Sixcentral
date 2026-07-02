@@ -51,7 +51,7 @@ export default function TheComeUp() {
           <div className="ladder">
             {(ranks.length ? ranks : []).map((r) => (
               <div key={r.id} className="ladder__row">
-                <span className="ladder__heat heat heat--gold">{'\u25AE'.repeat(Math.max(r.heat, 0)) || '\u2013'}</span>
+                <span className="ladder__heat heat heat--gold">{'▮'.repeat(Math.max(r.heat, 0)) || '–'}</span>
                 <span className="ladder__name">{r.name}</span>
                 <span className="ladder__min">{r.min_respect.toLocaleString('en-GB')} Respect</span>
                 <span className="ladder__perk">{r.perk ?? ''}</span>

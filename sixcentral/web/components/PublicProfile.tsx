@@ -107,7 +107,7 @@ export default function PublicProfileView({ handle }: { handle: string }) {
               rank && (
                 <>
                   <span className="rank-chip">
-                    {rank.name} <span className="heat heat--gold">{'\u25AE'.repeat(rank.heat)}</span>
+                    {rank.name} <span className="heat heat--gold">{'▮'.repeat(rank.heat)}</span>
                   </span>
                   <span className="acct__respect">
                     {profile.respect.toLocaleString('en-GB')} Respect

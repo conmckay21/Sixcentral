@@ -6,8 +6,8 @@ import HeroMedia from '@/components/HeroMedia';
 function Heat({ level }: { level: number }) {
   return (
     <span className="heat" aria-label={`Heat ${level} out of 5`}>
-      {'\u25AE'.repeat(level)}
-      <span className="heat__off">{'\u25AE'.repeat(5 - level)}</span>
+      {'▮'.repeat(level)}
+      <span className="heat__off">{'▮'.repeat(5 - level)}</span>
     </span>
   );
 }
@@ -31,7 +31,7 @@ export default function ArticleRow({ article }: { article: Article }) {
         </div>
         <div className="row-item__t">{article.title}</div>
         <div className="row-item__d">
-          {rumour ? 'Unconfirmed \u00b7 tracked ' : 'Facts checked '}
+          {rumour ? 'Unconfirmed · tracked ' : 'Facts checked '}
           {formatDate(article.updatedAt)}
         </div>
       </div>
