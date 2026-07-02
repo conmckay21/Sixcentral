@@ -38,7 +38,7 @@ export default function MapTab() {
     supabase
       .from('map_pins')
       .select('id, name, region, lat, lng, collectible_type')
-      .in('status', ['accepted', 'approved', 'confirmed'])
+      .eq('status', 'verified')
       .then(({ data }) => {
         if (data) setPins(data as Pin[]);
       });
@@ -79,7 +79,14 @@ export default function MapTab() {
         <Text style={st.h1}>Leonida</Text>
         <View style={st.statChip}>
           <Text style={st.statText}>
-            {pins.length} / {TOTAL} confirmed{pins.length === 0 ? ' · opens with the game' : ''}
+            {(() => {
+              const landmarkType = types.find((t) => t.slug === 'landmarks')?.id;
+              const landmarks = pins.filter((p) => p.collectible_type === landmarkType).length;
+              const finds = pins.length - landmarks;
+              return finds === 0
+                ? `${landmarks} landmarks · collectibles open with the game`
+                : `${finds} / ${TOTAL} · ${landmarks} landmarks`;
+            })()}
           </Text>
         </View>
       </View>
