@@ -1,0 +1,5 @@
+-- ============================================================================
+--  SixCentral — 0016: clip shares (applied live 2 Jul 2026)
+--  Structured clip sharing between accepted friends. No free text by design.
+--  Insert policy enforces mutual friendship + approved clip. See live project.
+-- ============================================================================

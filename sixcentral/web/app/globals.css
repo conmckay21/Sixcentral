@@ -564,3 +564,12 @@ select.nl__input { appearance: none; }
 .frlist__state { font-family: var(--mono); font-size: 0.62rem; color: var(--dim); text-transform: uppercase; letter-spacing: 0.05em; flex: 1; }
 .frlist__actions { display: flex; gap: 8px; }
 @media (max-width: 560px) { .frlist__row { flex-wrap: wrap; } .frlist__state { flex-basis: 100%; order: 3; } }
+
+/* clip sharing */
+.clipcard__send { background: none; border: 0; color: var(--pink-l); font-family: var(--mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; padding: 0; }
+.clipcard__send:hover { color: #fff; }
+.clipcard__dismiss { background: none; border: 0; color: var(--dim); font-family: var(--mono); font-size: 0.62rem; text-transform: uppercase; cursor: pointer; padding: 0; }
+.clipcard__dismiss:hover { color: var(--pink); }
+.clipcard__sent { display: block; font-family: var(--mono); font-size: 0.64rem; color: var(--green); margin-top: 4px; }
+.friendpick { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.friendpick em { font-style: normal; font-family: var(--mono); font-size: 0.64rem; color: var(--dim); }
