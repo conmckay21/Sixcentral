@@ -57,7 +57,7 @@ async function handleRank(discordId: string) {
 
   const { data: profile } = await sb
     .from('profiles')
-    .select('handle, respect, rank_id')
+    .select('handle, respect, rank_id, title, is_staff')
     .eq('discord_id', discordId)
     .maybeSingle();
 
@@ -65,6 +65,10 @@ async function handleRank(discordId: string) {
     return reply(
       'Your Discord isn\u2019t linked to a SixCentral profile yet. Sign in with Discord at https://sixcentral.co.uk/account and it links automatically \u2014 then your Respect shows up here.',
     );
+  }
+
+  if (profile.is_staff) {
+    return reply(`**@${profile.handle}** \u2014 **${profile.title ?? 'Staff'}** \u00b7 above the ladder.`);
   }
 
   const { data: ranks } = await sb.from('ranks').select('id, name, min_respect, perk').order('id');

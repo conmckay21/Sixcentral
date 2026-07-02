@@ -9,6 +9,7 @@ type Profile = {
   id: string;
   handle: string;
   title: string | null;
+  is_staff: boolean;
   avatar_url: string | null;
   discord_id: string | null;
   respect: number;
@@ -527,7 +528,7 @@ export default function AccountPanel() {
               <div className="acct__handle">@{profile.handle}</div>
               <div className="acct__sub">
                 {profile.title && <span className="title-chip">{profile.title}</span>}
-                {rank && (
+                {!profile.is_staff && rank && (
                   <>
                     <span className="rank-chip">
                       {rank.name} <span className="heat heat--gold">{'\u25AE'.repeat(rank.heat)}</span>
@@ -543,7 +544,9 @@ export default function AccountPanel() {
 
           {avatarState === 'error' && <p className="panel__err">{avatarMsg}</p>}
 
-          {nextRank ? (
+          {profile.is_staff ? (
+            <div className="xp__perk">Above the ladder.</div>
+          ) : nextRank ? (
             <div className="xp">
               <div className="xp__label">
                 <span>Next: {nextRank.name}</span>

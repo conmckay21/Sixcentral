@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 
   const { data: profile } = await sb
     .from('profiles')
-    .select('handle, discord_id, respect, rank_id')
+    .select('handle, discord_id, respect, rank_id, is_staff')
     .eq('id', rec.profile_id)
     .single();
   if (!profile) return Response.json({ ok: false, reason: 'no profile' });
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
     /* announcement failure never blocks */
   }
 
-  if (profile.discord_id && rank?.name) {
+  if (profile.discord_id && rank?.name && !profile.is_staff) {
     const extras = Date.now() < LAUNCH ? ['Founding Contributor'] : [];
     await setMemberRankRole(profile.discord_id, rank.name, extras).catch(() => {});
   }
