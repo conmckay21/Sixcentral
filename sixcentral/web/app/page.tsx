@@ -202,63 +202,6 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* The Rumour Mill */}
-      <section className="section section--rumour" id="rumour-mill">
-        <div className="wrap">
-          <div className="section__head">
-            <h2>
-              The <span className="r">rumour mill</span>
-            </h2>
-            <span className="rumour-note">Unconfirmed by design. Never mixed with the facts.</span>
-          </div>
-          <div className="rows">
-            {rumours.map((a) => (
-              <ArticleRow key={a.slug} article={a} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Launch list */}
-      <section className="section" id="newsletter">
-        <div className="wrap">
-          <NewsletterSignup source="home" />
-        </div>
-      </section>
-
-      {/* App teaser */}
-      <section className="section" id="app">
-        <div className="wrap">
-          <div
-            className="card"
-            style={{
-              padding: 30,
-              background: 'linear-gradient(160deg, rgba(255,46,136,0.14), var(--bg2))',
-              borderColor: 'var(--pink)',
-            }}
-          >
-            <div className="kicker" style={{ color: 'var(--pink-l)' }}>
-              The companion app
-            </div>
-            <h2
-              style={{
-                fontFamily: 'var(--display)',
-                textTransform: 'uppercase',
-                fontSize: '1.8rem',
-                margin: '8px 0',
-              }}
-            >
-              Track your 100% on the go
-            </h2>
-            <p style={{ color: 'var(--muted)', maxWidth: '52ch' }}>
-              An interactive map, collectible tracking that syncs with these guides, a community
-              clip feed, and a reputation ladder for the people mapping the game. Coming to iOS and
-              Android.
-            </p>
-          </div>
-        </div>
-      </section>
     </>
   );
 }
