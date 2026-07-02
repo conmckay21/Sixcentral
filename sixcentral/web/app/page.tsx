@@ -20,7 +20,7 @@ export default async function HomePage() {
       <section className="hero">
         <div className="wrap hero__grid">
           <div>
-            <div className="kicker">The UK GTA 6 companion</div>
+            <div className="kicker">The GTA 6 companion</div>
             <h1>
               Everything you need for <span className="c">Grand Theft Auto VI</span>
             </h1>
