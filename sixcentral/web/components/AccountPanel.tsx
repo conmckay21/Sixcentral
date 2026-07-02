@@ -21,6 +21,10 @@ type Rank = { id: number; name: string; min_respect: number; heat: number; perk:
 
 const HANDLE_RE = /^[A-Za-z0-9_]{3,20}$/;
 
+/** Stored verbatim as the consent record — must match the checkbox label. */
+const SIGNUP_CONSENT =
+  'Launch-critical updates from SixCentral \u2014 pre-order intel, the launch-day checklist, and first access when the tracker goes live. Unsubscribe any time.';
+
 export default function AccountPanel() {
   const sb = getBrowserSupabase();
   const [ready, setReady] = useState(false);
@@ -37,6 +41,7 @@ export default function AccountPanel() {
   const [password, setPassword] = useState('');
   const [authState, setAuthState] = useState<'idle' | 'busy' | 'sent' | 'error'>('idle');
   const [authMsg, setAuthMsg] = useState('');
+  const [newsletter, setNewsletter] = useState(false);
 
   // ---- password recovery ----
   const [recovery, setRecovery] = useState(false);
@@ -136,6 +141,16 @@ export default function AccountPanel() {
         emailRedirectTo: `${window.location.origin}/account`,
       },
     });
+    if (!error && newsletter) {
+      // Consent recorded verbatim; a failure here must never block the account.
+      try {
+        await sb
+          .from('subscribers')
+          .insert({ email: email.trim().toLowerCase(), source: 'signup', consent_text: SIGNUP_CONSENT });
+      } catch {
+        /* ignore — the account matters more than the list entry */
+      }
+    }
     if (error) {
       setAuthState('error');
       setAuthMsg(
@@ -394,6 +409,20 @@ export default function AccountPanel() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
+
+            {isUp && (
+              <label className="consent-row">
+                <input
+                  type="checkbox"
+                  checked={newsletter}
+                  onChange={(e) => setNewsletter(e.target.checked)}
+                />
+                <span>
+                  Email me launch-critical updates — pre-order intel, the launch-day checklist, and
+                  first access when the tracker goes live. Unsubscribe any time.
+                </span>
+              </label>
+            )}
 
             {authState === 'error' && <p className="panel__err">{authMsg}</p>}
 
