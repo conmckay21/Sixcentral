@@ -17,4 +17,4 @@ export const SITE_URL = 'https://sixcentral.co.uk';
  * (Auth -> Providers -> Discord). Until then the account page offers
  * email magic-link sign-in only.
  */
-export const DISCORD_AUTH_READY = false;
+export const DISCORD_AUTH_READY = process.env.NEXT_PUBLIC_DISCORD_AUTH_READY === 'true';
