@@ -34,6 +34,7 @@ export const MOCK_ARTICLES: Article[] = [
     readingMins: 8,
     gradient: 'linear-gradient(150deg,#FF2E88,#8A4FFF 55%,#1FE5D6)',
     motif: 'skyline',
+    heroImage: { src: '/media/gtavi-vice-city-skyline.jpg', alt: 'Vice City skyline at dusk, neon along the beachfront', credit: 'Rockstar Games' },
     body: [
       { type: 'p', text: 'This is our living roundup of what is officially confirmed about Grand Theft Auto VI. Confirmed facts are kept strictly separate from rumour — anything unconfirmed lives in the Rumour Mill, clearly labelled. Last full check: 2 July 2026.' },
       { type: 'h2', text: 'Confirmed' },
@@ -69,6 +70,7 @@ export const MOCK_ARTICLES: Article[] = [
     isNew: true,
     gradient: 'linear-gradient(150deg,#1FE5D6,#8A4FFF)',
     motif: 'money',
+    heroImage: { src: '/media/gtavi-ultimate-edition.jpg', alt: 'GTA VI Ultimate Edition contents', credit: 'Rockstar Games' },
     body: [
       { type: 'p', text: 'Two editions, a boxed option that is really a download code, and a handful of UK retailers. Here is how to decide.' },
       { type: 'h2', text: 'The editions' },
@@ -100,6 +102,7 @@ export const MOCK_ARTICLES: Article[] = [
     isNew: true,
     gradient: 'linear-gradient(150deg,#FF9E45,#FF2E88 60%,#8A4FFF)',
     motif: 'disc',
+    heroImage: { src: '/media/gtavi-vice-city-night.jpg', alt: 'A Vice City street at night', credit: 'Rockstar Games' },
     body: [
       { type: 'p', text: 'Confirmed with the edition reveal on 24 June: the boxed, physical version of Grand Theft Auto VI does not contain a game disc. Inside the retail case is a one-time download code.' },
       { type: 'h2', text: 'What is actually in the box' },
@@ -130,6 +133,7 @@ export const MOCK_ARTICLES: Article[] = [
     readingMins: 4,
     gradient: 'linear-gradient(150deg,#FFC83D,#FF9E45 55%,#FF2E88)',
     motif: 'cassette',
+    heroImage: { src: '/media/gtavi-vice-city-style.jpg', alt: 'Jason and Lucia in Vintage Vice City Pack outfits', credit: 'Rockstar Games' },
     body: [
       { type: 'p', text: 'The Vintage Vice City Pack is the pre-order bonus, and it is tied to ordering early rather than spending more: anyone who pre-orders before 20 November gets it, on either edition.' },
       { type: 'h2', text: 'What is in it' },
@@ -156,9 +160,7 @@ export const MOCK_ARTICLES: Article[] = [
     readingMins: 6,
     gradient: 'linear-gradient(150deg,#FF2E88,#FF9E45 60%,#FFC83D)',
     motif: 'palms',
-    // To run a credited official screenshot instead of the generated art,
-    // drop the file in web/public/media/ and uncomment:
-    // heroImage: { src: '/media/gtavi-screenshot-01.jpg', alt: 'Vice City at dusk', credit: 'Rockstar Games' },
+    heroImage: { src: '/media/gtavi-leonida-keys.jpg', alt: 'Aerial view over the Leonida Keys', credit: 'Rockstar Games' },
     body: [
       { type: 'p', text: 'Alongside pre-orders opening on 25 June, Rockstar published its biggest still-image release for the game so far — more than 60 screenshots, 51 of them on the official media page, largely built around the Ultimate Edition and the Vintage Vice City Pack.' },
       { type: 'h2', text: 'What the images genuinely confirm' },
