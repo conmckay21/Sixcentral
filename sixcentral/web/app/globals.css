@@ -539,3 +539,10 @@ select.nl__input { appearance: none; }
 .modq__clip { display: flex; gap: 14px; align-items: flex-start; }
 .modq__clip img { width: 160px; border-radius: 10px; border: 1px solid var(--line); }
 @media (max-width: 640px) { .modq__clip { flex-direction: column; } .modq__clip img { width: 100%; } }
+
+/* profile featured clips */
+.pp__clips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; }
+@media (max-width: 640px) { .pp__clips { grid-template-columns: repeat(2, 1fr); } }
+.pp__clip { display: block; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); transition: border-color 0.12s ease, transform 0.12s ease; }
+.pp__clip:hover { border-color: var(--pink); transform: translateY(-2px); }
+.pp__clip img { width: 100%; display: block; aspect-ratio: 16 / 9; object-fit: cover; }

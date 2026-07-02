@@ -24,12 +24,14 @@ type PublicProfile = {
 
 type Rank = { id: number; name: string; heat: number };
 type Find = { created_at: string; contribution_types: { label: string } | null };
+type ProfileClip = { id: string; video_id: string; caption: string | null };
 
 export default function PublicProfileView({ handle }: { handle: string }) {
   const sb = getBrowserSupabase();
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [ranks, setRanks] = useState<Rank[]>([]);
   const [finds, setFinds] = useState<Find[]>([]);
+  const [clips, setClips] = useState<ProfileClip[]>([]);
   const [state, setState] = useState<'loading' | 'ready' | 'missing'>('loading');
 
   useEffect(() => {
@@ -48,7 +50,7 @@ export default function PublicProfileView({ handle }: { handle: string }) {
         return;
       }
       setProfile(p as PublicProfile);
-      const [{ data: r }, { data: f }] = await Promise.all([
+      const [{ data: r }, { data: f }, { data: cl }] = await Promise.all([
         sb.from('ranks').select('id, name, heat').order('id'),
         sb
           .from('contributions')
@@ -57,9 +59,17 @@ export default function PublicProfileView({ handle }: { handle: string }) {
           .eq('status', 'accepted')
           .order('created_at', { ascending: false })
           .limit(6),
+        sb
+          .from('clip_submissions')
+          .select('id, video_id, caption')
+          .eq('profile_id', (p as PublicProfile).id)
+          .eq('status', 'approved')
+          .order('created_at', { ascending: false })
+          .limit(4),
       ]);
       if (r) setRanks(r as Rank[]);
       if (f) setFinds(f as unknown as Find[]);
+      if (cl) setClips(cl as ProfileClip[]);
       setState('ready');
     })();
   }, [sb, handle]);
@@ -162,6 +172,29 @@ export default function PublicProfileView({ handle }: { handle: string }) {
           </ul>
         )}
       </div>
+
+      {clips.length > 0 && (
+        <div className="pp__finds">
+          <div className="kicker" style={{ color: 'var(--pink-l)' }}>
+            Featured clips
+          </div>
+          <div className="pp__clips">
+            {clips.map((c) => (
+              <a
+                key={c.id}
+                className="pp__clip"
+                href={`https://www.youtube.com/watch?v=${c.video_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={c.caption ?? 'Featured clip'}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`https://i.ytimg.com/vi/${c.video_id}/mqdefault.jpg`} alt={c.caption ?? 'Featured clip'} />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
 
       <p className="pp__cta">
         Earn your own spot:{' '}
