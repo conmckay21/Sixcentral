@@ -13,6 +13,14 @@ const LAUNCH = new Date('2026-11-19T00:00:00Z').getTime();
 const SITE = 'https://sixcentral.co.uk';
 
 type Clip = { id: string; video_id: string };
+type ContentItem = {
+  slug: string;
+  title: string;
+  kicker: string;
+  excerpt: string;
+  isRumour?: boolean;
+  heroImage?: { src: string } | null;
+};
 type ShareRow = {
   id: string;
   clip: { video_id: string; caption: string | null } | null;
@@ -40,6 +48,14 @@ export default function Home() {
   const [shares, setShares] = useState<ShareRow[]>([]);
   const [session, setSession] = useState<Session | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [feed, setFeed] = useState<ContentItem[]>([]);
+
+  const loadContent = useCallback(() => {
+    return fetch(`${SITE}/api/content`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((j: { articles: ContentItem[] }) => setFeed(j.articles.filter((a) => !a.isRumour)))
+      .catch(() => {});
+  }, []);
 
   const loadClips = useCallback(() => {
     return supabase
@@ -69,6 +85,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    loadContent();
     loadClips();
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -79,13 +96,13 @@ export default function Home() {
       loadShares(s);
     });
     return () => sub.subscription.unsubscribe();
-  }, [loadClips, loadShares]);
+  }, [loadClips, loadShares, loadContent]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([loadClips(), loadShares(session)]);
+    await Promise.all([loadClips(), loadShares(session), loadContent()]);
     setRefreshing(false);
-  }, [loadClips, loadShares, session]);
+  }, [loadClips, loadShares, loadContent, session]);
 
   return (
     <SafeAreaView style={st.safe}>
@@ -138,33 +155,53 @@ export default function Home() {
           </>
         )}
 
-        <Pressable onPress={() => Linking.openURL(`${SITE}/news/everything-confirmed`)}>
-          <LinearGradient colors={G.hot} {...GRAD} style={st.bigRead}>
-            <View style={st.bigReadShade} />
-            <Text style={st.bigKicker}>The big read · verified</Text>
-            <Text style={st.bigTitle}>Everything confirmed about GTA 6, in one place</Text>
-            <Text style={st.bigSub}>Read on sixcentral.co.uk →</Text>
-          </LinearGradient>
+        <Pressable
+          onPress={() =>
+            router.push({ pathname: '/article/[slug]', params: { slug: feed[0]?.slug ?? 'everything-confirmed' } })
+          }
+        >
+          {feed[0]?.heroImage ? (
+            <View style={st.bigRead}>
+              <Image source={{ uri: feed[0].heroImage.src }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} resizeMode="cover" />
+              <View style={st.bigReadShade} />
+              <Text style={st.bigKicker}>The big read · {feed[0].kicker}</Text>
+              <Text style={st.bigTitle}>{feed[0].title}</Text>
+              <Text style={st.bigSub}>Read in the app →</Text>
+            </View>
+          ) : (
+            <LinearGradient colors={G.hot} {...GRAD} style={st.bigRead}>
+              <View style={st.bigReadShade} />
+              <Text style={st.bigKicker}>The big read · verified</Text>
+              <Text style={st.bigTitle}>{feed[0]?.title ?? 'Everything confirmed about GTA 6, in one place'}</Text>
+              <Text style={st.bigSub}>Read in the app →</Text>
+            </LinearGradient>
+          )}
         </Pressable>
 
         <SectionTitle>Latest</SectionTitle>
-        {[
-          ['The guides desk: A to Z, the moment there is a game to guide', `${SITE}/guides`],
-          ['The clips feed is open. Get on it', `${SITE}/clips`],
-        ].map(([t, url]) => (
-          <Pressable key={url} style={st.latestRow} onPress={() => Linking.openURL(url)}>
-            <Text style={st.latestText}>{t}</Text>
+        {(feed.length > 1 ? feed.slice(1, 4) : []).map((a) => (
+          <Pressable
+            key={a.slug}
+            style={st.latestRow}
+            onPress={() => router.push({ pathname: '/article/[slug]', params: { slug: a.slug } })}
+          >
+            <Text style={st.latestText}>{a.title}</Text>
             <Text style={st.latestChev}>→</Text>
           </Pressable>
         ))}
+        {feed.length <= 1 && (
+          <Pressable style={st.latestRow} onPress={() => router.push('/guides')}>
+            <Text style={st.latestText}>The guides desk: A to Z, the moment there is a game to guide</Text>
+            <Text style={st.latestChev}>→</Text>
+          </Pressable>
+        )}
 
-        <View style={st.tip}>
+        <Pressable style={st.tip} onPress={() => router.push({ pathname: '/article/[slug]', params: { slug: 'which-edition-to-preorder' } })}>
           <Text style={st.tipKicker}>Tip · pre-orders</Text>
           <Text style={st.tipText}>
-            Standard £69.99, Ultimate £89.99. The guides desk breaks down which is actually worth
-            it before launch night.
+            Standard £69.99, Ultimate £89.99. Tap for the edition breakdown before launch night.
           </Text>
-        </View>
+        </Pressable>
 
         <SectionTitle>Clip of the Month</SectionTitle>
         <Pressable onPress={() => router.push('/clips')}>

@@ -6,6 +6,8 @@ import { WebView } from 'react-native-webview';
 import { useRouter } from 'expo-router';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { flairColor } from '@/lib/flairs';
+import Avatar from '@/components/Avatar';
 import { C } from '@/lib/theme';
 
 type Clip = {
@@ -14,7 +16,7 @@ type Clip = {
   caption: string | null;
   votes: number;
   comp_entry: boolean;
-  profiles: { handle: string; title: string | null; rank_id: number } | null;
+  profiles: { handle: string; title: string | null; rank_id: number; avatar_url: string | null; flair: string | null } | null;
 };
 type Rank = { id: number; name: string };
 
@@ -44,7 +46,7 @@ export default function Clips() {
     });
     return supabase
       .from('clip_submissions')
-      .select('id, video_id, caption, votes, comp_entry, profiles!clip_submissions_profile_id_fkey(handle, title, rank_id)')
+      .select('id, video_id, caption, votes, comp_entry, profiles!clip_submissions_profile_id_fkey(handle, title, rank_id, avatar_url, flair)')
       .eq('status', 'approved')
       .gt('votes', -3)
       .order('votes', { ascending: false })
@@ -291,9 +293,7 @@ export default function Clips() {
                         style={st.creator}
                         onPress={() => p && router.push({ pathname: '/u/[handle]', params: { handle: p.handle } })}
                       >
-                        <View style={st.av}>
-                          <Text style={st.avText}>{p?.handle?.slice(0, 2).toUpperCase() ?? '??'}</Text>
-                        </View>
+                        <Avatar url={p?.avatar_url} handle={p?.handle} size={38} ring={flairColor(p?.flair)} />
                         <View>
                           <Text style={st.cn}>@{p?.handle ?? 'unknown'}</Text>
                           <Text style={st.cr}>{p ? (p.title ?? rankName(p.rank_id)) : ''}</Text>

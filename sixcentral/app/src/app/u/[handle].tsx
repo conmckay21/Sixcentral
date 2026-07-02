@@ -6,6 +6,7 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import { flairColor } from '@/lib/flairs';
+import Avatar from '@/components/Avatar';
 import { SectionTitle } from '@/components/ui';
 
 type P = {
@@ -137,13 +138,7 @@ export default function MemberProfile() {
         </Pressable>
 
         <View style={st.head}>
-          {p.avatar_url ? (
-            <Image source={{ uri: p.avatar_url }} style={[st.avatar, { borderColor: ring, shadowColor: ring }]} />
-          ) : (
-            <View style={[st.avatar, st.avatarFallback, { borderColor: ring, shadowColor: ring }]}>
-              <Text style={[st.avatarLetter, { color: ring }]}>{p.handle.slice(0, 1).toUpperCase()}</Text>
-            </View>
-          )}
+          <Avatar url={p.avatar_url} handle={p.handle} size={68} ring={ring} />
           <View style={{ flex: 1 }}>
             <Text style={st.handle}>@{p.handle}</Text>
             <Text style={st.rank}>

@@ -7,6 +7,7 @@ import type { Session } from '@supabase/supabase-js';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { flairColor } from '@/lib/flairs';
+import Avatar from '@/components/Avatar';
 import { C, G, GRAD } from '@/lib/theme';
 import { SectionTitle } from '@/components/ui';
 
@@ -173,13 +174,7 @@ export default function ProfileTab() {
     <SafeAreaView style={st.safe}>
       <ScrollView contentContainerStyle={st.wrap} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.pink} />}>
         <View style={st.head}>
-          {profile?.avatar_url ? (
-            <Image source={{ uri: profile.avatar_url }} style={[st.avatar, { borderColor: flairColor(profile.flair), shadowColor: flairColor(profile.flair) }]} />
-          ) : (
-            <View style={[st.avatar, st.avatarFallback, { borderColor: flairColor(profile?.flair), shadowColor: flairColor(profile?.flair) }]}>
-              <Text style={[st.avatarLetter, { color: flairColor(profile?.flair) }]}>{profile?.handle?.slice(0, 1).toUpperCase() ?? '?'}</Text>
-            </View>
-          )}
+          <Avatar url={profile?.avatar_url} handle={profile?.handle} size={68} ring={flairColor(profile?.flair)} />
           <View style={{ flex: 1 }}>
             <Text style={st.handle}>@{profile?.handle ?? '…'}</Text>
             <Text style={st.rank}>

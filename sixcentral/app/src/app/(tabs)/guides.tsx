@@ -1,20 +1,19 @@
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { C } from '@/lib/theme';
 import { SectionTitle } from '@/components/ui';
-
-const SITE = 'https://sixcentral.co.uk';
 
 const LIVE = [
   {
     t: 'Everything confirmed so far',
     d: 'The verified list: setting, characters, dates, editions. No rumours.',
-    url: `${SITE}/news/everything-confirmed`,
+    slug: 'everything-confirmed',
   },
   {
-    t: 'The guides desk',
-    d: 'The full plan, A to Z, and what goes live the day the game does.',
-    url: `${SITE}/guides`,
+    t: 'Which edition to pre-order',
+    d: 'Standard or Ultimate: what the extra £20 actually buys.',
+    slug: 'which-edition-to-preorder',
   },
 ];
 
@@ -28,6 +27,7 @@ const DAY_ONE = [
 ];
 
 export default function Guides() {
+  const router = useRouter();
   return (
     <SafeAreaView style={st.safe}>
       <ScrollView contentContainerStyle={st.wrap} showsVerticalScrollIndicator={false}>
@@ -36,7 +36,7 @@ export default function Guides() {
 
         <SectionTitle>Live now</SectionTitle>
         {LIVE.map((g) => (
-          <Pressable key={g.t} style={st.row} onPress={() => Linking.openURL(g.url)}>
+          <Pressable key={g.t} style={st.row} onPress={() => router.push({ pathname: '/article/[slug]', params: { slug: g.slug } })}>
             <View style={{ flex: 1 }}>
               <Text style={st.rowTitle}>{g.t}</Text>
               <Text style={st.rowDesc}>{g.d}</Text>
