@@ -1,11 +1,13 @@
 import Link from 'next/link';
 import type { Guide } from '@/lib/types';
 import { formatDate } from '@/lib/format';
+import HeroArt from '@/components/HeroArt';
 
 export default function GuideCard({ guide }: { guide: Guide }) {
   return (
     <Link href={`/guides/${guide.slug}`} className="card">
       <div className="card__media" style={{ background: guide.gradient }}>
+        <HeroArt motif={guide.motif} gradient={guide.gradient} />
         <div className="v" />
       </div>
       <div className="card__body">

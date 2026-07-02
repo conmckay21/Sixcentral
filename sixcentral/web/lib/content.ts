@@ -39,11 +39,21 @@ export async function getLatestArticles(limit = 6): Promise<Article[]> {
     // const { data } = await sb.from('articles').select('*').order('updated_at', { ascending: false }).limit(limit);
     // if (data) return data.map(mapArticle);
   }
-  return byNewest(MOCK_ARTICLES).slice(0, limit);
+  return byNewest(MOCK_ARTICLES.filter((a) => !a.isRumour)).slice(0, limit);
+}
+
+/** Rumour Mill: explicitly unconfirmed pieces, kept out of Latest News. */
+export async function getRumours(limit = 6): Promise<Article[]> {
+  return byNewest(MOCK_ARTICLES.filter((a) => a.isRumour)).slice(0, limit);
+}
+
+/** Every article, facts and rumours — for routing, sitemaps and lookups. */
+export async function getAllArticles(): Promise<Article[]> {
+  return byNewest(MOCK_ARTICLES);
 }
 
 export async function getArticleBySlug(slug: string): Promise<Article | null> {
-  const articles = await getLatestArticles(100);
+  const articles = await getAllArticles();
   return articles.find((a) => a.slug === slug) ?? null;
 }
 
@@ -53,7 +63,7 @@ export async function getFeatured(): Promise<Article> {
 }
 
 export async function getRelated(current: AnyContent, limit = 3): Promise<AnyContent[]> {
-  const all: AnyContent[] = [...(await getGuides()), ...(await getLatestArticles(100))];
+  const all: AnyContent[] = [...(await getGuides()), ...(await getAllArticles())];
   return all
     .filter((c) => c.slug !== current.slug && c.category === current.category)
     .slice(0, limit);

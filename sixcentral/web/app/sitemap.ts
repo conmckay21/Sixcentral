@@ -1,10 +1,10 @@
 import type { MetadataRoute } from 'next';
-import { getGuides, getLatestArticles } from '@/lib/content';
+import { getGuides, getAllArticles } from '@/lib/content';
 
 const BASE = 'https://sixcentral.co.uk';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [guides, articles] = await Promise.all([getGuides(), getLatestArticles(100)]);
+  const [guides, articles] = await Promise.all([getGuides(), getAllArticles()]);
 
   return [
     { url: BASE, lastModified: new Date(), changeFrequency: 'daily', priority: 1 },

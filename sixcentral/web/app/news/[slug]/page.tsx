@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import LongformArticle from '@/components/LongformArticle';
-import { getLatestArticles, getArticleBySlug, getRelated } from '@/lib/content';
+import { getAllArticles, getArticleBySlug, getRelated } from '@/lib/content';
 
 export async function generateStaticParams() {
-  const articles = await getLatestArticles(100);
+  const articles = await getAllArticles();
   return articles.map((a) => ({ slug: a.slug }));
 }
 

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { AnyContent, Guide } from '@/lib/types';
 import { formatDate } from '@/lib/format';
+import HeroArt from '@/components/HeroArt';
 
 function isGuide(c: AnyContent): c is Guide {
   return c.kind === 'guide';
@@ -21,6 +22,8 @@ export default function LongformArticle({
         <div className="article__meta">
           {isGuide(content) ? (
             <span>Updated {formatDate(content.updatedAt)}</span>
+          ) : content.isRumour ? (
+            <span className="article__rumour-flag">Rumour — unconfirmed · heat {content.credibility ?? 2}/5</span>
           ) : (
             <span className="article__check">✓ Facts checked {formatDate(content.updatedAt)}</span>
           )}
@@ -28,8 +31,17 @@ export default function LongformArticle({
         </div>
 
         <div className="article__hero" style={{ background: content.gradient }}>
+          <HeroArt motif={content.motif} gradient={content.gradient} />
           <div className="v" />
         </div>
+
+        {!isGuide(content) && content.isRumour && (
+          <div className="rumour-box">
+            <strong>This is a Rumour Mill piece.</strong> Nothing here is confirmed by Rockstar
+            unless explicitly marked. Our heat rating reflects the quality of the sourcing, not a
+            promise — confirmed facts live in the news section, never here.
+          </div>
+        )}
 
         <div className="prose">
           {content.body.map((block, i) => {
@@ -64,20 +76,31 @@ export default function LongformArticle({
               Related
             </h2>
             <div className="rows">
-              {related.map((r) => (
-                <Link
-                  key={r.slug}
-                  href={`/${r.kind === 'guide' ? 'guides' : 'news'}/${r.slug}`}
-                  className="row-item"
-                >
-                  <div className="row-item__thumb" style={{ background: r.gradient }} />
-                  <div>
-                    <div className="row-item__k">{r.kicker}</div>
-                    <div className="row-item__t">{r.title}</div>
-                    <div className="row-item__d">Updated {formatDate(r.updatedAt)}</div>
-                  </div>
-                </Link>
-              ))}
+              {related.map((r) => {
+                const rRumour = r.kind === 'article' && r.isRumour === true;
+                return (
+                  <Link
+                    key={r.slug}
+                    href={`/${r.kind === 'guide' ? 'guides' : 'news'}/${r.slug}`}
+                    className={rRumour ? 'row-item row-item--rumour' : 'row-item'}
+                  >
+                    <div className="row-item__thumb">
+                      <HeroArt motif={r.motif} gradient={r.gradient} compact />
+                    </div>
+                    <div>
+                      <div className={rRumour ? 'row-item__k row-item__k--rumour' : 'row-item__k'}>
+                        {rRumour && <span className="rumour-chip">Rumour</span>}
+                        {r.kicker}
+                      </div>
+                      <div className="row-item__t">{r.title}</div>
+                      <div className="row-item__d">
+                        {rRumour ? 'Unconfirmed · tracked ' : 'Updated '}
+                        {formatDate(r.updatedAt)}
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </>
         )}

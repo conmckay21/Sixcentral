@@ -1,17 +1,19 @@
 import Link from 'next/link';
 import Countdown from '@/components/Countdown';
 import NewsletterSignup from '@/components/NewsletterSignup';
+import HeroArt from '@/components/HeroArt';
 import GuideCard from '@/components/GuideCard';
 import ArticleRow from '@/components/ArticleRow';
-import { getGuides, getLatestArticles, getFeatured } from '@/lib/content';
+import { getGuides, getLatestArticles, getFeatured, getRumours } from '@/lib/content';
 
 export const metadata = { alternates: { canonical: '/' } };
 
 export default async function HomePage() {
-  const [guides, articles, featured] = await Promise.all([
+  const [guides, articles, featured, rumours] = await Promise.all([
     getGuides(),
     getLatestArticles(4),
     getFeatured(),
+    getRumours(5),
   ]);
 
   return (
@@ -37,6 +39,7 @@ export default async function HomePage() {
         <div className="wrap">
           <Link href={`/news/${featured.slug}`} className="card" style={{ minHeight: 220 }}>
             <div className="card__media" style={{ height: 220, background: featured.gradient }}>
+              <HeroArt motif={featured.motif} gradient={featured.gradient} />
               <div className="v" />
               <div style={{ position: 'absolute', bottom: 0, padding: 22, zIndex: 2 }}>
                 <div className="card__kicker" style={{ color: 'var(--gold)' }}>
@@ -87,6 +90,23 @@ export default async function HomePage() {
           </div>
           <div className="rows">
             {articles.map((a) => (
+              <ArticleRow key={a.slug} article={a} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* The Rumour Mill */}
+      <section className="section section--rumour" id="rumour-mill">
+        <div className="wrap">
+          <div className="section__head">
+            <h2>
+              The <span className="r">rumour mill</span>
+            </h2>
+            <span className="rumour-note">Unconfirmed by design — never mixed with the facts.</span>
+          </div>
+          <div className="rows">
+            {rumours.map((a) => (
               <ArticleRow key={a.slug} article={a} />
             ))}
           </div>
