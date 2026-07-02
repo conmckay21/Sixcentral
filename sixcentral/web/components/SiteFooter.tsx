@@ -26,6 +26,7 @@ export default function SiteFooter() {
               <h4>Community</h4>
               <Link href="/#app">The app</Link>
               <Link href="/crew">The Come-Up</Link>
+              <Link href="/contribute">Contribute</Link>
               {DISCORD_INVITE ? (
                 <a href={DISCORD_INVITE} target="_blank" rel="noopener noreferrer">
                   Discord

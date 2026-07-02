@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { getBrowserSupabase } from '@/lib/supabase-browser';
 
 type Rank = { id: number; name: string; min_respect: number; heat: number; perk: string | null };
@@ -83,9 +84,13 @@ export default function TheComeUp() {
             ))}
           </div>
           <p style={{ color: 'var(--dim)', fontSize: '0.86rem', marginTop: 14, maxWidth: '68ch' }}>
-            Right now, the way in is the Discord: founding contributors earning Respect for
-            verified pre-order intel, corrections and analysis. The full pipeline — map pins,
-            collectible confirmations, clip features — opens with the tracker at launch.
+            Right now there are two ways in:{' '}
+            <Link href="/contribute" style={{ color: 'var(--cyan)' }}>
+              submit intel or a correction
+            </Link>{' '}
+            right here on the site, or earn as a founding contributor in the Discord. The full
+            pipeline — map pins, collectible confirmations, clip features — opens with the tracker
+            at launch.
           </p>
         </div>
       </section>

@@ -56,6 +56,14 @@ export default function LongformArticle({
           })}
         </div>
 
+        <p className="correction-cta">
+          Spotted an error?{' '}
+          <Link href={`/contribute?type=verified_correction&about=/${isGuide(content) ? 'guides' : 'news'}/${content.slug}`}>
+            Report it
+          </Link>{' '}
+          — Respect on The Come-Up if you&rsquo;re right.
+        </p>
+
         {isGuide(content) && content.trackable && (
           <div className="tracker-cta">
             <span className="ic">◎</span>

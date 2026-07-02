@@ -406,3 +406,24 @@ img { max-width: 100%; display: block; }
 .avatar-btn:hover { background: rgba(31, 229, 214, 0.1); }
 .avatar-remove { background: none; border: 0; color: var(--dim); font-family: var(--mono); font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; }
 .avatar-remove:hover { color: var(--pink); }
+
+/* ---- Contribution intake + mod queue ---- */
+.correction-cta { margin-top: 26px; color: var(--dim); font-size: 0.85rem; }
+.correction-cta a { color: var(--cyan); }
+textarea.nl__input { resize: vertical; min-height: 110px; line-height: 1.5; }
+select.nl__input { appearance: none; }
+.modq { display: flex; flex-direction: column; gap: 14px; }
+.modq__item { border: 1px solid var(--line); border-radius: 14px; background: var(--bg2); padding: 18px; }
+.modq__meta { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.modq__type { font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cyan); }
+.modq__who { font-family: var(--mono); font-size: 0.64rem; color: var(--dim); }
+.modq__about { font-family: var(--mono); font-size: 0.7rem; color: var(--gold); margin-bottom: 6px; }
+.modq__details { color: var(--text); font-size: 0.92rem; line-height: 1.55; white-space: pre-wrap; }
+.modq__source { display: inline-block; margin-top: 8px; font-family: var(--mono); font-size: 0.68rem; color: var(--cyan); word-break: break-all; }
+.modq__actions { display: flex; gap: 10px; margin-top: 14px; }
+.modq__accept { background: var(--green); color: #06301a; border: 0; border-radius: 8px; padding: 9px 16px; font-family: var(--mono); font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; }
+.modq__reject { background: transparent; color: var(--muted); border: 1px solid var(--line2); border-radius: 8px; padding: 9px 16px; font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; }
+.modq__reject:hover { border-color: var(--pink); color: var(--pink); }
+.modq__item--slim { display: flex; gap: 14px; align-items: center; padding: 10px 16px; }
+.modq__ok { color: var(--green); font-family: var(--mono); font-size: 0.66rem; text-transform: uppercase; }
+.modq__no { color: var(--dim); font-family: var(--mono); font-size: 0.66rem; text-transform: uppercase; }
