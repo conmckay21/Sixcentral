@@ -18,6 +18,7 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: ({ color, size }) => <Ionicons name="home" color={color} size={size} /> }} />
+      <Tabs.Screen name="guides" options={{ title: 'Guides', tabBarIcon: ({ color, size }) => <Ionicons name="book" color={color} size={size} /> }} />
       <Tabs.Screen name="map" options={{ title: 'Map', tabBarIcon: ({ color, size }) => <Ionicons name="map" color={color} size={size} /> }} />
       <Tabs.Screen name="clips" options={{ title: 'Clips', tabBarIcon: ({ color, size }) => <Ionicons name="play-circle" color={color} size={size} /> }} />
       <Tabs.Screen name="progress" options={{ title: 'Progress', tabBarIcon: ({ color, size }) => <Ionicons name="stats-chart" color={color} size={size} /> }} />

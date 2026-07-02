@@ -3,7 +3,9 @@ import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, Text
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { Session } from '@supabase/supabase-js';
+import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { flairColor } from '@/lib/flairs';
 import { C, G, GRAD } from '@/lib/theme';
 import { SectionTitle } from '@/components/ui';
 
@@ -15,6 +17,19 @@ type Profile = {
   rank_id: number;
   is_staff: boolean;
   is_pro: boolean;
+  flair: string | null;
+  bio: string | null;
+  platform: string | null;
+  psn_id: string | null;
+  xbox_gamertag: string | null;
+};
+type Friend = {
+  id: string;
+  status: string;
+  requester: string;
+  addressee: string;
+  req: { handle: string; flair: string | null } | null;
+  add: { handle: string; flair: string | null } | null;
 };
 type Rank = { id: number; name: string };
 type Row = { id: string; handle: string; respect: number; rank_name: string; title: string | null };
@@ -25,6 +40,8 @@ export default function ProfileTab() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [ranks, setRanks] = useState<Rank[]>([]);
   const [board, setBoard] = useState<Row[]>([]);
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const router = useRouter();
 
   const [email, setEmail] = useState('');
   const [pw, setPw] = useState('');
@@ -48,7 +65,7 @@ export default function ProfileTab() {
     }
     supabase
       .from('public_profiles')
-      .select('handle, title, avatar_url, respect, rank_id, is_staff, is_pro')
+      .select('handle, title, avatar_url, respect, rank_id, is_staff, is_pro, flair, bio, platform, psn_id, xbox_gamertag')
       .eq('id', session.user.id)
       .single()
       .then(({ data }) => {
@@ -57,6 +74,12 @@ export default function ProfileTab() {
     supabase.from('ranks').select('id, name').order('id').then(({ data }) => {
       if (data) setRanks(data as Rank[]);
     });
+    supabase
+      .from('friendships')
+      .select('id, status, requester, addressee, req:profiles!friendships_requester_fkey(handle, flair), add:profiles!friendships_addressee_fkey(handle, flair)')
+      .then(({ data }) => {
+        if (data) setFriends(data as unknown as Friend[]);
+      });
     supabase
       .from('leaderboard_all')
       .select('id, handle, respect, rank_name, title')
@@ -114,10 +137,10 @@ export default function ProfileTab() {
       <ScrollView contentContainerStyle={st.wrap} showsVerticalScrollIndicator={false}>
         <View style={st.head}>
           {profile?.avatar_url ? (
-            <Image source={{ uri: profile.avatar_url }} style={st.avatar} />
+            <Image source={{ uri: profile.avatar_url }} style={[st.avatar, { borderColor: flairColor(profile.flair), shadowColor: flairColor(profile.flair) }]} />
           ) : (
-            <View style={[st.avatar, st.avatarFallback]}>
-              <Text style={st.avatarLetter}>{profile?.handle?.slice(0, 1).toUpperCase() ?? '?'}</Text>
+            <View style={[st.avatar, st.avatarFallback, { borderColor: flairColor(profile?.flair), shadowColor: flairColor(profile?.flair) }]}>
+              <Text style={[st.avatarLetter, { color: flairColor(profile?.flair) }]}>{profile?.handle?.slice(0, 1).toUpperCase() ?? '?'}</Text>
             </View>
           )}
           <View style={{ flex: 1 }}>
@@ -135,6 +158,19 @@ export default function ProfileTab() {
           )}
         </View>
 
+        {profile?.bio ? <Text style={st.bio}>{profile.bio}</Text> : null}
+        {(profile?.platform || profile?.psn_id || profile?.xbox_gamertag) && (
+          <View style={st.metaRow}>
+            {profile?.platform && (
+              <View style={st.metaChip}>
+                <Text style={st.metaChipText}>{profile.platform === 'ps5' ? 'PS5' : 'Xbox'}</Text>
+              </View>
+            )}
+            {profile?.psn_id ? <Text style={st.metaId}>PSN · {profile.psn_id}</Text> : null}
+            {profile?.xbox_gamertag ? <Text style={st.metaId}>Xbox · {profile.xbox_gamertag}</Text> : null}
+          </View>
+        )}
+
         <View style={st.statCard}>
           <Text style={st.statNum}>{profile?.respect?.toLocaleString('en-GB') ?? '0'}</Text>
           <Text style={st.statLbl}>Respect</Text>
@@ -149,12 +185,74 @@ export default function ProfileTab() {
           </LinearGradient>
         )}
 
+        <SectionTitle>Friends</SectionTitle>
+        {friends.length === 0 ? (
+          <Text style={st.muted}>Tap a creator anywhere in the app to add your first friend.</Text>
+        ) : (
+          friends.map((f) => {
+            const me = session.user.id;
+            const other = f.requester === me ? f.add : f.req;
+            const incoming = f.status === 'pending' && f.addressee === me;
+            const outgoing = f.status === 'pending' && f.requester === me;
+            return (
+              <View key={f.id} style={st.row}>
+                <Pressable
+                  style={{ flex: 1 }}
+                  onPress={() => other && router.push({ pathname: '/u/[handle]', params: { handle: other.handle } })}
+                >
+                  <Text style={st.rowHandle}>@{other?.handle ?? 'unknown'}</Text>
+                  <Text style={st.rowRank}>
+                    {f.status === 'accepted' ? 'Friends' : incoming ? 'Wants to be friends' : 'Requested'}
+                  </Text>
+                </Pressable>
+                {incoming && (
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <Pressable
+                      style={st.miniBtn}
+                      onPress={async () => {
+                        await supabase.from('friendships').update({ status: 'accepted' }).eq('id', f.id);
+                        setFriends((fs) => fs.map((x) => (x.id === f.id ? { ...x, status: 'accepted' } : x)));
+                      }}
+                    >
+                      <Text style={st.miniBtnText}>Accept</Text>
+                    </Pressable>
+                    <Pressable
+                      style={st.miniGhost}
+                      onPress={async () => {
+                        await supabase.from('friendships').delete().eq('id', f.id);
+                        setFriends((fs) => fs.filter((x) => x.id !== f.id));
+                      }}
+                    >
+                      <Text style={st.miniGhostText}>✕</Text>
+                    </Pressable>
+                  </View>
+                )}
+                {outgoing && (
+                  <Pressable
+                    style={st.miniGhost}
+                    onPress={async () => {
+                      await supabase.from('friendships').delete().eq('id', f.id);
+                      setFriends((fs) => fs.filter((x) => x.id !== f.id));
+                    }}
+                  >
+                    <Text style={st.miniGhostText}>Cancel</Text>
+                  </Pressable>
+                )}
+              </View>
+            );
+          })
+        )}
+
         <SectionTitle>The Come-Up · top five</SectionTitle>
         {board.length === 0 ? (
           <Text style={st.muted}>The board opens with the first crew members.</Text>
         ) : (
           board.map((r, i) => (
-            <View key={r.id} style={st.row}>
+            <Pressable
+              key={r.id}
+              style={st.row}
+              onPress={() => router.push({ pathname: '/u/[handle]', params: { handle: r.handle } })}
+            >
               <Text style={st.pos}>{i + 1}</Text>
               <View style={{ flex: 1 }}>
                 <Text style={st.rowHandle}>@{r.handle}</Text>
@@ -164,7 +262,7 @@ export default function ProfileTab() {
                 </Text>
               </View>
               <Text style={st.pts}>{r.respect.toLocaleString('en-GB')}</Text>
-            </View>
+            </Pressable>
           ))
         )}
 
@@ -189,13 +287,22 @@ const st = StyleSheet.create({
   swap: { color: C.cyan, marginTop: 16, textAlign: 'center' },
   err: { color: C.pinkL, marginBottom: 8 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 18 },
-  avatar: { width: 68, height: 68, borderRadius: 34, borderWidth: 2, borderColor: C.pink },
+  avatar: { width: 68, height: 68, borderRadius: 34, borderWidth: 2.5, shadowOpacity: 0.7, shadowRadius: 8, shadowOffset: { width: 0, height: 0 }, elevation: 5 },
   avatarFallback: { backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
-  avatarLetter: { color: C.pink, fontSize: 26, fontWeight: '900' },
+  avatarLetter: { fontSize: 26, fontWeight: '900' },
   handle: { color: C.text, fontSize: 21, fontWeight: '800' },
   rank: { color: C.gold, marginTop: 2, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 },
   proBadge: { backgroundColor: 'rgba(255,200,61,0.15)', borderColor: C.gold, borderWidth: 1, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
   proBadgeText: { color: C.gold, fontWeight: '900', fontSize: 11, letterSpacing: 1 },
+  bio: { color: C.muted, lineHeight: 20, marginBottom: 12 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14, flexWrap: 'wrap' },
+  metaChip: { borderColor: C.line2, borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  metaChipText: { color: C.cyan, fontSize: 11, fontWeight: '800' },
+  metaId: { color: C.dim, fontSize: 12 },
+  miniBtn: { backgroundColor: C.green, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
+  miniBtnText: { color: '#06130B', fontWeight: '900', fontSize: 11, textTransform: 'uppercase' },
+  miniGhost: { borderColor: C.line2, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
+  miniGhostText: { color: C.muted, fontWeight: '700', fontSize: 11 },
   statCard: { backgroundColor: C.bg2, borderColor: C.line, borderWidth: 1, borderRadius: 18, padding: 18, alignItems: 'center', marginBottom: 14 },
   statNum: { color: C.cyan, fontSize: 32, fontWeight: '900', fontVariant: ['tabular-nums'] },
   statLbl: { color: C.dim, textTransform: 'uppercase', letterSpacing: 2, fontSize: 11, marginTop: 4 },
