@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { AnyContent, Guide } from '@/lib/types';
 import { formatDate } from '@/lib/format';
 import HeroMedia from '@/components/HeroMedia';
+import MediaCarousel from '@/components/MediaCarousel';
 
 function isGuide(c: AnyContent): c is Guide {
   return c.kind === 'guide';
@@ -55,6 +56,10 @@ export default function LongformArticle({
             return <p key={i}>{block.text}</p>;
           })}
         </div>
+
+        {content.gallery && content.gallery.length > 0 && (
+          <MediaCarousel images={content.gallery} title="The shots" />
+        )}
 
         <p className="correction-cta">
           Spotted an error?{' '}

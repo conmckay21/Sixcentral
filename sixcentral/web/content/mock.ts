@@ -71,6 +71,14 @@ export const MOCK_ARTICLES: Article[] = [
     gradient: 'linear-gradient(150deg,#1FE5D6,#8A4FFF)',
     motif: 'money',
     heroImage: { src: '/media/gtavi-ultimate-edition.jpg', alt: 'GTA VI Ultimate Edition contents', credit: 'Rockstar Games' },
+    gallery: [
+      { src: '/media/gtavi-cheetah.jpg', alt: 'Grotti Cheetah \u2014 Ultimate Edition', credit: 'Rockstar Games' },
+      { src: '/media/gtavi-squalo.jpg', alt: 'The Squalo speedboat', credit: 'Rockstar Games' },
+      { src: '/media/gtavi-stock305.jpg', alt: 'Stock 305 muscle car', credit: 'Rockstar Games' },
+      { src: '/media/gtavi-willie.jpg', alt: 'One Eyed Willie off-roader', credit: 'Rockstar Games' },
+      { src: '/media/gtavi-rideout.jpg', alt: 'Rideout Customs', credit: 'Rockstar Games' },
+      { src: '/media/gtavi-vice-city-style.jpg', alt: 'Vice City Style outfits', credit: 'Rockstar Games' },
+    ],
     body: [
       { type: 'p', text: 'Two editions, a boxed option that is really a download code, and a handful of UK retailers. Here is how to decide.' },
       { type: 'h2', text: 'The editions' },
@@ -133,7 +141,15 @@ export const MOCK_ARTICLES: Article[] = [
     readingMins: 4,
     gradient: 'linear-gradient(150deg,#FFC83D,#FF9E45 55%,#FF2E88)',
     motif: 'cassette',
-    heroImage: { src: '/media/gtavi-vice-city-style.jpg', alt: 'Jason and Lucia in Vintage Vice City Pack outfits', credit: 'Rockstar Games' },
+    heroImage: { src: '/media/gtavi-vvcp-hero.jpg', alt: 'The Vintage Vice City Pack', credit: 'Rockstar Games' },
+    gallery: [
+      { src: '/media/gtavi-vvcp-montage.jpg', alt: 'Vintage Vice City Pack contents', credit: 'Rockstar Games' },
+      { src: '/media/gtavi-vvcp-looks-1.jpg', alt: 'Exclusive Vice City look', credit: 'Rockstar Games' },
+      { src: '/media/gtavi-vvcp-looks-2.jpg', alt: 'Exclusive Vice City look \u2014 retro fit', credit: 'Rockstar Games' },
+      { src: '/media/gtavi-stanier-1.jpg', alt: 'The classic Vapid Stanier', credit: 'Rockstar Games' },
+      { src: '/media/gtavi-stanier-2.jpg', alt: 'Vapid Stanier \u2014 detail', credit: 'Rockstar Games' },
+      { src: '/media/gtavi-vvcp-pattern.jpg', alt: 'Vice City weapon pattern', credit: 'Rockstar Games' },
+    ],
     body: [
       { type: 'p', text: 'The Vintage Vice City Pack is the pre-order bonus, and it is tied to ordering early rather than spending more: anyone who pre-orders before 20 November gets it, on either edition.' },
       { type: 'h2', text: 'What is in it' },
@@ -161,6 +177,14 @@ export const MOCK_ARTICLES: Article[] = [
     gradient: 'linear-gradient(150deg,#FF2E88,#FF9E45 60%,#FFC83D)',
     motif: 'palms',
     heroImage: { src: '/media/gtavi-leonida-keys.jpg', alt: 'Aerial view over the Leonida Keys', credit: 'Rockstar Games' },
+    gallery: [
+      { src: '/media/gtavi-vc-beach.jpg', alt: 'Vice City \u2014 the beach', credit: 'Rockstar Games' },
+      { src: '/media/gtavi-keys-2.jpg', alt: 'Leonida Keys \u2014 the causeway', credit: 'Rockstar Games' },
+      { src: '/media/gtavi-gellhorn.jpg', alt: 'Port Gellhorn', credit: 'Rockstar Games' },
+      { src: '/media/gtavi-kalaga.jpg', alt: 'Mount Kalaga National Park', credit: 'Rockstar Games' },
+      { src: '/media/gtavi-grassrivers.jpg', alt: 'Grassrivers wetlands', credit: 'Rockstar Games' },
+      { src: '/media/gtavi-ambrosia.jpg', alt: 'Ambrosia', credit: 'Rockstar Games' },
+    ],
     body: [
       { type: 'p', text: 'Alongside pre-orders opening on 25 June, Rockstar published its biggest still-image release for the game so far — more than 60 screenshots, 51 of them on the official media page, largely built around the Ultimate Edition and the Vintage Vice City Pack.' },
       { type: 'h2', text: 'What the images genuinely confirm' },

@@ -29,6 +29,8 @@ export type ContentBase = {
   motif?: Motif;    // HeroArt illustration key
   /** Optional credited official screenshot; falls back to HeroArt when absent. */
   heroImage?: HeroImage;
+  /** Optional credited gallery rendered as a carousel after the article body. */
+  gallery?: HeroImage[];
   isNew?: boolean;
 };
 
