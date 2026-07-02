@@ -59,9 +59,13 @@ Paste each file from `supabase/templates/` into Supabase → Authentication →
 | Confirm signup | confirm-signup.html | Confirm your SixCentral email |
 | Change Email Address | change-email.html | Confirm your new email address |
 | Magic Link | magic-link.html | Your SixCentral sign-in link |
+| Invite user | invite-user.html | You're invited to SixCentral |
+| Reauthentication | reauthentication.html | Your SixCentral confirmation code |
+| Password changed (notification) | password-changed.html | Your SixCentral password was changed |
 
-(Invite user / Reauthentication see near-zero use — leave defaults or clone the
-skeleton if they ever matter.)
+Note: Reauthentication is a **code** email ({{ .Token }}), not a link; the
+password-changed notification has no confirmation action — its button just
+points at /account for anyone who didn't make the change.
 
 ## 5. Policy notes
 
