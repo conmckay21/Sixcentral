@@ -597,7 +597,7 @@ export default function ClipsSection() {
               </label>
 
               <div className="licence-box">
-                <div className="kicker" style={{ fontSize: '0.58rem' }}>The clip licence, in plain English</div>
+                <div className="kicker" style={{ fontSize: '0.58rem' }}>The clip licence, in plain English · <a href="/terms#clips" style={{ color: 'var(--cyan)' }}>full terms</a></div>
                 <p>{LICENCE_SUMMARY}</p>
               </div>
 

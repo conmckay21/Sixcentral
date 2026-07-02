@@ -13,6 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/contribute`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.4 },
     { url: `${BASE}/clips`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.7 },
     { url: `${BASE}/privacy`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.2 },
+    { url: `${BASE}/terms`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.2 },
     ...guides.map((g) => ({
       url: `${BASE}/guides/${g.slug}`,
       lastModified: new Date(g.updatedAt),
