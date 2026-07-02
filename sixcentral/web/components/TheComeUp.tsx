@@ -6,7 +6,7 @@ import { getBrowserSupabase } from '@/lib/supabase-browser';
 
 type Rank = { id: number; name: string; min_respect: number; heat: number; perk: string | null };
 type EarnType = { key: string; label: string; points: number };
-type BoardRow = { id: string; handle: string; avatar_url: string | null; respect?: number; respect_week?: number; rank_name?: string };
+type BoardRow = { id: string; handle: string; avatar_url: string | null; respect?: number; respect_week?: number; rank_name?: string; title?: string | null };
 
 export default function TheComeUp() {
   const sb = getBrowserSupabase();
@@ -132,7 +132,13 @@ export default function TheComeUp() {
                   </span>
                   <span className="lb__handle">
                     @{r.handle}
-                    {r.rank_name && <em>{r.rank_name}</em>}
+                    {(r.title || r.rank_name) && (
+                      <em>
+                        {r.title && <strong className="lb__title">{r.title}</strong>}
+                        {r.title && r.rank_name ? ' · ' : ''}
+                        {r.rank_name ?? ''}
+                      </em>
+                    )}
                   </span>
                   <span className="lb__pts">
                     {(board === 'all' ? r.respect ?? 0 : r.respect_week ?? 0).toLocaleString('en-GB')}

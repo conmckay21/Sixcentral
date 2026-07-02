@@ -63,6 +63,7 @@ const RANK_ROLES = [
 const SPECIAL_ROLES = [
   { name: 'Founding Contributor', color: 0x9b5cff },
   { name: 'Moderator',            color: 0xf4efe8 },
+  { name: 'Founder',              color: 0xffffff },
 ];
 
 // ---- channel plan ----

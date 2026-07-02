@@ -8,6 +8,7 @@ import { DISCORD_AUTH_READY } from '@/lib/site';
 type Profile = {
   id: string;
   handle: string;
+  title: string | null;
   avatar_url: string | null;
   discord_id: string | null;
   respect: number;
@@ -525,6 +526,7 @@ export default function AccountPanel() {
             <div>
               <div className="acct__handle">@{profile.handle}</div>
               <div className="acct__sub">
+                {profile.title && <span className="title-chip">{profile.title}</span>}
                 {rank && (
                   <>
                     <span className="rank-chip">
