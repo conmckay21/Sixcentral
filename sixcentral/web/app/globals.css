@@ -395,3 +395,14 @@ img { max-width: 100%; display: block; }
 .lb__handle { font-weight: 600; color: #fff; }
 .lb__handle em { display: block; font-style: normal; font-family: var(--mono); font-size: 0.62rem; color: var(--gold); text-transform: uppercase; letter-spacing: 0.06em; }
 .lb__pts { font-family: var(--mono); color: var(--cyan); }
+
+/* ---- Avatar uploader ---- */
+.acct__avatarcol { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 0 0 auto; }
+.avatar-btn {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--cyan); border: 1px solid rgba(31, 229, 214, 0.4); border-radius: 6px;
+  padding: 4px 8px; cursor: pointer;
+}
+.avatar-btn:hover { background: rgba(31, 229, 214, 0.1); }
+.avatar-remove { background: none; border: 0; color: var(--dim); font-family: var(--mono); font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; }
+.avatar-remove:hover { color: var(--pink); }

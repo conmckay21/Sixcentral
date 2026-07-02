@@ -36,6 +36,9 @@ export default function AccountPanel() {
   const [saveState, setSaveState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
   const [saveMsg, setSaveMsg] = useState('');
 
+  const [avatarState, setAvatarState] = useState<'idle' | 'busy' | 'error'>('idle');
+  const [avatarMsg, setAvatarMsg] = useState('');
+
   const loadProfile = useCallback(
     async (uid: string) => {
       if (!sb) return;
@@ -115,6 +118,67 @@ export default function AccountPanel() {
     }
   }
 
+  /** Client-side resize to a 256px cover-cropped jpeg (~15KB), then upsert. */
+  function resizeToJpeg(file: File): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const size = 256;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('no canvas'));
+        const scale = Math.max(size / img.width, size / img.height);
+        const w = img.width * scale;
+        const h = img.height * scale;
+        ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+        URL.revokeObjectURL(url);
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('encode failed'))), 'image/jpeg', 0.85);
+      };
+      img.onerror = () => reject(new Error('That file could not be read as an image.'));
+      img.src = url;
+    });
+  }
+
+  async function uploadAvatar(file: File) {
+    if (!sb || !profile || avatarState === 'busy') return;
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+      setAvatarState('error');
+      setAvatarMsg('JPEG, PNG or WebP only.');
+      return;
+    }
+    setAvatarState('busy');
+    setAvatarMsg('');
+    try {
+      const blob = await resizeToJpeg(file);
+      const path = `${profile.id}.jpg`;
+      const { error } = await sb.storage
+        .from('avatars')
+        .upload(path, blob, { upsert: true, contentType: 'image/jpeg', cacheControl: '3600' });
+      if (error) throw error;
+      const { data } = sb.storage.from('avatars').getPublicUrl(path);
+      const url = `${data.publicUrl}?v=${Date.now()}`;
+      const { error: e2 } = await sb.from('profiles').update({ avatar_url: url }).eq('id', profile.id);
+      if (e2) throw e2;
+      setProfile({ ...profile, avatar_url: url });
+      setAvatarState('idle');
+    } catch (err) {
+      setAvatarState('error');
+      setAvatarMsg(err instanceof Error ? err.message : 'Upload failed — try again.');
+    }
+  }
+
+  async function removeAvatar() {
+    if (!sb || !profile || avatarState === 'busy') return;
+    setAvatarState('busy');
+    await sb.storage.from('avatars').remove([`${profile.id}.jpg`]);
+    await sb.from('profiles').update({ avatar_url: null }).eq('id', profile.id);
+    setProfile({ ...profile, avatar_url: null });
+    setAvatarState('idle');
+  }
+
   async function signOut() {
     if (!sb) return;
     await sb.auth.signOut();
@@ -182,12 +246,33 @@ export default function AccountPanel() {
       ) : (
         <>
           <div className="acct__head">
-            <div className="acct__avatar">
-              {profile.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={profile.avatar_url} alt="" />
-              ) : (
-                <span>{profile.handle.slice(0, 1).toUpperCase()}</span>
+            <div className="acct__avatarcol">
+              <div className="acct__avatar">
+                {profile.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={profile.avatar_url} alt="" />
+                ) : (
+                  <span>{profile.handle.slice(0, 1).toUpperCase()}</span>
+                )}
+              </div>
+              <label className="avatar-btn" htmlFor="avatar-file">
+                {avatarState === 'busy' ? 'Uploading…' : 'Change photo'}
+              </label>
+              <input
+                id="avatar-file"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) uploadAvatar(f);
+                  e.target.value = '';
+                }}
+              />
+              {profile.avatar_url && avatarState !== 'busy' && (
+                <button className="avatar-remove" onClick={removeAvatar}>
+                  Remove
+                </button>
               )}
             </div>
             <div>
