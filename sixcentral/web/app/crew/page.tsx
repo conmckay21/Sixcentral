@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import TheComeUp from '@/components/TheComeUp';
-import { DISCORD_INVITE } from '@/lib/site';
 
 export const metadata: Metadata = {
   title: 'The Come-Up: ranks, Respect and the crew leaderboard',
@@ -29,19 +28,6 @@ export default function CrewPage() {
             <Link href="/account" style={{ color: 'var(--cyan)' }}>
               Create your account →
             </Link>
-            {DISCORD_INVITE && (
-              <>
-                {'  '}
-                <a
-                  href={DISCORD_INVITE}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: 'var(--cyan)', marginLeft: 18 }}
-                >
-                  Join the Discord →
-                </a>
-              </>
-            )}
           </p>
         </div>
       </section>

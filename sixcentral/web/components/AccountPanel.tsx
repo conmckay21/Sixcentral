@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { getBrowserSupabase } from '@/lib/supabase-browser';
 import FriendSearch from '@/components/FriendSearch';
-import { DISCORD_AUTH_READY } from '@/lib/site';
+import { DISCORD_AUTH_READY, DISCORD_INVITE } from '@/lib/site';
 
 type Profile = {
   id: string;
@@ -954,6 +954,20 @@ export default function AccountPanel() {
               View your public profile →
             </a>
           </p>
+
+          {DISCORD_INVITE && (
+            <div className="acct__field" style={{ marginTop: 22 }}>
+              <label>The Discord</label>
+              <p className="panel__hint" style={{ margin: '2px 0 10px' }}>
+                {profile.discord_linked
+                  ? 'Your account is linked. Tap Agree in #welcome and the whole server opens.'
+                  : 'Members only. Sign out and back in with Discord once so your account links, then the gate in #welcome recognises you.'}
+              </p>
+              <a className="btn-crew" href={DISCORD_INVITE} target="_blank" rel="noopener noreferrer">
+                Open the Discord
+              </a>
+            </div>
+          )}
 
           <div className="acct__meta">
             <span>

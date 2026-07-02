@@ -2,7 +2,6 @@ import Link from 'next/link';
 import Countdown from '@/components/Countdown';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import HeroMedia from '@/components/HeroMedia';
-import { DISCORD_INVITE } from '@/lib/site';
 import ArticleRow from '@/components/ArticleRow';
 import { getLatestArticles, getFeatured, getRumours } from '@/lib/content';
 
@@ -188,16 +187,10 @@ export default async function HomePage() {
                 and first access to everything. Confirmed contributions earn Respect on The Come-Up.
                 Climb the ladder and Premium comes free at Lieutenant.
               </p>
-              {DISCORD_INVITE ? (
-                <a className="btn-crew" href={DISCORD_INVITE} target="_blank" rel="noopener noreferrer">
-                  Join the Discord
-                </a>
-              ) : (
-                <div>
-                  <span className="btn-crew btn-crew--soon">Discord opens soon</span>
-                  <p className="crew-note">Launch-list members get the first invites.</p>
-                </div>
-              )}
+              <a className="btn-crew" href="/account">
+                Join the crew
+              </a>
+              <p className="crew-note">Create your account, and the Discord opens from your account page.</p>
             </div>
           </div>
         </div>
