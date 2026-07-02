@@ -22,6 +22,7 @@ export default function RootLayout() {
     <ThemeProvider value={SixTheme}>
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg } }}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="submit" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>
   );

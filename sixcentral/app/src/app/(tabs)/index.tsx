@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { FlatList, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import type { Session } from '@supabase/supabase-js';
+import { useCallback } from 'react';
+import { FlatList, Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -11,6 +13,11 @@ const LAUNCH = new Date('2026-11-19T00:00:00Z').getTime();
 const SITE = 'https://sixcentral.co.uk';
 
 type Clip = { id: string; video_id: string };
+type ShareRow = {
+  id: string;
+  clip: { video_id: string; caption: string | null } | null;
+  from_p: { handle: string } | null;
+};
 
 function useCountdown() {
   const [now, setNow] = useState(Date.now());
@@ -30,9 +37,12 @@ export default function Home() {
   const { d, h, m } = useCountdown();
   const router = useRouter();
   const [clips, setClips] = useState<Clip[]>([]);
+  const [shares, setShares] = useState<ShareRow[]>([]);
+  const [session, setSession] = useState<Session | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    supabase
+  const loadClips = useCallback(() => {
+    return supabase
       .from('clip_submissions')
       .select('id, video_id')
       .eq('status', 'approved')
@@ -44,9 +54,42 @@ export default function Home() {
       });
   }, []);
 
+  const loadShares = useCallback((s: Session | null) => {
+    if (!s) return Promise.resolve();
+    return supabase
+      .from('clip_shares')
+      .select('id, clip:clip_submissions!clip_shares_clip_id_fkey(video_id, caption), from_p:profiles!clip_shares_from_profile_fkey(handle)')
+      .eq('to_profile', s.user.id)
+      .is('seen_at', null)
+      .order('created_at', { ascending: false })
+      .limit(6)
+      .then(({ data }) => {
+        if (data) setShares(data as unknown as ShareRow[]);
+      });
+  }, []);
+
+  useEffect(() => {
+    loadClips();
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      loadShares(data.session);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      setSession(s);
+      loadShares(s);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [loadClips, loadShares]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([loadClips(), loadShares(session)]);
+    setRefreshing(false);
+  }, [loadClips, loadShares, session]);
+
   return (
     <SafeAreaView style={st.safe}>
-      <ScrollView contentContainerStyle={st.wrap} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={st.wrap} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.pink} />}>
         <View style={st.header}>
           <Text style={st.brand}>
             <Text style={{ color: C.pink }}>SIX</Text>
@@ -58,6 +101,42 @@ export default function Home() {
             </Text>
           </View>
         </View>
+
+        {shares.length > 0 && (
+          <>
+            <SectionTitle>Shared with you</SectionTitle>
+            <FlatList
+              horizontal
+              data={shares}
+              keyExtractor={(s) => s.id}
+              showsHorizontalScrollIndicator={false}
+              style={{ marginBottom: 16 }}
+              renderItem={({ item }) => (
+                <Pressable
+                  style={st.shareCard}
+                  onPress={async () => {
+                    await supabase.from('clip_shares').update({ seen_at: new Date().toISOString() }).eq('id', item.id);
+                    setShares((s) => s.filter((x) => x.id !== item.id));
+                    router.push('/clips');
+                  }}
+                >
+                  <Image source={{ uri: `https://i.ytimg.com/vi/${item.clip?.video_id}/mqdefault.jpg` }} style={st.shareThumb} />
+                  <Text style={st.shareFrom}>@{item.from_p?.handle ?? '?'} sent this</Text>
+                  <Pressable
+                    style={st.shareX}
+                    hitSlop={8}
+                    onPress={async () => {
+                      await supabase.from('clip_shares').delete().eq('id', item.id);
+                      setShares((s) => s.filter((x) => x.id !== item.id));
+                    }}
+                  >
+                    <Text style={st.shareXText}>✕</Text>
+                  </Pressable>
+                </Pressable>
+              )}
+            />
+          </>
+        )}
 
         <Pressable onPress={() => Linking.openURL(`${SITE}/news/everything-confirmed`)}>
           <LinearGradient colors={G.hot} {...GRAD} style={st.bigRead}>
@@ -165,4 +244,9 @@ const st = StyleSheet.create({
   mapNote: { color: C.dim, marginTop: 4, fontSize: 12 },
   proKicker: { color: '#fff', fontSize: 11, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6, opacity: 0.9 },
   proPrice: { color: 'rgba(255,255,255,0.85)', marginTop: 8, fontSize: 12, fontWeight: '600' },
+  shareCard: { width: 150, marginRight: 10 },
+  shareThumb: { width: 150, height: 88, borderRadius: 12, backgroundColor: C.surface },
+  shareFrom: { color: C.muted, fontSize: 11, marginTop: 5, fontWeight: '600' },
+  shareX: { position: 'absolute', top: 6, right: 6, backgroundColor: 'rgba(11,8,16,0.7)', borderRadius: 999, width: 22, height: 22, alignItems: 'center', justifyContent: 'center' },
+  shareXText: { color: '#fff', fontSize: 11, fontWeight: '900' },
 });

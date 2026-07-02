@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useCallback } from 'react';
+import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { Session } from '@supabase/supabase-js';
@@ -41,6 +42,9 @@ export default function ProfileTab() {
   const [ranks, setRanks] = useState<Rank[]>([]);
   const [board, setBoard] = useState<Row[]>([]);
   const [friends, setFriends] = useState<Friend[]>([]);
+  const [q, setQ] = useState('');
+  const [results, setResults] = useState<{ handle: string; respect: number }[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
 
   const [email, setEmail] = useState('');
@@ -58,36 +62,69 @@ export default function ProfileTab() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  const loadAll = useCallback((s: Session) => {
+    return Promise.all([
+      supabase
+        .from('public_profiles')
+        .select('handle, title, avatar_url, respect, rank_id, is_staff, is_pro, flair, bio, platform, psn_id, xbox_gamertag')
+        .eq('id', s.user.id)
+        .single()
+        .then(({ data }) => {
+          if (data) setProfile(data as Profile);
+        }),
+      supabase.from('ranks').select('id, name').order('id').then(({ data }) => {
+        if (data) setRanks(data as Rank[]);
+      }),
+      supabase
+        .from('friendships')
+        .select('id, status, requester, addressee, req:profiles!friendships_requester_fkey(handle, flair), add:profiles!friendships_addressee_fkey(handle, flair)')
+        .then(({ data }) => {
+          if (data) setFriends(data as unknown as Friend[]);
+        }),
+      supabase
+        .from('leaderboard_all')
+        .select('id, handle, respect, rank_name, title')
+        .limit(5)
+        .then(({ data }) => {
+          if (data) setBoard(data as Row[]);
+        }),
+    ]);
+  }, []);
+
   useEffect(() => {
     if (!session) {
       setProfile(null);
       return;
     }
-    supabase
-      .from('public_profiles')
-      .select('handle, title, avatar_url, respect, rank_id, is_staff, is_pro, flair, bio, platform, psn_id, xbox_gamertag')
-      .eq('id', session.user.id)
-      .single()
-      .then(({ data }) => {
-        if (data) setProfile(data as Profile);
-      });
-    supabase.from('ranks').select('id, name').order('id').then(({ data }) => {
-      if (data) setRanks(data as Rank[]);
-    });
-    supabase
-      .from('friendships')
-      .select('id, status, requester, addressee, req:profiles!friendships_requester_fkey(handle, flair), add:profiles!friendships_addressee_fkey(handle, flair)')
-      .then(({ data }) => {
-        if (data) setFriends(data as unknown as Friend[]);
-      });
-    supabase
-      .from('leaderboard_all')
-      .select('id, handle, respect, rank_name, title')
-      .limit(5)
-      .then(({ data }) => {
-        if (data) setBoard(data as Row[]);
-      });
-  }, [session]);
+    loadAll(session);
+  }, [session, loadAll]);
+
+  useEffect(() => {
+    if (!session || q.trim().length < 2) {
+      setResults([]);
+      return;
+    }
+    const t = setTimeout(() => {
+      supabase
+        .from('public_profiles')
+        .select('handle, respect')
+        .ilike('handle', `%${q.trim()}%`)
+        .neq('id', session.user.id)
+        .order('respect', { ascending: false })
+        .limit(8)
+        .then(({ data }) => {
+          if (data) setResults(data as { handle: string; respect: number }[]);
+        });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [q, session]);
+
+  const onRefresh = useCallback(async () => {
+    if (!session) return;
+    setRefreshing(true);
+    await loadAll(session);
+    setRefreshing(false);
+  }, [session, loadAll]);
 
   async function go() {
     if (busy) return;
@@ -134,7 +171,7 @@ export default function ProfileTab() {
 
   return (
     <SafeAreaView style={st.safe}>
-      <ScrollView contentContainerStyle={st.wrap} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={st.wrap} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.pink} />}>
         <View style={st.head}>
           {profile?.avatar_url ? (
             <Image source={{ uri: profile.avatar_url }} style={[st.avatar, { borderColor: flairColor(profile.flair), shadowColor: flairColor(profile.flair) }]} />
@@ -186,6 +223,30 @@ export default function ProfileTab() {
         )}
 
         <SectionTitle>Friends</SectionTitle>
+        <TextInput
+          style={st.search}
+          placeholder="Find a handle…"
+          placeholderTextColor={C.dim}
+          autoCapitalize="none"
+          value={q}
+          onChangeText={setQ}
+        />
+        {results.map((r) => (
+          <Pressable
+            key={r.handle}
+            style={st.row}
+            onPress={() => {
+              setQ('');
+              router.push({ pathname: '/u/[handle]', params: { handle: r.handle } });
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={st.rowHandle}>@{r.handle}</Text>
+              <Text style={st.rowRank}>{r.respect.toLocaleString('en-GB')} Respect</Text>
+            </View>
+            <Text style={st.pts}>→</Text>
+          </Pressable>
+        ))}
         {friends.length === 0 ? (
           <Text style={st.muted}>Tap a creator anywhere in the app to add your first friend.</Text>
         ) : (
@@ -303,6 +364,7 @@ const st = StyleSheet.create({
   miniBtnText: { color: '#06130B', fontWeight: '900', fontSize: 11, textTransform: 'uppercase' },
   miniGhost: { borderColor: C.line2, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
   miniGhostText: { color: C.muted, fontWeight: '700', fontSize: 11 },
+  search: { backgroundColor: C.bg2, borderColor: C.line2, borderWidth: 1, borderRadius: 12, color: C.text, padding: 12, marginBottom: 10 },
   statCard: { backgroundColor: C.bg2, borderColor: C.line, borderWidth: 1, borderRadius: 18, padding: 18, alignItems: 'center', marginBottom: 14 },
   statNum: { color: C.cyan, fontSize: 32, fontWeight: '900', fontVariant: ['tabular-nums'] },
   statLbl: { color: C.dim, textTransform: 'uppercase', letterSpacing: 2, fontSize: 11, marginTop: 4 },

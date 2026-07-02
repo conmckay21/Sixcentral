@@ -25,9 +25,9 @@ type SharedClip = {
   from_p: { handle: string } | null;
 };
 
-type ReactKey = 'fire' | 'laugh' | 'wow' | 'trophy';
-const REACTS: ReactKey[] = ['fire', 'laugh', 'wow', 'trophy'];
-const EMOJI: Record<ReactKey, string> = { fire: '🔥', laugh: '😂', wow: '😮', trophy: '🏆' };
+type ReactKey = 'fire' | 'funny' | 'mind' | 'trophy';
+const REACTS: ReactKey[] = ['fire', 'funny', 'mind', 'trophy'];
+const EMOJI: Record<ReactKey, string> = { fire: '🔥', funny: '😂', mind: '🤯', trophy: '🏆' };
 
 /** Stored via terms_version + agreed_at. Shown verbatim at submission. */
 const LICENCE_SUMMARY =
@@ -119,19 +119,19 @@ export default function ClipsSection() {
     if (!sb || clips.length === 0) return;
     const ids = clips.map((c) => c.id);
     sb.from('clip_reactions')
-      .select('clip_id, emoji_key, profile_id')
+      .select('clip_id, emoji, profile_id')
       .in('clip_id', ids)
       .then(({ data }) => {
         if (!data) return;
         const counts: Record<string, Partial<Record<ReactKey, number>>> = {};
         const mine: Record<string, Partial<Record<ReactKey, boolean>>> = {};
         const uid = session?.user.id;
-        for (const r of data as { clip_id: string; emoji_key: ReactKey; profile_id: string }[]) {
+        for (const r of data as { clip_id: string; emoji: ReactKey; profile_id: string }[]) {
           counts[r.clip_id] = counts[r.clip_id] ?? {};
-          counts[r.clip_id][r.emoji_key] = (counts[r.clip_id][r.emoji_key] ?? 0) + 1;
+          counts[r.clip_id][r.emoji] = (counts[r.clip_id][r.emoji] ?? 0) + 1;
           if (uid && r.profile_id === uid) {
             mine[r.clip_id] = mine[r.clip_id] ?? {};
-            mine[r.clip_id][r.emoji_key] = true;
+            mine[r.clip_id][r.emoji] = true;
           }
         }
         setReactCounts(counts);
@@ -201,9 +201,9 @@ export default function ClipsSection() {
         .delete()
         .eq('clip_id', clipId)
         .eq('profile_id', session.user.id)
-        .eq('emoji_key', key);
+        .eq('emoji', key);
     } else {
-      await sb.from('clip_reactions').insert({ clip_id: clipId, profile_id: session.user.id, emoji_key: key });
+      await sb.from('clip_reactions').insert({ clip_id: clipId, profile_id: session.user.id, emoji: key });
     }
   }
 
@@ -324,7 +324,7 @@ export default function ClipsSection() {
     setState('busy');
     const { error } = await sb.from('clip_submissions').insert({
       profile_id: session.user.id,
-      source: 'link',
+      source: 'youtube',
       video_id: vid,
       caption: caption.trim() || null,
       category,
