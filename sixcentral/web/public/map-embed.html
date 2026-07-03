@@ -49,12 +49,12 @@ const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const MAXZ = 6, WORLD = 256 * Math.pow(2, MAXZ);
 const inApp = !!window.ReactNativeWebView;
 
-const map = L.map('map', { crs: L.CRS.Simple, minZoom: 1, maxZoom: 7, zoomSnap: 0.5, zoomControl: false, attributionControl: false });
-L.tileLayer('/tiles/{z}/{x}/{y}.png?v=3', { minZoom: 0, maxZoom: 7, maxNativeZoom: MAXZ, noWrap: true }).addTo(map);
+const map = L.map('map', { crs: L.CRS.Simple, minZoom: 1, maxZoom: 6, zoomSnap: 0.5, maxBoundsViscosity: 1.0, zoomControl: false, attributionControl: false });
+L.tileLayer('/tiles/{z}/{x}/{y}.png?v=4', { minZoom: 0, maxZoom: 6, noWrap: true }).addTo(map);
 
 const P = (x, y) => map.unproject([x * WORLD, y * WORLD], MAXZ);
 const LANDBOX = [[0.19, 0.053], [0.81, 0.994]];
-map.setMaxBounds(L.latLngBounds(P(LANDBOX[0][0] - 0.04, LANDBOX[0][1] - 0.04), P(LANDBOX[1][0] + 0.04, LANDBOX[1][1] + 0.04)));
+map.setMaxBounds(L.latLngBounds(P(LANDBOX[0][0] - 0.015, LANDBOX[0][1] - 0.015), P(LANDBOX[1][0] + 0.015, LANDBOX[1][1] + 0.015)));
 map.fitBounds(L.latLngBounds(P(LANDBOX[0][0], LANDBOX[0][1]), P(LANDBOX[1][0], LANDBOX[1][1])));
 
 const LABELS = [
