@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, type SharedValue } from 'react-native-reanimated';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 
@@ -14,9 +14,18 @@ import { C } from '@/lib/theme';
 type Pin = { id: string; name: string; region: string | null; lat: number; lng: number; collectible_type: string; blurb: string | null; image_url: string | null; source_note: string | null };
 type CType = { id: string; slug: string; name: string; colour: string | null };
 
+function PinDot({ pin, colour, canvas, zoom, onPress }: { pin: Pin; colour: string; canvas: number; zoom: SharedValue<number>; onPress: () => void }) {
+  const inverse = useAnimatedStyle(() => ({ transform: [{ scale: 1 / zoom.value }] }));
+  return (
+    <Animated.View style={[st.pinWrap, { left: pin.lng * canvas - 14, top: pin.lat * canvas - 14 }, inverse]}>
+      <Pressable hitSlop={6} onPress={onPress} style={[st.pin, { backgroundColor: colour, shadowColor: colour }]} />
+    </Animated.View>
+  );
+}
+
 const MAP = require('../../../assets/images/leonida-schematic.png');
 const TOTAL = 305;
-const MAX_ZOOM = 8;
+const MAX_ZOOM = 12;
 // Landmass bounding box within the square asset (normalised), from the render projection.
 const LAND = { w: 0.580, h: 0.883 };
 
@@ -62,8 +71,8 @@ export default function MapTab() {
 
   const pan = Gesture.Pan()
     .onUpdate((e) => {
-      const bx = Math.max(0, (size * scale.value - vw) / 2);
-      const by = Math.max(0, (size * scale.value - vh) / 2);
+      const bx = Math.max(0, (LAND.w * size * scale.value - vw) / 2 + 24);
+      const by = Math.max(0, (LAND.h * size * scale.value - vh) / 2 + 24);
       tx.value = Math.min(bx, Math.max(-bx, stx.value + e.translationX));
       ty.value = Math.min(by, Math.max(-by, sty.value + e.translationY));
     })
@@ -89,11 +98,7 @@ export default function MapTab() {
         <Animated.View style={[{ width: size, height: size, marginLeft: (vw - size) / 2, marginTop: (vh - size) / 2 }, anim]}>
           <Image source={MAP} style={{ width: size, height: size }} resizeMode="cover" />
           {shown.map((p) => (
-            <Pressable
-              key={p.id}
-              style={[st.pin, { left: p.lng * size - 7, top: p.lat * size - 7, backgroundColor: colourOf(p.collectible_type), shadowColor: colourOf(p.collectible_type) }]}
-              onPress={() => setSelected(p)}
-            />
+            <PinDot key={p.id} pin={p} colour={colourOf(p.collectible_type)} canvas={size} zoom={scale} onPress={() => setSelected(p)} />
           ))}
         </Animated.View>
       </GestureDetector>
@@ -160,7 +165,8 @@ const st = StyleSheet.create({
   chipText: { color: C.muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   chipTextOn: { color: '#fff' },
   dot: { width: 7, height: 7, borderRadius: 4 },
-  pin: { position: 'absolute', width: 14, height: 14, borderRadius: 7, borderColor: '#fff', borderWidth: 1.5, shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 }, elevation: 4 },
+  pinWrap: { position: 'absolute', width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  pin: { width: 14, height: 14, borderRadius: 7, borderColor: '#fff', borderWidth: 1.5, shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 }, elevation: 4 },
   hint: { position: 'absolute', left: 16, color: 'rgba(237,231,245,0.45)', fontSize: 11 },
   sheetBack: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: C.bg2, borderTopLeftRadius: 22, borderTopRightRadius: 22, borderColor: C.line2, borderWidth: 1, overflow: 'hidden' },
