@@ -17,18 +17,23 @@ type CType = { id: string; slug: string; name: string; colour: string | null };
 const MAP = require('../../../assets/images/leonida-schematic.png');
 const TOTAL = 305;
 const MAX_ZOOM = 8;
+// Landmass bounding box within the square asset (normalised), from the render projection.
+const LAND = { w: 0.580, h: 0.883 };
 
 export default function MapTab() {
   const { width: vw, height: vh } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const size = Math.min(vw, vh); // square canvas containing the whole map; water matches the screen background
+  const size = Math.min(vw, vh);
+  // Frame the LAND, not the image: open with the state filling the viewport.
+  const fitCover = Math.max(vw / (LAND.w * size), vh / (LAND.h * size));
+  const fitContain = Math.min(vw / (LAND.w * size), vh / (LAND.h * size));
   const [pins, setPins] = useState<Pin[]>([]);
   const [types, setTypes] = useState<CType[]>([]);
   const [filter, setFilter] = useState<string | null>(null);
   const [selected, setSelected] = useState<Pin | null>(null);
 
-  const scale = useSharedValue(1);
-  const saved = useSharedValue(1);
+  const scale = useSharedValue(fitCover);
+  const saved = useSharedValue(fitCover);
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
   const stx = useSharedValue(0);
@@ -49,7 +54,7 @@ export default function MapTab() {
 
   const pinch = Gesture.Pinch()
     .onUpdate((e) => {
-      scale.value = Math.min(MAX_ZOOM, Math.max(1, saved.value * e.scale));
+      scale.value = Math.min(MAX_ZOOM, Math.max(fitContain * 0.98, saved.value * e.scale));
     })
     .onEnd(() => {
       saved.value = scale.value;
