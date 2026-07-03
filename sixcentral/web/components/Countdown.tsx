@@ -17,18 +17,22 @@ function diff(target: number) {
 
 export default function Countdown() {
   const target = new Date(LAUNCH_DATE).getTime();
-  const [t, setT] = useState(() => diff(target));
+  // Null until mounted so the server HTML and the first client paint agree.
+  // Computing digits in the initialiser baked build-time numbers into the static
+  // page and threw React 425/418/423 on every visit.
+  const [t, setT] = useState<ReturnType<typeof diff> | null>(null);
 
   useEffect(() => {
+    setT(diff(target));
     const id = setInterval(() => setT(diff(target)), 1000);
     return () => clearInterval(id);
   }, [target]);
 
-  const cells: Array<[number, string]> = [
-    [t.days, 'Days'],
-    [t.hours, 'Hrs'],
-    [t.mins, 'Min'],
-    [t.secs, 'Sec'],
+  const cells: Array<[number | null, string]> = [
+    [t ? t.days : null, 'Days'],
+    [t ? t.hours : null, 'Hrs'],
+    [t ? t.mins : null, 'Min'],
+    [t ? t.secs : null, 'Sec'],
   ];
 
   return (
@@ -37,7 +41,7 @@ export default function Countdown() {
       <div className="countdown__grid">
         {cells.map(([n, u]) => (
           <div className="cd-cell" key={u}>
-            <div className="n">{String(n).padStart(2, '0')}</div>
+            <div className="n">{n == null ? '--' : String(n).padStart(2, '0')}</div>
             <div className="u">{u}</div>
           </div>
         ))}

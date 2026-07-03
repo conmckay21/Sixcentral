@@ -2,7 +2,7 @@
   "expo": {
     "name": "SixCentral",
     "slug": "sixcentral",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "sixcentral",
@@ -10,7 +10,11 @@
     "backgroundColor": "#0B0810",
     "ios": {
       "bundleIdentifier": "uk.co.sixcentral.app",
-      "supportsTablet": false
+      "supportsTablet": false,
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "uk.co.sixcentral.app",
@@ -19,7 +23,8 @@
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
-      }
+      },
+      "versionCode": 1
     },
     "web": {
       "output": "static",

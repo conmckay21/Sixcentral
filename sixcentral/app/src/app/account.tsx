@@ -40,6 +40,10 @@ export default function Account() {
   const [msg, setMsg] = useState('');
   const [ok, setOk] = useState('');
 
+  const [delOpen, setDelOpen] = useState(false);
+  const [delText, setDelText] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
       setSession(data.session);
@@ -83,6 +87,21 @@ export default function Account() {
       setMsg(text);
       setOk('');
     }
+  }
+
+  async function deleteAccount() {
+    if (!session || deleting) return;
+    if (delText.trim().toUpperCase() !== 'DELETE') {
+      return flash(false, 'Type DELETE in the box to confirm.');
+    }
+    setDeleting(true);
+    const { error } = await supabase.functions.invoke('delete-account');
+    if (error) {
+      setDeleting(false);
+      return flash(false, 'Could not delete the account. Try again in a minute.');
+    }
+    await supabase.auth.signOut();
+    router.replace('/');
   }
 
   async function setAvatar(url: string) {
@@ -329,7 +348,43 @@ export default function Account() {
           </LinearGradient>
         )}
 
+        <Text style={st.label}>Danger zone</Text>
+        {!delOpen ? (
+          <Pressable style={st.delOpenBtn} onPress={() => setDelOpen(true)}>
+            <Text style={st.delOpenText}>Delete my account</Text>
+          </Pressable>
+        ) : (
+          <View style={st.delBox}>
+            <Text style={st.delWarn}>
+              This wipes your profile, Respect, friends, reactions and tracker progress for good.
+              Clips already published to the SixCentral channel stay up under the submission terms.
+              No undo.
+            </Text>
+            <TextInput
+              style={[st.input, st.delInput]}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              placeholder="Type DELETE to confirm"
+              placeholderTextColor={C.dim}
+              value={delText}
+              onChangeText={setDelText}
+            />
+            <View style={st.delRow}>
+              <Pressable style={[st.delBtn, deleting && { opacity: 0.6 }]} onPress={deleteAccount} disabled={deleting}>
+                <Text style={st.delBtnText}>{deleting ? 'Deleting…' : 'Delete forever'}</Text>
+              </Pressable>
+              <Pressable style={st.keepBtn} onPress={() => { setDelOpen(false); setDelText(''); }}>
+                <Text style={st.keepBtnText}>Keep my account</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
         <Text style={st.foot}>Password changes live on the website for now.</Text>
+        <Text style={st.foot}>
+          SixCentral is an independent fan companion. Not affiliated with, endorsed by or connected
+          to Rockstar Games or Take-Two Interactive.
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -382,5 +437,15 @@ const st = StyleSheet.create({
   dobBtn: { backgroundColor: C.cyan, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13 },
   dobBtnText: { color: '#06201D', fontWeight: '900', fontSize: 13 },
   foot: { color: C.dim, fontSize: 11, marginTop: 22, lineHeight: 16 },
+  delOpenBtn: { borderColor: '#E5484D', borderWidth: 1, borderRadius: 12, padding: 13, alignItems: 'center' },
+  delOpenText: { color: '#FF6B6E', fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 },
+  delBox: { borderColor: '#E5484D', borderWidth: 1, borderRadius: 16, padding: 14, backgroundColor: 'rgba(229,72,77,0.06)' },
+  delWarn: { color: C.muted, fontSize: 13, lineHeight: 19 },
+  delInput: { marginTop: 12 },
+  delRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  delBtn: { backgroundColor: '#E5484D', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13 },
+  delBtnText: { color: '#fff', fontWeight: '900', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 },
+  keepBtn: { borderColor: C.line2, borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13 },
+  keepBtnText: { color: C.muted, fontWeight: '800', fontSize: 12 },
   muted: { color: C.muted, lineHeight: 20 },
 });
