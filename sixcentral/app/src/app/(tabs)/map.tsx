@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { supabase } from '@/lib/supabase';
@@ -16,9 +16,12 @@ type CType = { id: string; slug: string; name: string; colour: string | null };
 
 const MAP = require('../../../assets/images/leonida-schematic.png');
 const TOTAL = 305;
+const MAX_ZOOM = 8;
 
 export default function MapTab() {
-  const [size, setSize] = useState(0);
+  const { width: vw, height: vh } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const size = Math.max(vw, vh); // square canvas covering the viewport
   const [pins, setPins] = useState<Pin[]>([]);
   const [types, setTypes] = useState<CType[]>([]);
   const [filter, setFilter] = useState<string | null>(null);
@@ -46,8 +49,7 @@ export default function MapTab() {
 
   const pinch = Gesture.Pinch()
     .onUpdate((e) => {
-      const next = saved.value * e.scale;
-      scale.value = Math.min(5, Math.max(1, next));
+      scale.value = Math.min(MAX_ZOOM, Math.max(1, saved.value * e.scale));
     })
     .onEnd(() => {
       saved.value = scale.value;
@@ -55,9 +57,10 @@ export default function MapTab() {
 
   const pan = Gesture.Pan()
     .onUpdate((e) => {
-      const bound = ((scale.value - 1) * size) / 2;
-      tx.value = Math.min(bound, Math.max(-bound, stx.value + e.translationX));
-      ty.value = Math.min(bound, Math.max(-bound, sty.value + e.translationY));
+      const bx = Math.max(0, (size * scale.value - vw) / 2);
+      const by = Math.max(0, (size * scale.value - vh) / 2);
+      tx.value = Math.min(bx, Math.max(-bx, stx.value + e.translationX));
+      ty.value = Math.min(by, Math.max(-by, sty.value + e.translationY));
     })
     .onEnd(() => {
       stx.value = tx.value;
@@ -65,64 +68,55 @@ export default function MapTab() {
     });
 
   const composed = Gesture.Simultaneous(pinch, pan);
-
   const anim = useAnimatedStyle(() => ({
     transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: scale.value }],
   }));
 
   const shown = useMemo(() => (filter ? pins.filter((p) => p.collectible_type === filter) : pins), [pins, filter]);
   const colourOf = (typeId: string) => types.find((t) => t.id === typeId)?.colour ?? C.pink;
+  const landmarkType = types.find((t) => t.slug === 'landmarks')?.id;
+  const landmarks = pins.filter((p) => p.collectible_type === landmarkType).length;
+  const finds = pins.length - landmarks;
 
   return (
-    <SafeAreaView style={st.safe}>
-      <View style={st.head}>
-        <Text style={st.h1}>Leonida</Text>
-        <View style={st.statChip}>
-          <Text style={st.statText}>
-            {(() => {
-              const landmarkType = types.find((t) => t.slug === 'landmarks')?.id;
-              const landmarks = pins.filter((p) => p.collectible_type === landmarkType).length;
-              const finds = pins.length - landmarks;
-              return finds === 0
-                ? `${landmarks} landmarks · collectibles open with the game`
-                : `${finds} / ${TOTAL} · ${landmarks} landmarks`;
-            })()}
-          </Text>
+    <View style={st.root}>
+      <GestureDetector gesture={composed}>
+        <Animated.View style={[{ width: size, height: size, marginLeft: (vw - size) / 2, marginTop: (vh - size) / 2 }, anim]}>
+          <Image source={MAP} style={{ width: size, height: size }} resizeMode="cover" />
+          {shown.map((p) => (
+            <Pressable
+              key={p.id}
+              style={[st.pin, { left: p.lng * size - 7, top: p.lat * size - 7, backgroundColor: colourOf(p.collectible_type), shadowColor: colourOf(p.collectible_type) }]}
+              onPress={() => setSelected(p)}
+            />
+          ))}
+        </Animated.View>
+      </GestureDetector>
+
+      <View style={[st.topBar, { paddingTop: insets.top + 6 }]} pointerEvents="box-none">
+        <View style={st.topRow} pointerEvents="box-none">
+          <Text style={st.h1}>Leonida</Text>
+          <View style={st.statChip}>
+            <Text style={st.statText}>
+              {finds === 0 ? `${landmarks} landmarks · collectibles open with the game` : `${finds} / ${TOTAL} · ${landmarks} landmarks`}
+            </Text>
+          </View>
         </View>
-      </View>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.chips} contentContainerStyle={{ paddingHorizontal: 16 }}>
-        <Pressable style={[st.chip, !filter && st.chipOn]} onPress={() => setFilter(null)}>
-          <Text style={[st.chipText, !filter && st.chipTextOn]}>All</Text>
-        </Pressable>
-        {types.map((t) => (
-          <Pressable key={t.id} style={[st.chip, filter === t.id && st.chipOn]} onPress={() => setFilter(filter === t.id ? null : t.id)}>
-            <View style={[st.dot, { backgroundColor: t.colour ?? C.pink }]} />
-            <Text style={[st.chipText, filter === t.id && st.chipTextOn]}>{t.name}</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 10 }}>
+          <Pressable style={[st.chip, !filter && st.chipOn]} onPress={() => setFilter(null)}>
+            <Text style={[st.chipText, !filter && st.chipTextOn]}>All</Text>
           </Pressable>
-        ))}
-      </ScrollView>
-
-      <View style={st.canvasWrap} onLayout={(e) => setSize(e.nativeEvent.layout.width)}>
-        {size > 0 && (
-          <GestureDetector gesture={composed}>
-            <Animated.View style={[{ width: size, height: size }, anim]}>
-              <Image source={MAP} style={{ width: size, height: size }} resizeMode="cover" />
-              {shown.map((p) => (
-                <Pressable
-                  key={p.id}
-                  style={[st.pin, { left: p.lng * size - 7, top: p.lat * size - 7, backgroundColor: colourOf(p.collectible_type), shadowColor: colourOf(p.collectible_type) }]}
-                  onPress={() => setSelected(p)}
-                />
-              ))}
-            </Animated.View>
-          </GestureDetector>
-        )}
+          {types.map((t) => (
+            <Pressable key={t.id} style={[st.chip, filter === t.id && st.chipOn]} onPress={() => setFilter(filter === t.id ? null : t.id)}>
+              <View style={[st.dot, { backgroundColor: t.colour ?? C.pink }]} />
+              <Text style={[st.chipText, filter === t.id && st.chipTextOn]}>{t.name}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
       </View>
 
-      <Text style={st.note}>
-        Pinch to zoom, drag to pan. Every find is community-pinned and confirmed before it
-        counts. Full cartography lands with the game.
+      <Text style={[st.hint, { bottom: insets.bottom + 8 }]} pointerEvents="none">
+        Pinch to zoom · every pin verified before it counts
       </Text>
 
       <Modal visible={!!selected} transparent animationType="slide" onRequestClose={() => setSelected(null)}>
@@ -149,22 +143,24 @@ export default function MapTab() {
           </Pressable>
         </Pressable>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const st = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.bg },
-  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 6 },
-  h1: { color: C.text, fontSize: 28, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 },
-  statChip: { backgroundColor: C.bg2, borderColor: C.line2, borderWidth: 1, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6 },
+  root: { flex: 1, backgroundColor: '#070a14', overflow: 'hidden' },
+  topBar: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: 'rgba(7,10,20,0.72)', borderBottomColor: C.line, borderBottomWidth: 1, paddingBottom: 12 },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
+  h1: { color: C.text, fontSize: 24, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 },
+  statChip: { backgroundColor: 'rgba(20,17,38,0.9)', borderColor: C.line2, borderWidth: 1, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6, maxWidth: '62%' },
   statText: { color: C.cyan, fontWeight: '800', fontSize: 10 },
-  chips: { marginTop: 12, maxHeight: 40 },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderColor: C.line2, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, marginRight: 8 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderColor: C.line2, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, marginRight: 8, backgroundColor: 'rgba(20,17,38,0.85)' },
   chipOn: { backgroundColor: C.pink, borderColor: C.pink },
   chipText: { color: C.muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   chipTextOn: { color: '#fff' },
   dot: { width: 7, height: 7, borderRadius: 4 },
+  pin: { position: 'absolute', width: 14, height: 14, borderRadius: 7, borderColor: '#fff', borderWidth: 1.5, shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 }, elevation: 4 },
+  hint: { position: 'absolute', left: 16, color: 'rgba(237,231,245,0.45)', fontSize: 11 },
   sheetBack: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: C.bg2, borderTopLeftRadius: 22, borderTopRightRadius: 22, borderColor: C.line2, borderWidth: 1, overflow: 'hidden' },
   sheetImage: { width: '100%', aspectRatio: 16 / 9, backgroundColor: C.surface },
@@ -177,7 +173,4 @@ const st = StyleSheet.create({
   sheetSource: { color: C.dim, fontSize: 11, marginTop: 12 },
   sheetClose: { alignSelf: 'flex-start', borderColor: C.line2, borderWidth: 1, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 9, marginTop: 16 },
   sheetCloseText: { color: C.cyan, fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 },
-  canvasWrap: { marginTop: 12, marginHorizontal: 16, borderRadius: 18, overflow: 'hidden', borderColor: C.line, borderWidth: 1, aspectRatio: 1 },
-  pin: { position: 'absolute', width: 14, height: 14, borderRadius: 7, borderColor: '#fff', borderWidth: 1.5, shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 }, elevation: 4 },
-  note: { color: C.dim, fontSize: 11, lineHeight: 16, margin: 16 },
 });
