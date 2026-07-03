@@ -50,7 +50,7 @@ const MAXZ = 6, WORLD = 256 * Math.pow(2, MAXZ);
 const inApp = !!window.ReactNativeWebView;
 
 const map = L.map('map', { crs: L.CRS.Simple, minZoom: 1, maxZoom: 7, zoomSnap: 0.5, zoomControl: false, attributionControl: false });
-L.tileLayer('/tiles/{z}/{x}/{y}.png?v=2', { minZoom: 0, maxZoom: 7, maxNativeZoom: MAXZ, noWrap: true, detectRetina: true }).addTo(map);
+L.tileLayer('/tiles/{z}/{x}/{y}.png?v=3', { minZoom: 0, maxZoom: 7, maxNativeZoom: MAXZ, noWrap: true }).addTo(map);
 
 const P = (x, y) => map.unproject([x * WORLD, y * WORLD], MAXZ);
 const LANDBOX = [[0.19, 0.053], [0.81, 0.994]];
