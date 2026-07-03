@@ -2,16 +2,17 @@ import Link from 'next/link';
 import Countdown from '@/components/Countdown';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import HeroMedia from '@/components/HeroMedia';
-import ArticleRow from '@/components/ArticleRow';
+import ArticleCard from '@/components/ArticleCard';
+import Carousel from '@/components/Carousel';
 import { getLatestArticles, getFeatured, getRumours } from '@/lib/content';
 
 export const metadata = { alternates: { canonical: '/' } };
 
 export default async function HomePage() {
   const [articles, featured, rumours] = await Promise.all([
-    getLatestArticles(4),
+    getLatestArticles(8),
     getFeatured(),
-    getRumours(5),
+    getRumours(8),
   ]);
 
   return (
@@ -99,11 +100,13 @@ export default async function HomePage() {
               Latest <span className="c">news</span>
             </h2>
           </div>
-          <div className="rows">
-            {articles.map((a) => (
-              <ArticleRow key={a.slug} article={a} />
-            ))}
-          </div>
+          <Carousel label="Latest news">
+            {articles
+              .filter((a) => a.slug !== featured.slug)
+              .map((a) => (
+                <ArticleCard key={a.slug} article={a} />
+              ))}
+          </Carousel>
         </div>
       </section>
 
@@ -116,11 +119,11 @@ export default async function HomePage() {
             </h2>
             <span className="rumour-note">Unconfirmed by design. Never mixed with the facts.</span>
           </div>
-          <div className="rows">
+          <Carousel label="The Rumour Mill">
             {rumours.map((a) => (
-              <ArticleRow key={a.slug} article={a} />
+              <ArticleCard key={a.slug} article={a} />
             ))}
-          </div>
+          </Carousel>
         </div>
       </section>
 

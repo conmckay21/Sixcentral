@@ -19,6 +19,7 @@ type ContentItem = {
   kicker: string;
   excerpt: string;
   isRumour?: boolean;
+  credibility?: number;
   heroImage?: { src: string } | null;
 };
 type ShareRow = {
@@ -49,11 +50,15 @@ export default function Home() {
   const [session, setSession] = useState<Session | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [feed, setFeed] = useState<ContentItem[]>([]);
+  const [rumours, setRumours] = useState<ContentItem[]>([]);
 
   const loadContent = useCallback(() => {
     return fetch(`${SITE}/api/content`)
       .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((j: { articles: ContentItem[] }) => setFeed(j.articles.filter((a) => !a.isRumour)))
+      .then((j: { articles: ContentItem[] }) => {
+        setFeed(j.articles.filter((a) => !a.isRumour));
+        setRumours(j.articles.filter((a) => a.isRumour));
+      })
       .catch(() => {});
   }, []);
 
@@ -179,21 +184,67 @@ export default function Home() {
         </Pressable>
 
         <SectionTitle>Latest</SectionTitle>
-        {(feed.length > 1 ? feed.slice(1, 4) : []).map((a) => (
-          <Pressable
-            key={a.slug}
-            style={st.latestRow}
-            onPress={() => router.push({ pathname: '/article/[slug]', params: { slug: a.slug } })}
-          >
-            <Text style={st.latestText}>{a.title}</Text>
-            <Text style={st.latestChev}>→</Text>
-          </Pressable>
-        ))}
+        <FlatList
+          horizontal
+          data={feed.slice(1, 9)}
+          keyExtractor={(a) => a.slug}
+          showsHorizontalScrollIndicator={false}
+          snapToInterval={242}
+          decelerationRate="fast"
+          style={st.newsRail}
+          renderItem={({ item }) => (
+            <Pressable
+              style={st.newsCard}
+              onPress={() => router.push({ pathname: '/article/[slug]', params: { slug: item.slug } })}
+            >
+              {item.heroImage ? (
+                <Image source={{ uri: item.heroImage.src }} style={st.newsThumb} resizeMode="cover" />
+              ) : (
+                <LinearGradient colors={G.hot} {...GRAD} style={st.newsThumb} />
+              )}
+              <Text style={st.newsKicker}>{item.kicker}</Text>
+              <Text style={st.newsTitle} numberOfLines={2}>
+                {item.title}
+              </Text>
+            </Pressable>
+          )}
+        />
         {feed.length <= 1 && (
           <Pressable style={st.latestRow} onPress={() => router.push('/guides')}>
             <Text style={st.latestText}>The guides desk: A to Z, the moment there is a game to guide</Text>
             <Text style={st.latestChev}>→</Text>
           </Pressable>
+        )}
+
+        {rumours.length > 0 && (
+          <>
+            <SectionTitle right={<Text style={st.railNote}>Unconfirmed by design</Text>}>Rumour Mill</SectionTitle>
+            <FlatList
+              horizontal
+              data={rumours.slice(0, 8)}
+              keyExtractor={(a) => a.slug}
+              showsHorizontalScrollIndicator={false}
+              snapToInterval={242}
+              decelerationRate="fast"
+              style={st.newsRail}
+              renderItem={({ item }) => (
+                <Pressable
+                  style={st.newsCard}
+                  onPress={() => router.push({ pathname: '/article/[slug]', params: { slug: item.slug } })}
+                >
+                  {item.heroImage ? (
+                    <Image source={{ uri: item.heroImage.src }} style={[st.newsThumb, st.rumourThumb]} resizeMode="cover" />
+                  ) : (
+                    <LinearGradient colors={G.cool} {...GRAD} style={[st.newsThumb, st.rumourThumb]} />
+                  )}
+                  <Text style={st.rumourChipText}>Rumour · Heat {item.credibility ?? 2}/5</Text>
+                  <Text style={st.newsTitle} numberOfLines={2}>
+                    {item.title}
+                  </Text>
+                </Pressable>
+              )}
+            />
+          </>
         )}
 
         <Pressable style={st.tip} onPress={() => router.push({ pathname: '/article/[slug]', params: { slug: 'which-edition-to-preorder' } })}>
@@ -281,6 +332,14 @@ const st = StyleSheet.create({
   mapNote: { color: C.dim, marginTop: 4, fontSize: 12 },
   proKicker: { color: '#fff', fontSize: 11, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6, opacity: 0.9 },
   proPrice: { color: 'rgba(255,255,255,0.85)', marginTop: 8, fontSize: 12, fontWeight: '600' },
+  newsRail: { marginBottom: 4 },
+  newsCard: { width: 230, marginRight: 12 },
+  newsThumb: { width: 230, height: 130, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line },
+  rumourThumb: { borderColor: 'rgba(255,200,61,0.35)' },
+  newsKicker: { color: C.cyan, fontSize: 9, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 8 },
+  rumourChipText: { color: C.gold, fontSize: 9, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 8 },
+  newsTitle: { color: C.text, fontWeight: '700', fontSize: 13.5, lineHeight: 18, marginTop: 3 },
+  railNote: { color: C.dim, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
   shareCard: { width: 150, marginRight: 10 },
   shareThumb: { width: 150, height: 88, borderRadius: 12, backgroundColor: C.surface },
   shareFrom: { color: C.muted, fontSize: 11, marginTop: 5, fontWeight: '600' },
