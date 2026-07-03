@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
@@ -11,7 +11,7 @@ import { C } from '@/lib/theme';
  * 0..1 against the map canvas (top-left origin). Holds across base-map swaps.
  */
 
-type Pin = { id: string; name: string; region: string | null; lat: number; lng: number; collectible_type: string };
+type Pin = { id: string; name: string; region: string | null; lat: number; lng: number; collectible_type: string; blurb: string | null; image_url: string | null; source_note: string | null };
 type CType = { id: string; slug: string; name: string; colour: string | null };
 
 const MAP = require('../../../assets/images/leonida-schematic.png');
@@ -37,7 +37,7 @@ export default function MapTab() {
     });
     supabase
       .from('map_pins')
-      .select('id, name, region, lat, lng, collectible_type')
+      .select('id, name, region, lat, lng, collectible_type, blurb, image_url, source_note')
       .eq('status', 'verified')
       .then(({ data }) => {
         if (data) setPins(data as Pin[]);
@@ -103,15 +103,6 @@ export default function MapTab() {
         ))}
       </ScrollView>
 
-      {selected && (
-        <Pressable style={st.pinInfo} onPress={() => setSelected(null)}>
-          <Text style={st.pinInfoText}>
-            📍 {selected.name}
-            {selected.region ? ` · ${selected.region}` : ''} · tap to dismiss
-          </Text>
-        </Pressable>
-      )}
-
       <View style={st.canvasWrap} onLayout={(e) => setSize(e.nativeEvent.layout.width)}>
         {size > 0 && (
           <GestureDetector gesture={composed}>
@@ -133,6 +124,31 @@ export default function MapTab() {
         Pinch to zoom, drag to pan. Every find is community-pinned and confirmed before it
         counts. Full cartography lands with the game.
       </Text>
+
+      <Modal visible={!!selected} transparent animationType="slide" onRequestClose={() => setSelected(null)}>
+        <Pressable style={st.sheetBack} onPress={() => setSelected(null)}>
+          <Pressable style={st.sheet} onPress={() => {}}>
+            {selected?.image_url ? (
+              <Image source={{ uri: selected.image_url }} style={st.sheetImage} resizeMode="cover" />
+            ) : null}
+            <View style={st.sheetBody}>
+              <View style={st.sheetHead}>
+                <Text style={st.sheetTitle}>{selected?.name}</Text>
+                {selected?.region ? (
+                  <View style={st.regionChip}>
+                    <Text style={st.regionChipText}>{selected.region}</Text>
+                  </View>
+                ) : null}
+              </View>
+              {selected?.blurb ? <Text style={st.sheetBlurb}>{selected.blurb}</Text> : null}
+              {selected?.source_note ? <Text style={st.sheetSource}>Verified · {selected.source_note}</Text> : null}
+              <Pressable style={st.sheetClose} onPress={() => setSelected(null)}>
+                <Text style={st.sheetCloseText}>Close</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -149,8 +165,18 @@ const st = StyleSheet.create({
   chipText: { color: C.muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   chipTextOn: { color: '#fff' },
   dot: { width: 7, height: 7, borderRadius: 4 },
-  pinInfo: { marginHorizontal: 16, marginTop: 10, backgroundColor: C.bg2, borderColor: C.gold, borderWidth: 1, borderRadius: 12, padding: 10 },
-  pinInfoText: { color: C.gold, fontSize: 12, fontWeight: '700' },
+  sheetBack: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: C.bg2, borderTopLeftRadius: 22, borderTopRightRadius: 22, borderColor: C.line2, borderWidth: 1, overflow: 'hidden' },
+  sheetImage: { width: '100%', aspectRatio: 16 / 9, backgroundColor: C.surface },
+  sheetBody: { padding: 18, paddingBottom: 34 },
+  sheetHead: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
+  sheetTitle: { color: C.text, fontSize: 20, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5, flexShrink: 1 },
+  regionChip: { borderColor: C.gold, borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: 'rgba(255,200,61,0.08)' },
+  regionChipText: { color: C.gold, fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
+  sheetBlurb: { color: C.muted, fontSize: 14, lineHeight: 21, marginTop: 10 },
+  sheetSource: { color: C.dim, fontSize: 11, marginTop: 12 },
+  sheetClose: { alignSelf: 'flex-start', borderColor: C.line2, borderWidth: 1, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 9, marginTop: 16 },
+  sheetCloseText: { color: C.cyan, fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 },
   canvasWrap: { marginTop: 12, marginHorizontal: 16, borderRadius: 18, overflow: 'hidden', borderColor: C.line, borderWidth: 1, aspectRatio: 1 },
   pin: { position: 'absolute', width: 14, height: 14, borderRadius: 7, borderColor: '#fff', borderWidth: 1.5, shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 }, elevation: 4 },
   note: { color: C.dim, fontSize: 11, lineHeight: 16, margin: 16 },
