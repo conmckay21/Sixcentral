@@ -49,13 +49,15 @@ const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const MAXZ = 6, WORLD = 512 * Math.pow(2, MAXZ);
 const inApp = !!window.ReactNativeWebView;
 
-const map = L.map('map', { crs: L.CRS.Simple, minZoom: 1, maxZoom: 6, zoomSnap: 0.5, maxBoundsViscosity: 1.0, zoomControl: false, attributionControl: false });
-L.tileLayer('/tiles512/{z}/{x}/{y}.png?v=5', { tileSize: 512, minZoom: 0, maxZoom: 6, noWrap: true }).addTo(map);
+const map = L.map('map', { crs: L.CRS.Simple, minZoom: 0, maxZoom: 6, zoomSnap: 0, zoomDelta: 0.5, maxBoundsViscosity: 1.0, zoomControl: false, attributionControl: false });
+L.tileLayer('/tiles512/{z}/{x}/{y}.png?v=6', { tileSize: 512, minZoom: 0, maxZoom: 6, noWrap: true }).addTo(map);
 
 const P = (x, y) => map.unproject([x * WORLD, y * WORLD], MAXZ);
 const LANDBOX = [[0.19, 0.053], [0.81, 0.994]];
-map.setMaxBounds(L.latLngBounds(P(LANDBOX[0][0] - 0.015, LANDBOX[0][1] - 0.015), P(LANDBOX[1][0] + 0.015, LANDBOX[1][1] + 0.015)));
-map.fitBounds(L.latLngBounds(P(LANDBOX[0][0], LANDBOX[0][1]), P(LANDBOX[1][0], LANDBOX[1][1])));
+map.setMaxBounds(L.latLngBounds(P(LANDBOX[0][0] - 0.02, LANDBOX[0][1] - 0.05), P(LANDBOX[1][0] + 0.02, LANDBOX[1][1] + 0.02)));
+const landBounds = L.latLngBounds(P(LANDBOX[0][0], LANDBOX[0][1]), P(LANDBOX[1][0], LANDBOX[1][1]));
+map.fitBounds(landBounds, { paddingTopLeft: [0, 130], paddingBottomRight: [0, 16] });
+map.setMinZoom(map.getBoundsZoom(landBounds, false, [0, 40]));
 
 const LABELS = [
   ['VICE CITY', 0.5426, 0.7348, '#FF2E88'],
