@@ -318,10 +318,16 @@ export default function Clips() {
                         {item.votes + (deltas[item.id] ?? 0)}
                       </Text>
                     </Pressable>
-                    <View style={st.railBtn}>
+                    <Pressable
+                      style={st.railBtn}
+                      onPress={() => {
+                        setHint('Comments land with the game this November.');
+                        setTimeout(() => setHint(''), 2200);
+                      }}
+                    >
                       <Text style={st.railIcon}>💬</Text>
-                      <Text style={st.railCount}>—</Text>
-                    </View>
+                      <Text style={st.railCount}>Soon</Text>
+                    </Pressable>
                     <Pressable style={st.railBtn} onPress={() => setShareClip(item)}>
                       <Text style={st.railIcon}>↗</Text>
                       <Text style={st.railCount}>Share</Text>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useCallback } from 'react';
-import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { Session } from '@supabase/supabase-js';
@@ -163,6 +163,17 @@ export default function ProfileTab() {
           <Pressable onPress={() => setMode(mode === 'signin' ? 'signup' : 'signin')}>
             <Text style={st.swap}>{mode === 'signin' ? 'New here? Create an account' : 'Already in? Sign in'}</Text>
           </Pressable>
+          <Text style={st.legal}>
+            By creating an account you agree to the{' '}
+            <Text style={st.legalLink} onPress={() => Linking.openURL('https://sixcentral.co.uk/terms')}>
+              Terms
+            </Text>{' '}
+            and{' '}
+            <Text style={st.legalLink} onPress={() => Linking.openURL('https://sixcentral.co.uk/privacy')}>
+              Privacy Policy
+            </Text>
+            . Abusive content and accounts get removed.
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -343,6 +354,8 @@ const st = StyleSheet.create({
   input: { backgroundColor: C.bg2, borderColor: C.line2, borderWidth: 1, borderRadius: 12, color: C.text, padding: 14, marginBottom: 12 },
   btn: { backgroundColor: C.pink, borderRadius: 12, padding: 15, alignItems: 'center', marginTop: 4 },
   btnText: { color: '#fff', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
+  legal: { color: C.dim, fontSize: 11, lineHeight: 16, textAlign: 'center', marginTop: 16, paddingHorizontal: 8 },
+  legalLink: { color: C.cyan, fontWeight: '700' },
   swap: { color: C.cyan, marginTop: 16, textAlign: 'center' },
   err: { color: C.pinkL, marginBottom: 8 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 18 },
