@@ -32,8 +32,8 @@ export default function MapTab() {
   const [filter, setFilter] = useState<string | null>(null);
   const [selected, setSelected] = useState<Pin | null>(null);
 
-  const scale = useSharedValue(fitCover);
-  const saved = useSharedValue(fitCover);
+  const scale = useSharedValue(fitContain);
+  const saved = useSharedValue(fitContain);
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
   const stx = useSharedValue(0);
@@ -119,10 +119,6 @@ export default function MapTab() {
           ))}
         </ScrollView>
       </View>
-
-      <Text style={[st.hint, { bottom: insets.bottom + 8 }]} pointerEvents="none">
-        Pinch to zoom · every pin verified before it counts
-      </Text>
 
       <Modal visible={!!selected} transparent animationType="slide" onRequestClose={() => setSelected(null)}>
         <Pressable style={st.sheetBack} onPress={() => setSelected(null)}>
