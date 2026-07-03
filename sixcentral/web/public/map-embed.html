@@ -46,11 +46,11 @@
 <script>
 const SUPA = 'https://kodkbbuuhkoifnggkrjx.supabase.co';
 const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtvZGtiYnV1aGtvaWZuZ2drcmp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5ODcwNjIsImV4cCI6MjA5ODU2MzA2Mn0.E6PF9sgtj8ZzBlK7V-fVSIFAdvoUnaD_vAKATNjtSCs';
-const MAXZ = 6, WORLD = 256 * Math.pow(2, MAXZ);
+const MAXZ = 6, WORLD = 512 * Math.pow(2, MAXZ);
 const inApp = !!window.ReactNativeWebView;
 
 const map = L.map('map', { crs: L.CRS.Simple, minZoom: 1, maxZoom: 6, zoomSnap: 0.5, maxBoundsViscosity: 1.0, zoomControl: false, attributionControl: false });
-L.tileLayer('/tiles/{z}/{x}/{y}.png?v=4', { minZoom: 0, maxZoom: 6, noWrap: true }).addTo(map);
+L.tileLayer('/tiles512/{z}/{x}/{y}.png?v=5', { tileSize: 512, minZoom: 0, maxZoom: 6, noWrap: true }).addTo(map);
 
 const P = (x, y) => map.unproject([x * WORLD, y * WORLD], MAXZ);
 const LANDBOX = [[0.19, 0.053], [0.81, 0.994]];
