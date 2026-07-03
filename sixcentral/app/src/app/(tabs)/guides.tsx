@@ -47,7 +47,7 @@ export default function Guides() {
           </Pressable>
         ))}
 
-        <SectionTitle>Day one</SectionTitle>
+        <SectionTitle>Coming soon</SectionTitle>
         {DAY_ONE.map((g) => (
           <View key={g.t} style={[st.row, { opacity: 0.75 }]}>
             <View style={{ flex: 1 }}>
