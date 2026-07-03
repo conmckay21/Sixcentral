@@ -285,8 +285,10 @@ export default function Clips() {
                   {playing ? (
                     <WebView
                       style={StyleSheet.absoluteFill}
+                      originWhitelist={['*']}
                       source={{
-                        uri: `https://www.youtube-nocookie.com/embed/${item.video_id}?autoplay=1&playsinline=1&rel=0&modestbranding=1`,
+                        html: `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>html,body{margin:0;background:#000;height:100%;overflow:hidden}iframe{position:absolute;inset:0;width:100%;height:100%;border:0}</style></head><body><iframe src="https://www.youtube-nocookie.com/embed/${item.video_id}?autoplay=1&playsinline=1&rel=0&modestbranding=1" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></body></html>`,
+                        baseUrl: 'https://sixcentral.co.uk',
                       }}
                       allowsInlineMediaPlayback
                       mediaPlaybackRequiresUserAction={false}
