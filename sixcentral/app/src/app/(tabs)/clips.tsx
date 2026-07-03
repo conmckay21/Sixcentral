@@ -29,6 +29,8 @@ export default function Clips() {
   const [pageH, setPageH] = useState(0);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [focused, setFocused] = useState(true);
+  const [soundOn, setSoundOn] = useState(false);
+  const playerRef = useRef<WebView>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [myVotes, setMyVotes] = useState<Record<string, number>>({});
   const [deltas, setDeltas] = useState<Record<string, number>>({});
@@ -47,6 +49,14 @@ export default function Clips() {
   }, [session]);
 
   const EMOJI: [string, string][] = [['fire', '🔥'], ['funny', '😂'], ['mind', '🤯'], ['trophy', '🏆']];
+
+  // Volume changes on an already-playing video are not gesture-gated, so one
+  // tap buys sound for the whole session; each fresh player re-unmutes itself.
+  function unmutePlayer() {
+    playerRef.current?.injectJavaScript(
+      `(function(){var f=document.querySelector('iframe');if(f&&f.contentWindow){f.contentWindow.postMessage(JSON.stringify({event:'command',func:'unMute',args:[]}),'*');f.contentWindow.postMessage(JSON.stringify({event:'command',func:'playVideo',args:[]}),'*');}})();true;`
+    );
+  }
 
   function needSignIn() {
     Alert.alert('Sign in first', 'Reporting and blocking need an account so mods can act on it.');
@@ -287,10 +297,14 @@ export default function Clips() {
                 <View style={{ height: pageH }}>
                   {playing ? (
                     <WebView
+                      ref={playerRef}
                       style={StyleSheet.absoluteFill}
                       originWhitelist={['*']}
+                      onLoadEnd={() => {
+                        if (soundOn) setTimeout(unmutePlayer, 400);
+                      }}
                       source={{
-                        html: `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>html,body{margin:0;background:#000;height:100%;overflow:hidden}iframe{position:absolute;inset:0;width:100%;height:100%;border:0}</style></head><body><iframe src="https://www.youtube-nocookie.com/embed/${item.video_id}?autoplay=1&playsinline=1&rel=0&modestbranding=1" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></body></html>`,
+                        html: `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>html,body{margin:0;background:#000;height:100%;overflow:hidden}iframe{position:absolute;inset:0;width:100%;height:100%;border:0}</style></head><body><iframe src="https://www.youtube-nocookie.com/embed/${item.video_id}?autoplay=1&mute=1&enablejsapi=1&origin=https%3A%2F%2Fsixcentral.co.uk&playsinline=1&rel=0&modestbranding=1" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></body></html>`,
                         baseUrl: 'https://sixcentral.co.uk',
                       }}
                       allowsInlineMediaPlayback
@@ -310,6 +324,17 @@ export default function Clips() {
 
                   <Text style={st.feedTag}>CLIPS · swipe up</Text>
                   {hint ? <Text style={st.hint}>{hint}</Text> : null}
+                  {playing && !soundOn && (
+                    <Pressable
+                      style={st.soundPill}
+                      onPress={() => {
+                        unmutePlayer();
+                        setSoundOn(true);
+                      }}
+                    >
+                      <Text style={st.soundPillText}>🔊 Tap for sound</Text>
+                    </Pressable>
+                  )}
 
                   <View style={st.rail} pointerEvents="box-none">
                     <Pressable style={st.railBtn} onPress={() => vote(item)}>
@@ -419,6 +444,8 @@ const st = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   h1: { color: C.text, fontSize: 30, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 },
   muted: { color: C.muted, lineHeight: 20 },
+  soundPill: { position: 'absolute', top: 108, alignSelf: 'center', backgroundColor: 'rgba(11,8,16,0.78)', borderColor: C.line2, borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
+  soundPillText: { color: '#fff', fontWeight: '800', fontSize: 12, letterSpacing: 0.5 },
   feedTag: { position: 'absolute', top: 14, left: 16, color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: '800', letterSpacing: 2 },
   hint: { position: 'absolute', top: 40, left: 16, right: 16, color: C.gold, fontSize: 12, fontWeight: '700' },
   rail: { position: 'absolute', right: 12, bottom: 110, alignItems: 'center', gap: 18 },
