@@ -3,7 +3,7 @@ import { Alert, FlatList, Image, Modal, Pressable, RefreshControl, Share, StyleS
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WebView } from 'react-native-webview';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { flairColor } from '@/lib/flairs';
@@ -28,7 +28,7 @@ export default function Clips() {
   const [loaded, setLoaded] = useState(false);
   const [pageH, setPageH] = useState(0);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [playingId, setPlayingId] = useState<string | null>(null);
+  const [focused, setFocused] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const [myVotes, setMyVotes] = useState<Record<string, number>>({});
   const [deltas, setDeltas] = useState<Record<string, number>>({});
@@ -177,10 +177,13 @@ export default function Clips() {
       });
   }, [session, clips]);
 
-  // leaving a page stops its player
-  useEffect(() => {
-    setPlayingId((p) => (p && p !== activeId ? null : p));
-  }, [activeId]);
+  // leaving the tab stops the player; the visible page drives playback
+  useFocusEffect(
+    useCallback(() => {
+      setFocused(true);
+      return () => setFocused(false);
+    }, [])
+  );
 
   const onViewable = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     const first = viewableItems.find((v) => v.isViewable);
@@ -279,7 +282,7 @@ export default function Clips() {
             viewabilityConfig={{ itemVisiblePercentThreshold: 75 }}
             renderItem={({ item }) => {
               const p = item.profiles;
-              const playing = playingId === item.id;
+              const playing = focused && activeId === item.id;
               return (
                 <View style={{ height: pageH }}>
                   {playing ? (
@@ -302,11 +305,6 @@ export default function Clips() {
                         resizeMode="cover"
                       />
                       <LinearGradient colors={['rgba(11,8,16,0.35)', 'transparent', 'rgba(11,8,16,0.95)']} style={StyleSheet.absoluteFill} />
-                      <Pressable style={st.playHit} onPress={() => setPlayingId(item.id)}>
-                        <View style={st.play}>
-                          <Text style={st.playText}>▶</Text>
-                        </View>
-                      </Pressable>
                     </>
                   )}
 
@@ -340,7 +338,7 @@ export default function Clips() {
                     </Pressable>
                   </View>
 
-                  {!playing && (
+                  {(
                     <View style={st.info} pointerEvents="box-none">
                       <View style={st.reactRow}>
                         {EMOJI.map(([key, glyph]) => {
@@ -423,9 +421,6 @@ const st = StyleSheet.create({
   muted: { color: C.muted, lineHeight: 20 },
   feedTag: { position: 'absolute', top: 14, left: 16, color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: '800', letterSpacing: 2 },
   hint: { position: 'absolute', top: 40, left: 16, right: 16, color: C.gold, fontSize: 12, fontWeight: '700' },
-  playHit: { ...StyleSheet.absoluteFillObject as object, alignItems: 'center', justifyContent: 'center' },
-  play: { width: 62, height: 62, borderRadius: 31, backgroundColor: 'rgba(11,8,16,0.55)', alignItems: 'center', justifyContent: 'center', borderColor: 'rgba(255,255,255,0.4)', borderWidth: 1 },
-  playText: { color: '#fff', fontSize: 20, marginLeft: 3 },
   rail: { position: 'absolute', right: 12, bottom: 110, alignItems: 'center', gap: 18 },
   railBtn: { alignItems: 'center' },
   railIcon: { fontSize: 22, color: '#fff' },
