@@ -325,10 +325,7 @@ export default function Account() {
           <LinearGradient colors={G.hot} {...GRAD} style={st.proCard}>
             <View style={st.proShade} />
             <Text style={st.proTitle}>Full map. Unlimited tracking. Ad free.</Text>
-            <Text style={st.proSub}>From £14.99 a year</Text>
-            <View style={st.proBtn}>
-              <Text style={st.proBtnText}>Upgrade · coming to the app</Text>
-            </View>
+            <Text style={st.proSub}>Landing with the game this November.</Text>
           </LinearGradient>
         )}
 
