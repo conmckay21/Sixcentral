@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { useCallback } from 'react';
-import { FlatList, Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, FlatList, Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { C, G, GRAD } from '@/lib/theme';
 import { Chip, SectionTitle } from '@/components/ui';
@@ -42,6 +43,46 @@ function useCountdown() {
   };
 }
 
+const RAIL_STEP = 242; // card 230 + 12 gap, matches snapToInterval
+
+/**
+ * Auto-advances a horizontal FlatList one card per tick and wraps.
+ * Touching the rail buys an 8s grace period instead of an instant resume, the
+ * index resyncs to wherever the user left it, and it all switches off for
+ * Reduce Motion or when the screen loses focus.
+ */
+function useAutoRail(count: number, focused: boolean) {
+  const ref = useRef<FlatList>(null);
+  const idx = useRef(0);
+  const pausedUntil = useRef(0);
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => sub.remove();
+  }, []);
+
+  useEffect(() => {
+    if (!focused || reduceMotion || count < 2) return;
+    const id = setInterval(() => {
+      if (Date.now() < pausedUntil.current) return;
+      idx.current = (idx.current + 1) % count;
+      ref.current?.scrollToOffset({ offset: idx.current * RAIL_STEP, animated: true });
+    }, 5000);
+    return () => clearInterval(id);
+  }, [focused, reduceMotion, count]);
+
+  const onTouch = () => {
+    pausedUntil.current = Date.now() + 8000;
+  };
+  const onSettle = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    pausedUntil.current = Date.now() + 8000;
+    idx.current = Math.max(0, Math.round(e.nativeEvent.contentOffset.x / RAIL_STEP));
+  };
+  return { ref, onTouch, onSettle };
+}
+
 export default function Home() {
   const { d, h, m } = useCountdown();
   const router = useRouter();
@@ -51,6 +92,15 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
   const [feed, setFeed] = useState<ContentItem[]>([]);
   const [rumours, setRumours] = useState<ContentItem[]>([]);
+  const [focused, setFocused] = useState(true);
+  useFocusEffect(
+    useCallback(() => {
+      setFocused(true);
+      return () => setFocused(false);
+    }, [])
+  );
+  const newsRail = useAutoRail(Math.min(Math.max(feed.length - 1, 0), 8), focused);
+  const rumourRail = useAutoRail(Math.min(rumours.length, 8), focused);
 
   const loadContent = useCallback(() => {
     return fetch(`${SITE}/api/content`)
@@ -192,6 +242,10 @@ export default function Home() {
           snapToInterval={242}
           decelerationRate="fast"
           style={st.newsRail}
+          ref={newsRail.ref}
+          onScrollBeginDrag={newsRail.onTouch}
+          onScrollEndDrag={newsRail.onSettle}
+          onMomentumScrollEnd={newsRail.onSettle}
           renderItem={({ item }) => (
             <Pressable
               style={st.newsCard}
@@ -227,6 +281,10 @@ export default function Home() {
               snapToInterval={242}
               decelerationRate="fast"
               style={st.newsRail}
+              ref={rumourRail.ref}
+              onScrollBeginDrag={rumourRail.onTouch}
+              onScrollEndDrag={rumourRail.onSettle}
+              onMomentumScrollEnd={rumourRail.onSettle}
               renderItem={({ item }) => (
                 <Pressable
                   style={st.newsCard}
