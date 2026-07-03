@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <style>
-  html, body, #map { margin:0; height:100%; background:linear-gradient(180deg,#070a14 0%,#0d1322 100%); }
+  html, body, #map { margin:0; height:100%; background:#5e9bc8; }
   #map { outline:none; }
   .leaflet-container { background:transparent; font-family:-apple-system,'Segoe UI',Roboto,sans-serif; }
   .pin-dot { width:14px; height:14px; border-radius:50%; border:1.5px solid #fff;
@@ -15,16 +15,18 @@
   .cluster { display:flex; align-items:center; justify-content:center; width:34px; height:34px;
              border-radius:50%; background:rgba(255,46,136,.92); color:#fff; font-weight:800; font-size:13px;
              border:2px solid #fff; box-shadow:0 0 14px rgba(255,46,136,.8); }
-  .region-label { color:var(--c); font-weight:800; letter-spacing:.35em; text-shadow:0 0 6px #070a14,0 0 12px #070a14, 2px 2px 0 #070a14;
+  .region-label { color:#3a4252; font-weight:800; letter-spacing:.28em; text-shadow:0 0 5px #fff,0 0 9px #fff,1px 1px 0 #fff; text-align:center; }
+  .region-label small { display:block; letter-spacing:.22em; font-size:.62em; color:#6a7386; }
+  .region-label-old {
                   white-space:nowrap; transform:translate(-50%,-50%); pointer-events:none; }
   .z-far  .region-label { font-size:15px; opacity:1; }
   .z-mid  .region-label { font-size:11px; opacity:.85; }
   .z-near .region-label { font-size:0; opacity:0; }
-  .corner { position:fixed; z-index:800; color:#6f6488; font-size:10px; letter-spacing:.12em; pointer-events:none; }
+  .corner { position:fixed; z-index:800; color:#5a637a; text-shadow:0 0 4px #fff; font-size:10px; letter-spacing:.12em; pointer-events:none; }
   #credit { right:10px; bottom:6px; max-width:58%; text-align:right; font-size:8.5px; line-height:1.5; }
   #scalebar { left:12px; bottom:6px; font-size:8.5px; }
-  #compass { top:10px; right:12px; width:40px; height:40px; border:2px solid #968cb0; border-radius:50%;
-             display:flex; align-items:center; justify-content:center; color:#EDE7F5; font-weight:900; }
+  #compass { top:10px; right:12px; width:40px; height:40px; border:2px solid #5a637a; border-radius:50%;
+             display:flex; align-items:center; justify-content:center; color:#3a4252; font-weight:900; }
   #compass::after { content:''; position:absolute; width:0; height:0; border-left:5px solid transparent;
                     border-right:5px solid transparent; border-bottom:14px solid #FF2E88; transform:translateY(-8px); }
   .leaflet-popup-content-wrapper { background:#141126; color:#EDE7F5; border:1px solid #2c2744; border-radius:14px; }
@@ -50,7 +52,7 @@ const MAXZ = 6, WORLD = 512 * Math.pow(2, MAXZ);
 const inApp = !!window.ReactNativeWebView;
 
 const map = L.map('map', { crs: L.CRS.Simple, minZoom: 0, maxZoom: 6, zoomSnap: 0, zoomDelta: 0.5, maxBoundsViscosity: 1.0, zoomControl: false, attributionControl: false });
-L.tileLayer('/tiles512/{z}/{x}/{y}.png?v=6', { tileSize: 512, minZoom: 0, maxZoom: 6, noWrap: true }).addTo(map);
+L.tileLayer('/tiles512/{z}/{x}/{y}.png?v=7', { tileSize: 512, minZoom: 0, maxZoom: 6, noWrap: true }).addTo(map);
 
 const P = (x, y) => map.unproject([x * WORLD, y * WORLD], MAXZ);
 const LANDBOX = [[0.19, 0.053], [0.81, 0.994]];
@@ -60,16 +62,16 @@ map.fitBounds(landBounds, { paddingTopLeft: [0, 130], paddingBottomRight: [0, 16
 map.setMinZoom(map.getBoundsZoom(landBounds, false, [0, 40]));
 
 const LABELS = [
-  ['VICE CITY', 0.5426, 0.7348, '#FF2E88'],
-  ['LEONIDA KEYS', 0.6538, 0.9155, '#FFC83D'],
-  ['GRASSRIVERS', 0.6093, 0.8215, '#1FE5D6'],
-  ['AMBROSIA', 0.6568, 0.5685, '#EDE7F5'],
-  ['PORT GELLHORN', 0.3728, 0.2288, '#1FE5D6'],
-  ['MOUNT KALAGA', 0.507, 0.1276, '#8A4FFF'],
+  ['VICE CITY', 'MIAMI', 0.5426, 0.7348],
+  ['LEONIDA KEYS', 'FLORIDA KEYS', 0.6538, 0.9155],
+  ['GRASSRIVERS', 'EVERGLADES', 0.6093, 0.8215],
+  ['AMBROSIA', 'LAKE OKEECHOBEE', 0.6568, 0.5685],
+  ['PORT GELLHORN', 'GULF COAST', 0.3728, 0.2288],
+  ['MOUNT KALAGA', 'NATIONAL PARK', 0.507, 0.1276],
 ];
-for (const [t, x, y, c] of LABELS) {
+for (const [t, sub, x, y] of LABELS) {
   L.marker(P(x, y), {
-    icon: L.divIcon({ className: '', html: `<div class="region-label" style="--c:${c}">${t}</div>`, iconSize: [0, 0] }),
+    icon: L.divIcon({ className: '', html: `<div class="region-label">${t}<small>(${sub})</small></div>`, iconSize: [0, 0] }),
     interactive: false,
   }).addTo(map);
 }

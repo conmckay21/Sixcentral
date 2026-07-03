@@ -61,7 +61,7 @@ export default function MapTab() {
       ) : (
         <WebView
           ref={web}
-          source={{ uri: `${SITE}/map-embed.html?v=6` }}
+          source={{ uri: `${SITE}/map-embed.html?v=7` }}
           style={st.web}
           onMessage={(e) => {
             try {
@@ -129,8 +129,8 @@ export default function MapTab() {
 }
 
 const st = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#070a14' },
-  web: { flex: 1, backgroundColor: '#070a14' },
+  root: { flex: 1, backgroundColor: '#5e9bc8' },
+  web: { flex: 1, backgroundColor: '#5e9bc8' },
   fail: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 },
   failText: { color: C.muted, textAlign: 'center', lineHeight: 20 },
   retry: { marginTop: 14, borderColor: C.line2, borderWidth: 1, borderRadius: 999, paddingHorizontal: 18, paddingVertical: 10 },
