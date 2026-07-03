@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
+import { runOnJS } from 'react-native-reanimated';
 import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, useSharedValue, type SharedValue } from 'react-native-reanimated';
+import Animated, { useAnimatedReaction, useAnimatedStyle, useSharedValue, type SharedValue } from 'react-native-reanimated';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 
@@ -24,6 +25,14 @@ function PinDot({ pin, colour, canvas, zoom, onPress }: { pin: Pin; colour: stri
 }
 
 const MAP = require('../../../assets/images/leonida-schematic.png');
+// Native-resolution regional plates: crisp detail past the deep-zoom threshold.
+const PLATES = [
+  { img: require('../../../assets/images/plate-vc.png'),   x: 0.68887, y: 0.73478, w: 0.13011 },
+  { img: require('../../../assets/images/plate-keys.png'), x: 0.49809, y: 0.79305, w: 0.25213 },
+  { img: require('../../../assets/images/plate-gell.png'), x: 0.24665, y: 0.11675, w: 0.1771 },
+  { img: require('../../../assets/images/plate-kal.png'),  x: 0.41186, y: 0.12217, w: 0.18613 },
+];
+const PLATE_ZOOM = 2.5;
 const TOTAL = 305;
 const MAX_ZOOM = 12;
 // Landmass bounding box within the square asset (normalised), from the render projection.
@@ -40,6 +49,7 @@ export default function MapTab() {
   const [types, setTypes] = useState<CType[]>([]);
   const [filter, setFilter] = useState<string | null>(null);
   const [selected, setSelected] = useState<Pin | null>(null);
+  const [deep, setDeep] = useState(false);
 
   const scale = useSharedValue(fitContain);
   const saved = useSharedValue(fitContain);
@@ -82,6 +92,13 @@ export default function MapTab() {
     });
 
   const composed = Gesture.Simultaneous(pinch, pan);
+
+  useAnimatedReaction(
+    () => scale.value > PLATE_ZOOM,
+    (isDeep, prev) => {
+      if (isDeep !== prev) runOnJS(setDeep)(isDeep);
+    },
+  );
   const anim = useAnimatedStyle(() => ({
     transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: scale.value }],
   }));
@@ -97,6 +114,15 @@ export default function MapTab() {
       <GestureDetector gesture={composed}>
         <Animated.View style={[{ width: size, height: size, marginLeft: (vw - size) / 2, marginTop: (vh - size) / 2 }, anim]}>
           <Image source={MAP} style={{ width: size, height: size }} resizeMode="cover" />
+          {deep &&
+            PLATES.map((pl, i) => (
+              <Image
+                key={i}
+                source={pl.img}
+                style={{ position: 'absolute', left: pl.x * size, top: pl.y * size, width: pl.w * size, height: pl.w * size }}
+                resizeMode="cover"
+              />
+            ))}
           {shown.map((p) => (
             <PinDot key={p.id} pin={p} colour={colourOf(p.collectible_type)} canvas={size} zoom={scale} onPress={() => setSelected(p)} />
           ))}
