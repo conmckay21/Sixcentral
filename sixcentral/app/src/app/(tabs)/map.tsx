@@ -21,7 +21,7 @@ const MAX_ZOOM = 8;
 export default function MapTab() {
   const { width: vw, height: vh } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const size = Math.max(vw, vh); // square canvas covering the viewport
+  const size = Math.min(vw, vh); // square canvas containing the whole map; water matches the screen background
   const [pins, setPins] = useState<Pin[]>([]);
   const [types, setTypes] = useState<CType[]>([]);
   const [filter, setFilter] = useState<string | null>(null);
