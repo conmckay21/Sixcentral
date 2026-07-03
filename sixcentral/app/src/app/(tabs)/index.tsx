@@ -6,6 +6,7 @@ import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { fetchBlockedIds } from '@/lib/blocks';
 import { supabase } from '@/lib/supabase';
 import { C, G, GRAD } from '@/lib/theme';
 import { Chip, SectionTitle } from '@/components/ui';
@@ -13,7 +14,7 @@ import { Chip, SectionTitle } from '@/components/ui';
 const LAUNCH = new Date('2026-11-19T00:00:00Z').getTime();
 const SITE = 'https://sixcentral.co.uk';
 
-type Clip = { id: string; video_id: string };
+type Clip = { id: string; video_id: string; profile_id: string };
 type ContentItem = {
   slug: string;
   title: string;
@@ -26,7 +27,7 @@ type ContentItem = {
 type ShareRow = {
   id: string;
   clip: { video_id: string; caption: string | null } | null;
-  from_p: { handle: string } | null;
+  from_p: { id: string; handle: string } | null;
 };
 
 function useCountdown() {
@@ -101,6 +102,7 @@ export default function Home() {
   );
   const newsRail = useAutoRail(Math.min(Math.max(feed.length - 1, 0), 8), focused);
   const rumourRail = useAutoRail(Math.min(rumours.length, 8), focused);
+  const [blocked, setBlocked] = useState<Set<string>>(new Set());
 
   const loadContent = useCallback(() => {
     return fetch(`${SITE}/api/content`)
@@ -115,7 +117,7 @@ export default function Home() {
   const loadClips = useCallback(() => {
     return supabase
       .from('clip_submissions')
-      .select('id, video_id')
+      .select('id, video_id, profile_id')
       .eq('status', 'approved')
       .gt('votes', -3)
       .order('votes', { ascending: false })
@@ -129,7 +131,7 @@ export default function Home() {
     if (!s) return Promise.resolve();
     return supabase
       .from('clip_shares')
-      .select('id, clip:clip_submissions!clip_shares_clip_id_fkey(video_id, caption), from_p:profiles!clip_shares_from_profile_fkey(handle)')
+      .select('id, clip:clip_submissions!clip_shares_clip_id_fkey(video_id, caption), from_p:profiles!clip_shares_from_profile_fkey(id, handle)')
       .eq('to_profile', s.user.id)
       .is('seen_at', null)
       .order('created_at', { ascending: false })
@@ -145,6 +147,7 @@ export default function Home() {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       loadShares(data.session);
+      if (data.session) fetchBlockedIds().then(setBlocked);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s);
@@ -179,7 +182,7 @@ export default function Home() {
             <SectionTitle>Shared with you</SectionTitle>
             <FlatList
               horizontal
-              data={shares}
+              data={shares.filter((s) => !s.from_p || !blocked.has(s.from_p.id))}
               keyExtractor={(s) => s.id}
               showsHorizontalScrollIndicator={false}
               style={{ marginBottom: 16 }}
@@ -327,7 +330,7 @@ export default function Home() {
             <SectionTitle>Trending clips</SectionTitle>
             <FlatList
               horizontal
-              data={clips}
+              data={clips.filter((c) => !blocked.has(c.profile_id))}
               keyExtractor={(c) => c.id}
               showsHorizontalScrollIndicator={false}
               renderItem={({ item }) => (

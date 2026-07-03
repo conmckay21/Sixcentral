@@ -22,6 +22,7 @@ export default function MapTab() {
   const [selected, setSelected] = useState<Pin | null>(null);
   const [failed, setFailed] = useState(false);
   const [mapLive, setMapLive] = useState<boolean | null>(null);
+  const [isStaff, setIsStaff] = useState<boolean | null>(null);
 
   useEffect(() => {
     supabase
@@ -30,6 +31,13 @@ export default function MapTab() {
       .eq('key', 'map_live')
       .single()
       .then(({ data }) => setMapLive(data ? data.value === true : false));
+    // Staff bypass: the flag hides the map from the world, not from the crew.
+    supabase.auth.getSession().then(async ({ data }) => {
+      const uid = data.session?.user.id;
+      if (!uid) return setIsStaff(false);
+      const { data: prof } = await supabase.from('public_profiles').select('is_staff').eq('id', uid).single();
+      setIsStaff(!!prof?.is_staff);
+    });
     supabase.from('collectible_types').select('id, slug, name, colour').then(({ data }) => {
       if (data) setTypes(data as CType[]);
     });
@@ -56,7 +64,7 @@ export default function MapTab() {
     web.current?.injectJavaScript(`window.setFilter(${id ? `'${id}'` : 'null'}); true;`);
   }
 
-  if (mapLive === null) {
+  if (mapLive === null || isStaff === null) {
     return (
       <View style={[st.root, st.centre, { backgroundColor: C.bg }]}>
         <ActivityIndicator color={C.pink} />
@@ -64,7 +72,7 @@ export default function MapTab() {
     );
   }
 
-  if (!mapLive) {
+  if (!mapLive && !isStaff) {
     return (
       <View style={[st.root, { backgroundColor: C.bg }]}>
         <ScrollView contentContainerStyle={[st.teaser, { paddingTop: insets.top + 40 }]} showsVerticalScrollIndicator={false}>

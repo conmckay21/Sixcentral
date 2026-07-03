@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 import { flairColor } from '@/lib/flairs';
+import { blockUser, unblockUser } from '@/lib/blocks';
 import Avatar from '@/components/Avatar';
 import { SectionTitle } from '@/components/ui';
 
@@ -67,9 +68,18 @@ export default function MemberProfile() {
       });
   }, [handle]);
 
+  const [blockedByMe, setBlockedByMe] = useState(false);
+
   useEffect(() => {
     if (!session || !p || session.user.id === p.id) return;
     const me = session.user.id;
+    supabase
+      .from('user_blocks')
+      .select('blocked')
+      .eq('blocker', me)
+      .eq('blocked', p.id)
+      .maybeSingle()
+      .then(({ data }) => setBlockedByMe(!!data));
     supabase
       .from('friendships')
       .select('id, status, requester, addressee')
@@ -104,6 +114,34 @@ export default function MemberProfile() {
       setFId(null);
       setFState('none');
     }
+  }
+
+  async function toggleBlock() {
+    if (!session || !p) return;
+    if (blockedByMe) {
+      await unblockUser(p.id);
+      setBlockedByMe(false);
+      return;
+    }
+    Alert.alert(
+      `Block @${p.handle}?`,
+      'They vanish from your feeds and neither of you can send friend requests or shares. You can unblock any time from this page.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Block',
+          style: 'destructive',
+          onPress: async () => {
+            const { error } = await blockUser(p.id);
+            if (!error) {
+              setBlockedByMe(true);
+              setFState('none');
+              setFId(null);
+            }
+          },
+        },
+      ]
+    );
   }
 
   if (!loaded) {
@@ -173,7 +211,13 @@ export default function MemberProfile() {
           </View>
         )}
 
-        {!isMe && session && (
+        {!isMe && session && blockedByMe && (
+          <Pressable style={st.blockBtn} onPress={toggleBlock}>
+            <Text style={st.blockBtnText}>Blocked · tap to unblock</Text>
+          </Pressable>
+        )}
+
+        {!isMe && session && !blockedByMe && (
           <View style={st.friendRow}>
             {fState === 'none' && (
               <Pressable style={st.btn} onPress={() => friendAction('add')}>
@@ -200,6 +244,9 @@ export default function MemberProfile() {
                 <Text style={[st.btnGhostText, { color: C.green }]}>Friends ✓ · tap to remove</Text>
               </Pressable>
             )}
+            <Pressable style={st.blockLink} onPress={toggleBlock}>
+              <Text style={st.blockLinkText}>Block</Text>
+            </Pressable>
           </View>
         )}
 
@@ -248,4 +295,8 @@ const st = StyleSheet.create({
   clipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   clipThumb: { width: 156, height: 90, borderRadius: 12, backgroundColor: C.surface },
   muted: { color: C.muted, lineHeight: 20 },
+  blockBtn: { borderColor: '#E5484D', borderWidth: 1, borderRadius: 12, padding: 12, alignItems: 'center', marginTop: 4 },
+  blockBtnText: { color: '#FF6B6E', fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 },
+  blockLink: { justifyContent: 'center', paddingHorizontal: 12 },
+  blockLinkText: { color: '#FF6B6E', fontWeight: '800', fontSize: 12 },
 });

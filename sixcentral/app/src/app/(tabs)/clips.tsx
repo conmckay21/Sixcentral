@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, Image, Modal, Pressable, RefreshControl, Share, StyleSheet, Text, View, type ViewToken } from 'react-native';
+import { Alert, FlatList, Image, Modal, Pressable, RefreshControl, Share, StyleSheet, Text, View, type ViewToken } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WebView } from 'react-native-webview';
@@ -7,11 +7,13 @@ import { useRouter } from 'expo-router';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { flairColor } from '@/lib/flairs';
+import { blockUser, fetchBlockedIds, reportClip } from '@/lib/blocks';
 import Avatar from '@/components/Avatar';
 import { C } from '@/lib/theme';
 
 type Clip = {
   id: string;
+  profile_id: string;
   video_id: string;
   caption: string | null;
   votes: number;
@@ -36,9 +38,65 @@ export default function Clips() {
   const [friends, setFriends] = useState<{ id: string; handle: string }[]>([]);
   const [shareClip, setShareClip] = useState<Clip | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [blocked, setBlocked] = useState<Set<string>>(new Set());
   const router = useRouter();
 
+  useEffect(() => {
+    if (!session) return;
+    fetchBlockedIds().then(setBlocked);
+  }, [session]);
+
   const EMOJI: [string, string][] = [['fire', '🔥'], ['funny', '😂'], ['mind', '🤯'], ['trophy', '🏆']];
+
+  function needSignIn() {
+    Alert.alert('Sign in first', 'Reporting and blocking need an account so mods can act on it.');
+  }
+
+  async function sendReport(clip: Clip, reason: 'not_gta' | 'offensive' | 'spam' | 'other') {
+    const { error } = await reportClip(clip.id, reason);
+    Alert.alert(
+      error ? 'That did not go through' : 'Reported',
+      error ? 'Try again in a minute.' : 'Mods review fast and pull anything that breaks the rules.'
+    );
+  }
+
+  function reportMenu(clip: Clip) {
+    if (!session) return needSignIn();
+    Alert.alert('Report this clip', 'Tell the mods what is wrong.', [
+      { text: 'Not GTA', onPress: () => sendReport(clip, 'not_gta') },
+      { text: 'Offensive or abusive', onPress: () => sendReport(clip, 'offensive') },
+      { text: 'Spam or misleading', onPress: () => sendReport(clip, 'spam') },
+      { text: 'Something else', onPress: () => sendReport(clip, 'other') },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }
+
+  function confirmBlock(clip: Clip) {
+    if (!session) return needSignIn();
+    const handle = clip.profiles?.handle ?? 'this user';
+    Alert.alert(`Block @${handle}?`, 'Their clips vanish from your feed and neither of you can send friend requests or shares. Unblock any time from their profile.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Block',
+        style: 'destructive',
+        onPress: async () => {
+          const { error } = await blockUser(clip.profile_id);
+          if (!error) setBlocked((b) => new Set([...b, clip.profile_id]));
+        },
+      },
+    ]);
+  }
+
+  function modMenu(clip: Clip) {
+    const handle = clip.profiles?.handle ?? 'user';
+    Alert.alert('Clip options', undefined, [
+      { text: 'Report this clip', onPress: () => reportMenu(clip) },
+      { text: `Block @${handle}`, style: 'destructive', onPress: () => confirmBlock(clip) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }
+
+  const visible = clips.filter((c) => !blocked.has(c.profile_id));
 
   const loadFeed = useCallback(() => {
     supabase.from('ranks').select('id, name').order('id').then(({ data }) => {
@@ -46,7 +104,7 @@ export default function Clips() {
     });
     return supabase
       .from('clip_submissions')
-      .select('id, video_id, caption, votes, comp_entry, profiles!clip_submissions_profile_id_fkey(handle, title, rank_id, avatar_url, flair)')
+      .select('id, profile_id, video_id, caption, votes, comp_entry, profiles!clip_submissions_profile_id_fkey(handle, title, rank_id, avatar_url, flair)')
       .eq('status', 'approved')
       .gt('votes', -3)
       .order('votes', { ascending: false })
@@ -208,7 +266,7 @@ export default function Clips() {
       <View style={{ flex: 1 }} onLayout={(e) => setPageH(e.nativeEvent.layout.height)}>
         {pageH > 0 && (
           <FlatList
-            data={clips}
+            data={visible}
             keyExtractor={(c) => c.id}
             showsVerticalScrollIndicator={false}
             snapToInterval={pageH}
@@ -267,6 +325,10 @@ export default function Clips() {
                     <Pressable style={st.railBtn} onPress={() => setShareClip(item)}>
                       <Text style={st.railIcon}>↗</Text>
                       <Text style={st.railCount}>Share</Text>
+                    </Pressable>
+                    <Pressable style={st.railBtn} onPress={() => modMenu(item)}>
+                      <Text style={st.railIcon}>⚑</Text>
+                      <Text style={st.railCount}>Report</Text>
                     </Pressable>
                   </View>
 

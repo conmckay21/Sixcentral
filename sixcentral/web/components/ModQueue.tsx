@@ -6,6 +6,7 @@ import { getBrowserSupabase } from '@/lib/supabase-browser';
 
 type Payload = { about?: string | null; details?: string; source?: string | null };
 type ClipRow = {
+  status: string;
   id: string;
   video_id: string;
   caption: string | null;
@@ -35,6 +36,7 @@ export default function ModQueue() {
   const [isMod, setIsMod] = useState<boolean | null>(null);
   const [pending, setPending] = useState<Row[]>([]);
   const [clipQueue, setClipQueue] = useState<ClipRow[]>([]);
+  const [reports, setReports] = useState<Record<string, string[]>>({});
   const [actionErr, setActionErr] = useState('');
   const [recent, setRecent] = useState<Row[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
@@ -51,13 +53,30 @@ export default function ModQueue() {
         .limit(10),
       sb
         .from('clip_submissions')
-        .select('id, video_id, caption, category, source, created_at, profiles!clip_submissions_profile_id_fkey(handle)')
-        .eq('status', 'pending')
+        .select('id, status, video_id, caption, category, source, created_at, profiles!clip_submissions_profile_id_fkey(handle)')
+        .in('status', ['pending', 'flagged'])
         .order('created_at', { ascending: true }),
     ]);
     if (p) setPending(p as unknown as Row[]);
     if (r) setRecent(r as unknown as Row[]);
-    if (cq) setClipQueue(cq as unknown as ClipRow[]);
+    if (cq) {
+      setClipQueue(cq as unknown as ClipRow[]);
+      const flaggedIds = (cq as unknown as ClipRow[]).filter((c) => c.status === 'flagged').map((c) => c.id);
+      if (flaggedIds.length && sb) {
+        const { data: reps } = await sb
+          .from('clip_reports')
+          .select('clip_id, reason')
+          .in('clip_id', flaggedIds)
+          .is('resolved_at', null);
+        const byClip: Record<string, string[]> = {};
+        for (const r2 of (reps ?? []) as { clip_id: string; reason: string }[]) {
+          (byClip[r2.clip_id] ??= []).push(r2.reason);
+        }
+        setReports(byClip);
+      } else {
+        setReports({});
+      }
+    }
   }, [sb]);
 
   useEffect(() => {
@@ -89,6 +108,13 @@ export default function ModQueue() {
       .from('clip_submissions')
       .update({ status, reviewed_by: session.user.id })
       .eq('id', id);
+    if (!error) {
+      await sb
+        .from('clip_reports')
+        .update({ resolved_at: new Date().toISOString(), resolved_by: session.user.id })
+        .eq('clip_id', id)
+        .is('resolved_at', null);
+    }
     if (error) {
       setActionErr(`That did not go through: ${error.message.slice(0, 140)}`);
     } else {
@@ -197,7 +223,14 @@ export default function ModQueue() {
           {clipQueue.map((c) => (
             <div key={c.id} className="modq__item">
               <div className="modq__meta">
-                <span className="modq__type">clip · {c.category ?? 'uncategorised'} · via {c.source ?? 'link'}</span>
+                <span className="modq__type">
+                  {c.status === 'flagged' ? (
+                    <b style={{ color: 'var(--gold)' }}>
+                      FLAGGED · {(reports[c.id] ?? []).length || 3}+ reports · {[...new Set(reports[c.id] ?? [])].join(', ') || 'community'} ·{' '}
+                    </b>
+                  ) : null}
+                  clip · {c.category ?? 'uncategorised'} · via {c.source ?? 'link'}
+                </span>
                 <span className="modq__who">@{c.profiles?.handle ?? 'unknown'}</span>
               </div>
               <div className="modq__clip">
