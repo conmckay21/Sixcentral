@@ -1,62 +1,26 @@
-import { useEffect, useMemo, useState } from 'react';
-import { runOnJS } from 'react-native-reanimated';
-import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { useAnimatedReaction, useAnimatedStyle, useSharedValue, type SharedValue } from 'react-native-reanimated';
+import { WebView } from 'react-native-webview';
 import { supabase } from '@/lib/supabase';
+import { SITE } from '@/lib/site';
 import { C } from '@/lib/theme';
 
-/**
- * Coordinate convention for map_pins: lat = y and lng = x, both normalised
- * 0..1 against the map canvas (top-left origin). Holds across base-map swaps.
- */
+/** Tile-pyramid map: crisp at every zoom, clustering, live pins. Base served by the site. */
 
-type Pin = { id: string; name: string; region: string | null; lat: number; lng: number; collectible_type: string; blurb: string | null; image_url: string | null; source_note: string | null };
+type Pin = { id: string; name: string; region: string | null; blurb: string | null; image_url: string | null; source_note: string | null; collectible_type: string };
 type CType = { id: string; slug: string; name: string; colour: string | null };
 
-function PinDot({ pin, colour, canvas, zoom, onPress }: { pin: Pin; colour: string; canvas: number; zoom: SharedValue<number>; onPress: () => void }) {
-  const inverse = useAnimatedStyle(() => ({ transform: [{ scale: 1 / zoom.value }] }));
-  return (
-    <Animated.View style={[st.pinWrap, { left: pin.lng * canvas - 14, top: pin.lat * canvas - 14 }, inverse]}>
-      <Pressable hitSlop={6} onPress={onPress} style={[st.pin, { backgroundColor: colour, shadowColor: colour }]} />
-    </Animated.View>
-  );
-}
-
-const MAP = require('../../../assets/images/leonida-schematic.png');
-// Native-resolution regional plates: crisp detail past the deep-zoom threshold.
-const PLATES = [
-  { img: require('../../../assets/images/plate-vc.png'),   x: 0.68887, y: 0.73478, w: 0.13011 },
-  { img: require('../../../assets/images/plate-keys.png'), x: 0.49809, y: 0.79305, w: 0.25213 },
-  { img: require('../../../assets/images/plate-gell.png'), x: 0.24665, y: 0.11675, w: 0.1771 },
-  { img: require('../../../assets/images/plate-kal.png'),  x: 0.41186, y: 0.12217, w: 0.18613 },
-];
-const PLATE_ZOOM = 2.5;
 const TOTAL = 305;
-const MAX_ZOOM = 12;
-// Landmass bounding box within the square asset (normalised), from the render projection.
-const LAND = { w: 0.580, h: 0.883 };
 
 export default function MapTab() {
-  const { width: vw, height: vh } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const size = Math.min(vw, vh);
-  // Frame the LAND, not the image: open with the state filling the viewport.
-  const fitCover = Math.max(vw / (LAND.w * size), vh / (LAND.h * size));
-  const fitContain = Math.min(vw / (LAND.w * size), vh / (LAND.h * size));
-  const [pins, setPins] = useState<Pin[]>([]);
+  const web = useRef<WebView>(null);
   const [types, setTypes] = useState<CType[]>([]);
+  const [counts, setCounts] = useState({ landmarks: 0, finds: 0 });
   const [filter, setFilter] = useState<string | null>(null);
   const [selected, setSelected] = useState<Pin | null>(null);
-  const [deep, setDeep] = useState(false);
-
-  const scale = useSharedValue(fitContain);
-  const saved = useSharedValue(fitContain);
-  const tx = useSharedValue(0);
-  const ty = useSharedValue(0);
-  const stx = useSharedValue(0);
-  const sty = useSharedValue(0);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     supabase.from('collectible_types').select('id, slug, name, colour').then(({ data }) => {
@@ -64,86 +28,71 @@ export default function MapTab() {
     });
     supabase
       .from('map_pins')
-      .select('id, name, region, lat, lng, collectible_type, blurb, image_url, source_note')
+      .select('collectible_type', { count: 'exact' })
       .eq('status', 'verified')
       .then(({ data }) => {
-        if (data) setPins(data as Pin[]);
+        if (!data) return;
+        setCounts((c) => ({ ...c, landmarks: data.length }));
       });
   }, []);
 
-  const pinch = Gesture.Pinch()
-    .onUpdate((e) => {
-      scale.value = Math.min(MAX_ZOOM, Math.max(fitContain * 0.98, saved.value * e.scale));
-    })
-    .onEnd(() => {
-      saved.value = scale.value;
-    });
+  useEffect(() => {
+    if (types.length && counts.landmarks) {
+      const landmarkType = types.find((t) => t.slug === 'landmarks')?.id;
+      // finds vs landmarks recomputed when pin data matters; landmarks-only pre-launch
+      void landmarkType;
+    }
+  }, [types, counts.landmarks]);
 
-  const pan = Gesture.Pan()
-    .onUpdate((e) => {
-      const bx = Math.max(0, (LAND.w * size * scale.value - vw) / 2 + 24);
-      const by = Math.max(0, (LAND.h * size * scale.value - vh) / 2 + 24);
-      tx.value = Math.min(bx, Math.max(-bx, stx.value + e.translationX));
-      ty.value = Math.min(by, Math.max(-by, sty.value + e.translationY));
-    })
-    .onEnd(() => {
-      stx.value = tx.value;
-      sty.value = ty.value;
-    });
-
-  const composed = Gesture.Simultaneous(pinch, pan);
-
-  useAnimatedReaction(
-    () => scale.value > PLATE_ZOOM,
-    (isDeep, prev) => {
-      if (isDeep !== prev) runOnJS(setDeep)(isDeep);
-    },
-  );
-  const anim = useAnimatedStyle(() => ({
-    transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: scale.value }],
-  }));
-
-  const shown = useMemo(() => (filter ? pins.filter((p) => p.collectible_type === filter) : pins), [pins, filter]);
-  const colourOf = (typeId: string) => types.find((t) => t.id === typeId)?.colour ?? C.pink;
-  const landmarkType = types.find((t) => t.slug === 'landmarks')?.id;
-  const landmarks = pins.filter((p) => p.collectible_type === landmarkType).length;
-  const finds = pins.length - landmarks;
+  function applyFilter(id: string | null) {
+    setFilter(id);
+    web.current?.injectJavaScript(`window.setFilter(${id ? `'${id}'` : 'null'}); true;`);
+  }
 
   return (
     <View style={st.root}>
-      <GestureDetector gesture={composed}>
-        <Animated.View style={[{ width: size, height: size, marginLeft: (vw - size) / 2, marginTop: (vh - size) / 2 }, anim]}>
-          <Image source={MAP} style={{ width: size, height: size }} resizeMode="cover" />
-          {deep &&
-            PLATES.map((pl, i) => (
-              <Image
-                key={i}
-                source={pl.img}
-                style={{ position: 'absolute', left: pl.x * size, top: pl.y * size, width: pl.w * size, height: pl.w * size }}
-                resizeMode="cover"
-              />
-            ))}
-          {shown.map((p) => (
-            <PinDot key={p.id} pin={p} colour={colourOf(p.collectible_type)} canvas={size} zoom={scale} onPress={() => setSelected(p)} />
-          ))}
-        </Animated.View>
-      </GestureDetector>
+      {failed ? (
+        <View style={st.fail}>
+          <Text style={st.failText}>The map could not load. Check the connection and try again.</Text>
+          <Pressable style={st.retry} onPress={() => setFailed(false)}>
+            <Text style={st.retryText}>Retry</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <WebView
+          ref={web}
+          source={{ uri: `${SITE}/map-embed.html` }}
+          style={st.web}
+          onMessage={(e) => {
+            try {
+              setSelected(JSON.parse(e.nativeEvent.data) as Pin);
+            } catch {
+              // non-pin message; ignore
+            }
+          }}
+          onError={() => setFailed(true)}
+          allowsInlineMediaPlayback
+          bounces={false}
+          overScrollMode="never"
+          setSupportMultipleWindows={false}
+        />
+      )}
 
       <View style={[st.topBar, { paddingTop: insets.top + 6 }]} pointerEvents="box-none">
         <View style={st.topRow} pointerEvents="box-none">
           <Text style={st.h1}>Leonida</Text>
           <View style={st.statChip}>
             <Text style={st.statText}>
-              {finds === 0 ? `${landmarks} landmarks · collectibles open with the game` : `${finds} / ${TOTAL} · ${landmarks} landmarks`}
+              {counts.landmarks} landmarks · collectibles open with the game
             </Text>
           </View>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 14, paddingTop: 10 }}>
-          <Pressable style={[st.chip, !filter && st.chipOn]} onPress={() => setFilter(null)}>
+          <Pressable style={[st.chip, !filter && st.chipOn]} onPress={() => applyFilter(null)}>
             <Text style={[st.chipText, !filter && st.chipTextOn]}>All</Text>
           </Pressable>
           {types.map((t) => (
-            <Pressable key={t.id} style={[st.chip, filter === t.id && st.chipOn]} onPress={() => setFilter(filter === t.id ? null : t.id)}>
+            <Pressable key={t.id} style={[st.chip, filter === t.id && st.chipOn]} onPress={() => applyFilter(filter === t.id ? null : t.id)}>
               <View style={[st.dot, { backgroundColor: t.colour ?? C.pink }]} />
               <Text style={[st.chipText, filter === t.id && st.chipTextOn]}>{t.name}</Text>
             </Pressable>
@@ -180,7 +129,12 @@ export default function MapTab() {
 }
 
 const st = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#070a14', overflow: 'hidden' },
+  root: { flex: 1, backgroundColor: '#070a14' },
+  web: { flex: 1, backgroundColor: '#070a14' },
+  fail: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 },
+  failText: { color: C.muted, textAlign: 'center', lineHeight: 20 },
+  retry: { marginTop: 14, borderColor: C.line2, borderWidth: 1, borderRadius: 999, paddingHorizontal: 18, paddingVertical: 10 },
+  retryText: { color: C.cyan, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, fontSize: 12 },
   topBar: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: 'rgba(7,10,20,0.72)', borderBottomColor: C.line, borderBottomWidth: 1, paddingBottom: 12 },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
   h1: { color: C.text, fontSize: 24, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2 },
@@ -191,9 +145,6 @@ const st = StyleSheet.create({
   chipText: { color: C.muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   chipTextOn: { color: '#fff' },
   dot: { width: 7, height: 7, borderRadius: 4 },
-  pinWrap: { position: 'absolute', width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
-  pin: { width: 14, height: 14, borderRadius: 7, borderColor: '#fff', borderWidth: 1.5, shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 }, elevation: 4 },
-  hint: { position: 'absolute', left: 16, color: 'rgba(237,231,245,0.45)', fontSize: 11 },
   sheetBack: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: C.bg2, borderTopLeftRadius: 22, borderTopRightRadius: 22, borderColor: C.line2, borderWidth: 1, overflow: 'hidden' },
   sheetImage: { width: '100%', aspectRatio: 16 / 9, backgroundColor: C.surface },

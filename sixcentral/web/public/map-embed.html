@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Leonida · SixCentral</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<style>
+  html, body, #map { margin:0; height:100%; background:linear-gradient(180deg,#070a14 0%,#0d1322 100%); }
+  #map { outline:none; }
+  .leaflet-container { background:transparent; font-family:-apple-system,'Segoe UI',Roboto,sans-serif; }
+  .pin-dot { width:14px; height:14px; border-radius:50%; border:1.5px solid #fff;
+             box-shadow:0 0 10px 2px var(--glow); background:var(--glow); }
+  .cluster { display:flex; align-items:center; justify-content:center; width:34px; height:34px;
+             border-radius:50%; background:rgba(255,46,136,.92); color:#fff; font-weight:800; font-size:13px;
+             border:2px solid #fff; box-shadow:0 0 14px rgba(255,46,136,.8); }
+  .region-label { color:var(--c); font-weight:800; letter-spacing:.35em; text-shadow:0 0 6px #070a14,0 0 12px #070a14, 2px 2px 0 #070a14;
+                  white-space:nowrap; transform:translate(-50%,-50%); pointer-events:none; }
+  .z-far  .region-label { font-size:15px; opacity:1; }
+  .z-mid  .region-label { font-size:11px; opacity:.85; }
+  .z-near .region-label { font-size:0; opacity:0; }
+  .corner { position:fixed; z-index:800; color:#6f6488; font-size:10px; letter-spacing:.12em; pointer-events:none; }
+  #credit { right:10px; bottom:8px; }
+  #scalebar { left:12px; bottom:8px; }
+  #compass { top:10px; right:12px; width:40px; height:40px; border:2px solid #968cb0; border-radius:50%;
+             display:flex; align-items:center; justify-content:center; color:#EDE7F5; font-weight:900; }
+  #compass::after { content:''; position:absolute; width:0; height:0; border-left:5px solid transparent;
+                    border-right:5px solid transparent; border-bottom:14px solid #FF2E88; transform:translateY(-8px); }
+  .leaflet-popup-content-wrapper { background:#141126; color:#EDE7F5; border:1px solid #2c2744; border-radius:14px; }
+  .leaflet-popup-tip { background:#141126; }
+  .pop img { width:100%; border-radius:10px; display:block; margin-bottom:8px; }
+  .pop b { font-size:14px; text-transform:uppercase; letter-spacing:.04em; }
+  .pop .rg { color:#FFC83D; font-size:10px; text-transform:uppercase; letter-spacing:.08em; margin-left:6px; }
+  .pop p { color:#b9b0cc; font-size:12px; line-height:1.5; margin:6px 0 4px; }
+  .pop .src { color:#6f6488; font-size:10px; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="compass" class="corner">N</div>
+<div id="scalebar" class="corner">SCALE ILLUSTRATIVE</div>
+<div id="credit" class="corner">SIXCENTRAL RENDER · BASE DATA: NATURAL EARTH · ADJUSTS AS OFFICIAL MAPPING EMERGES</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script>
+const SUPA = 'https://kodkbbuuhkoifnggkrjx.supabase.co';
+const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtvZGtiYnV1aGtvaWZuZ2drcmp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5ODcwNjIsImV4cCI6MjA5ODU2MzA2Mn0.E6PF9sgtj8ZzBlK7V-fVSIFAdvoUnaD_vAKATNjtSCs';
+const MAXZ = 6, WORLD = 256 * Math.pow(2, MAXZ);
+const inApp = !!window.ReactNativeWebView;
+
+const map = L.map('map', { crs: L.CRS.Simple, minZoom: 1, maxZoom: 8, zoomControl: false, attributionControl: false });
+L.tileLayer('/tiles/{z}/{x}/{y}.png', { minZoom: 0, maxZoom: 8, maxNativeZoom: MAXZ, noWrap: true }).addTo(map);
+
+const P = (x, y) => map.unproject([x * WORLD, y * WORLD], MAXZ);
+const LANDBOX = [[0.19, 0.053], [0.81, 0.994]];
+map.setMaxBounds(L.latLngBounds(P(LANDBOX[0][0] - 0.04, LANDBOX[0][1] - 0.04), P(LANDBOX[1][0] + 0.04, LANDBOX[1][1] + 0.04)));
+map.fitBounds(L.latLngBounds(P(LANDBOX[0][0], LANDBOX[0][1]), P(LANDBOX[1][0], LANDBOX[1][1])));
+
+const LABELS = [
+  ['VICE CITY', 0.5426, 0.7348, '#FF2E88'],
+  ['LEONIDA KEYS', 0.6538, 0.9155, '#FFC83D'],
+  ['GRASSRIVERS', 0.6093, 0.8215, '#1FE5D6'],
+  ['AMBROSIA', 0.6568, 0.5685, '#EDE7F5'],
+  ['PORT GELLHORN', 0.3728, 0.2288, '#1FE5D6'],
+  ['MOUNT KALAGA', 0.507, 0.1276, '#8A4FFF'],
+];
+for (const [t, x, y, c] of LABELS) {
+  L.marker(P(x, y), {
+    icon: L.divIcon({ className: '', html: `<div class="region-label" style="--c:${c}">${t}</div>`, iconSize: [0, 0] }),
+    interactive: false,
+  }).addTo(map);
+}
+function zoomClass() {
+  const z = map.getZoom();
+  const el = document.getElementById('map');
+  el.classList.remove('z-far', 'z-mid', 'z-near');
+  el.classList.add(z < 3 ? 'z-far' : z < 5 ? 'z-mid' : 'z-near');
+}
+map.on('zoomend', zoomClass); zoomClass();
+
+let cluster = null, allPins = [], colours = {};
+function draw(filter) {
+  if (cluster) map.removeLayer(cluster);
+  cluster = L.markerClusterGroup({
+    maxClusterRadius: 46, showCoverageOnHover: false, spiderfyOnMaxZoom: true,
+    iconCreateFunction: (c) => L.divIcon({ className: '', html: `<div class="cluster">${c.getChildCount()}</div>`, iconSize: [34, 34] }),
+  });
+  for (const p of allPins) {
+    if (filter && p.collectible_type !== filter) continue;
+    const col = colours[p.collectible_type] || '#FF2E88';
+    const m = L.marker(P(p.lng, p.lat), {
+      icon: L.divIcon({ className: '', html: `<div class="pin-dot" style="--glow:${col}"></div>`, iconSize: [14, 14] }),
+    });
+    if (inApp) {
+      m.on('click', () => window.ReactNativeWebView.postMessage(JSON.stringify(p)));
+    } else {
+      m.bindPopup(`<div class="pop">${p.image_url ? `<img src="${p.image_url}"/>` : ''}<b>${p.name}</b>` +
+        `${p.region ? `<span class="rg">${p.region}</span>` : ''}` +
+        `${p.blurb ? `<p>${p.blurb}</p>` : ''}${p.source_note ? `<div class="src">Verified · ${p.source_note}</div>` : ''}</div>`,
+        { maxWidth: 260 });
+    }
+    cluster.addLayer(m);
+  }
+  map.addLayer(cluster);
+}
+window.setFilter = (id) => draw(id || null);
+
+const H = { apikey: ANON, Authorization: 'Bearer ' + ANON };
+Promise.all([
+  fetch(`${SUPA}/rest/v1/map_pins?status=eq.verified&select=id,name,region,lat,lng,collectible_type,blurb,image_url,source_note`, { headers: H }).then(r => r.json()),
+  fetch(`${SUPA}/rest/v1/collectible_types?select=id,colour`, { headers: H }).then(r => r.json()),
+]).then(([pins, types]) => {
+  allPins = pins.map(p => ({ ...p, lat: +p.lat, lng: +p.lng }));
+  for (const t of types) colours[t.id] = t.colour || '#FF2E88';
+  draw(null);
+});
+</script>
+</body>
+</html>
