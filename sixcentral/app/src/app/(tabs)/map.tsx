@@ -61,7 +61,7 @@ export default function MapTab() {
       ) : (
         <WebView
           ref={web}
-          source={{ uri: `${SITE}/map-embed.html?v=7` }}
+          source={{ uri: `${SITE}/map-embed.html?v=8` }}
           style={st.web}
           onMessage={(e) => {
             try {

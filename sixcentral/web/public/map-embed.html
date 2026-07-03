@@ -42,7 +42,7 @@
 <div id="map"></div>
 <div id="compass" class="corner">N</div>
 <div id="scalebar" class="corner">SCALE ILLUSTRATIVE</div>
-<div id="credit" class="corner">SIXCENTRAL RENDER · BASE DATA: NATURAL EARTH · ADJUSTS AS OFFICIAL MAPPING EMERGES</div>
+<div id="credit" class="corner">SIXCENTRAL RENDER · BASE: NATURAL EARTH · ISLAND BOUNDARY: SERIES CONVENTION · ADJUSTS AS OFFICIAL MAPPING EMERGES</div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script>
@@ -52,22 +52,22 @@ const MAXZ = 6, WORLD = 512 * Math.pow(2, MAXZ);
 const inApp = !!window.ReactNativeWebView;
 
 const map = L.map('map', { crs: L.CRS.Simple, minZoom: 0, maxZoom: 6, zoomSnap: 0, zoomDelta: 0.5, maxBoundsViscosity: 1.0, zoomControl: false, attributionControl: false });
-L.tileLayer('/tiles512/{z}/{x}/{y}.png?v=7', { tileSize: 512, minZoom: 0, maxZoom: 6, noWrap: true }).addTo(map);
+L.tileLayer('/tiles512/{z}/{x}/{y}.png?v=8', { tileSize: 512, minZoom: 0, maxZoom: 6, noWrap: true }).addTo(map);
 
 const P = (x, y) => map.unproject([x * WORLD, y * WORLD], MAXZ);
-const LANDBOX = [[0.19, 0.053], [0.81, 0.994]];
+const LANDBOX = [[0.055, 0.057], [0.945, 0.982]];
 map.setMaxBounds(L.latLngBounds(P(LANDBOX[0][0] - 0.02, LANDBOX[0][1] - 0.05), P(LANDBOX[1][0] + 0.02, LANDBOX[1][1] + 0.02)));
 const landBounds = L.latLngBounds(P(LANDBOX[0][0], LANDBOX[0][1]), P(LANDBOX[1][0], LANDBOX[1][1]));
 map.fitBounds(landBounds, { paddingTopLeft: [0, 130], paddingBottomRight: [0, 16] });
 map.setMinZoom(map.getBoundsZoom(landBounds, false, [0, 40]));
 
 const LABELS = [
-  ['VICE CITY', 'MIAMI', 0.5426, 0.7348],
-  ['LEONIDA KEYS', 'FLORIDA KEYS', 0.6538, 0.9155],
-  ['GRASSRIVERS', 'EVERGLADES', 0.6093, 0.8215],
-  ['AMBROSIA', 'LAKE OKEECHOBEE', 0.6568, 0.5685],
-  ['PORT GELLHORN', 'GULF COAST', 0.3728, 0.2288],
-  ['MOUNT KALAGA', 'NATIONAL PARK', 0.507, 0.1276],
+  ['VICE CITY', 'MIAMI', 0.5624, 0.7181],
+  ['LEONIDA KEYS', 'FLORIDA KEYS', 0.7256, 0.9021],
+  ['GRASSRIVERS', 'EVERGLADES', 0.6603, 0.8064],
+  ['AMBROSIA', 'LAKE OKEECHOBEE', 0.7299, 0.5488],
+  ['PORT GELLHORN', 'GULF COAST', 0.3134, 0.2029],
+  ['MOUNT KALAGA', 'NATIONAL PARK', 0.5103, 0.1164],
 ];
 for (const [t, sub, x, y] of LABELS) {
   L.marker(P(x, y), {
