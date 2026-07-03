@@ -98,6 +98,7 @@ export default function AccountPanel() {
   const [gamertag, setGamertag] = useState('');
   const [idsPublic, setIdsPublic] = useState(false);
   const [dob, setDob] = useState('');
+  const [dobLocked, setDobLocked] = useState(false);
   const [detailsState, setDetailsState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
   const [detailsMsg, setDetailsMsg] = useState('');
   const [newsletter2, setNewsletter2] = useState<'unknown' | 'on' | 'off' | 'busy'>('unknown');
@@ -124,6 +125,7 @@ export default function AccountPanel() {
         setGamertag(prof.xbox_gamertag ?? '');
         setIdsPublic(prof.ids_public);
         setDob(prof.date_of_birth ?? '');
+        setDobLocked(!!prof.date_of_birth);
       }
       if (r) setRanks(r as Rank[]);
       if (f) setFlairs(f as Flair[]);
@@ -374,7 +376,7 @@ export default function AccountPanel() {
         psn_id: psn.trim() || null,
         xbox_gamertag: gamertag.trim() || null,
         ids_public: idsPublic,
-        date_of_birth: dob || null,
+        ...(dobLocked ? {} : { date_of_birth: dob || null }),
       })
       .eq('id', profile.id);
     if (error) {
@@ -382,7 +384,11 @@ export default function AccountPanel() {
       setDetailsMsg(
         /IDS_AGE/.test(error.message)
           ? 'Showing IDs publicly needs a date of birth on file showing 18+.'
-          : 'Could not save. Check the fields and try again.',
+          : /DOB_LOCKED/.test(error.message)
+            ? 'Your date of birth is already set. Contact support to change it.'
+            : /DOB_MIN_AGE/.test(error.message)
+              ? 'SixCentral is for ages 13 and up.'
+              : 'Could not save. Check the fields and try again.',
       );
     } else {
       setDetailsState('done');
@@ -395,6 +401,7 @@ export default function AccountPanel() {
         ids_public: idsPublic,
         date_of_birth: dob || null,
       });
+      if (dob) setDobLocked(true);
       setTimeout(() => setDetailsState('idle'), 2000);
     }
   }
@@ -844,10 +851,13 @@ export default function AccountPanel() {
               type="date"
               className="nl__input"
               value={dob}
+              disabled={dobLocked}
               onChange={(e) => setDob(e.target.value)}
             />
             <p className="panel__hint">
-              Only needed to show gamer IDs publicly (18+). Never shown anywhere, ever.
+              {dobLocked
+                ? 'Set once and locked. Contact support if this is wrong.'
+                : 'Only needed to show gamer IDs publicly (18+). Never shown anywhere, ever.'}
             </p>
           </div>
 
