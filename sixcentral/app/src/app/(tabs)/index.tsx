@@ -354,7 +354,7 @@ export default function Home() {
           <View style={st.bigReadShade} />
           <Text style={st.proKicker}>SixCentral Pro</Text>
           <Text style={st.compTitle}>Full map. Unlimited tracking. Ad free.</Text>
-          <Text style={st.proPrice}>From £14.99 a year · arrives with the game</Text>
+          <Text style={st.proPrice}>Landing with the game this November.</Text>
         </LinearGradient>
       </ScrollView>
     </SafeAreaView>
