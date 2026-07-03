@@ -89,12 +89,14 @@ export default function Submit() {
     setPhase('Uploading your video…');
     const ext = (file.fileName ?? file.uri).toLowerCase().endsWith('.mov') ? 'mov' : 'mp4';
     const path = `${session.user.id}/${Math.random().toString(36).slice(2)}-${Date.now()}.${ext}`;
-    const bytes = await fetch(file.uri).then((r) => r.arrayBuffer()).catch(() => null);
-    if (!bytes) return fail('Could not read that video from your library.');
+    // Blob keeps the video on disk and streams it; an ArrayBuffer loads the whole
+    // file into JS memory, which quietly falls over as clips get bigger.
+    const blob = await fetch(file.uri).then((r) => r.blob()).catch(() => null);
+    if (!blob) return fail('Could not read that video from your library.');
     const { error: upErr } = await supabase.storage
       .from('clip-intake')
-      .upload(path, bytes, { contentType: file.mimeType ?? 'video/mp4' });
-    if (upErr) return fail('Upload failed. Check the connection and try again.');
+      .upload(path, blob, { contentType: file.mimeType ?? 'video/mp4' });
+    if (upErr) return fail(`Upload failed (${upErr.message}). Check the connection and try again.`);
     const { data: intake, error: inErr } = await supabase
       .from('clip_intake')
       .insert({
