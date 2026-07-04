@@ -36,6 +36,8 @@ type Friend = {
 type Rank = { id: number; name: string };
 type Row = { id: string; handle: string; respect: number; rank_name: string; title: string | null };
 
+const DISCORD_INVITE = 'https://discord.gg/8xsC3tymm'; // keep in step with web/lib/site.ts
+
 export default function ProfileTab() {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
@@ -174,6 +176,9 @@ export default function ProfileTab() {
             </Text>
             . Abusive content and accounts get removed.
           </Text>
+          <Pressable onPress={() => Linking.openURL(DISCORD_INVITE)}>
+            <Text style={st.discordLink}>Or just come say hi in the Discord →</Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     );
@@ -336,6 +341,9 @@ export default function ProfileTab() {
           ))
         )}
 
+        <Pressable style={st.discordBtn} onPress={() => Linking.openURL(DISCORD_INVITE)}>
+          <Text style={st.discordText}>Join the SixCentral Discord</Text>
+        </Pressable>
         <Text style={st.note}>Date of birth and password changes live on the website for now.</Text>
         <Pressable style={st.signout} onPress={() => supabase.auth.signOut()}>
           <Text style={st.signoutText}>Sign out</Text>
@@ -356,6 +364,9 @@ const st = StyleSheet.create({
   btnText: { color: '#fff', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
   legal: { color: C.dim, fontSize: 11, lineHeight: 16, textAlign: 'center', marginTop: 16, paddingHorizontal: 8 },
   legalLink: { color: C.cyan, fontWeight: '700' },
+  discordLink: { color: C.cyan, fontWeight: '700', fontSize: 12, textAlign: 'center', marginTop: 14 },
+  discordBtn: { borderColor: '#5865F2', borderWidth: 1, borderRadius: 12, padding: 13, alignItems: 'center', marginBottom: 14 },
+  discordText: { color: '#8C96F7', fontWeight: '800', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1 },
   swap: { color: C.cyan, marginTop: 16, textAlign: 'center' },
   err: { color: C.pinkL, marginBottom: 8 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 18 },
