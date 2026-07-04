@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, FlatList, Image, Modal, Pressable, RefreshControl, Share, StyleSheet, Text, View, type ViewToken } from 'react-native';
+import { Alert, Animated, FlatList, Image, Modal, Pressable, RefreshControl, Share, StyleSheet, Text, View, type ViewToken } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WebView } from 'react-native-webview';
@@ -21,6 +21,26 @@ type Clip = {
   profiles: { handle: string; title: string | null; rank_id: number; avatar_url: string | null; flair: string | null } | null;
 };
 type Rank = { id: number; name: string };
+
+/**
+ * Loading poster: our thumbnail sits over the player for the first beat and
+ * fades once playback has kicked, swallowing the worst of the load flash.
+ * It is a loading state, not a mask; YouTube attribution stays visible after.
+ */
+function PosterFade({ uri }: { uri: string }) {
+  const op = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      Animated.timing(op, { toValue: 0, duration: 450, useNativeDriver: true }).start();
+    }, 1300);
+    return () => clearTimeout(timer);
+  }, [op]);
+  return (
+    <Animated.View style={[StyleSheet.absoluteFill, { opacity: op }]} pointerEvents="none">
+      <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+    </Animated.View>
+  );
+}
 
 export default function Clips() {
   const [clips, setClips] = useState<Clip[]>([]);
@@ -307,19 +327,22 @@ export default function Clips() {
               return (
                 <View style={{ height: pageH }}>
                   {playing ? (
+                    <>
                     <WebView
                       ref={playerRef}
                       style={StyleSheet.absoluteFill}
                       originWhitelist={['*']}
                       onLoadEnd={() => kickPlayer(soundOn)}
                       source={{
-                        html: `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>html,body{margin:0;background:#000;height:100%;overflow:hidden}iframe{position:absolute;inset:0;width:100%;height:100%;border:0}</style></head><body><iframe src="https://www.youtube-nocookie.com/embed/${item.video_id}?autoplay=1&mute=1&enablejsapi=1&origin=https%3A%2F%2Fsixcentral.co.uk&playsinline=1&rel=0&controls=0&iv_load_policy=3" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></body></html>`,
+                        html: `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>html,body{margin:0;background:#000;height:100%;overflow:hidden}iframe{position:absolute;inset:0;width:100%;height:100%;border:0}</style></head><body><iframe src="https://www.youtube-nocookie.com/embed/${item.video_id}?autoplay=1&mute=1&enablejsapi=1&origin=https%3A%2F%2Fsixcentral.co.uk&playsinline=1&rel=0&controls=0&iv_load_policy=3&loop=1&playlist=${item.video_id}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></body></html>`,
                         baseUrl: 'https://sixcentral.co.uk',
                       }}
                       allowsInlineMediaPlayback
                       mediaPlaybackRequiresUserAction={false}
                       allowsFullscreenVideo
                     />
+                    <PosterFade uri={`https://i.ytimg.com/vi/${item.video_id}/hqdefault.jpg`} />
+                    </>
                   ) : (
                     <>
                       <Image
