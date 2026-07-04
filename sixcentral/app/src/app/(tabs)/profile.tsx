@@ -177,9 +177,6 @@ export default function ProfileTab() {
             </Text>
             . Abusive content and accounts get removed.
           </Text>
-          <Pressable onPress={() => Linking.openURL(DISCORD_INVITE)}>
-            <Text style={st.discordLink}>Or just come say hi in the Discord →</Text>
-          </Pressable>
         </View>
       </SafeAreaView>
     );
@@ -402,7 +399,6 @@ const st = StyleSheet.create({
   btnText: { color: '#fff', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
   legal: { color: C.dim, fontSize: 11, lineHeight: 16, textAlign: 'center', marginTop: 16, paddingHorizontal: 8 },
   legalLink: { color: C.cyan, fontWeight: '700' },
-  discordLink: { color: C.cyan, fontWeight: '700', fontSize: 12, textAlign: 'center', marginTop: 14 },
   discordBtn: { borderColor: '#5865F2', borderWidth: 1, borderRadius: 12, padding: 13, alignItems: 'center', marginBottom: 14 },
   discordText: { color: '#8C96F7', fontWeight: '800', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1 },
   statHint: { color: C.dim, fontSize: 10, fontWeight: '700', marginTop: 6 },
