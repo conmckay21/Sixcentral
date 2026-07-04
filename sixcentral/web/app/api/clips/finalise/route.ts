@@ -71,19 +71,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: msg }, { status: code });
   }
 
+  // Verification fails open: the channel token may hold upload-only scopes,
+  // and fresh uploads answer API queries inconsistently while processing.
+  // The mod queue is the real gate, exactly as it is for link submissions,
+  // so we hard-refuse only when YouTube affirmatively says the id is fake.
   const token = await youtubeAccessToken();
-  if (!token) return fail('Upload is warming up. The link route works right now.', 501);
-
-  const check = await fetch(
-    `https://www.googleapis.com/youtube/v3/videos?part=status,fileDetails&id=${videoId}`,
-    { headers: { Authorization: `Bearer ${token}` } },
-  );
-  const found = (await check.json().catch(() => null)) as {
-    items?: { status?: { privacyStatus?: string }; fileDetails?: unknown }[];
-  } | null;
-  const item = found?.items?.[0];
-  if (!check.ok || !item || !item.fileDetails || item.status?.privacyStatus !== 'unlisted') {
-    return fail('Could not verify that upload with YouTube.');
+  if (token) {
+    const check = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=id&id=${videoId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (check.ok) {
+      const found = (await check.json().catch(() => null)) as { items?: unknown[] } | null;
+      if (found && Array.isArray(found.items) && found.items.length === 0) {
+        return fail('YouTube has no video with that id.');
+      }
+    }
   }
 
   const { data: clip, error: insErr } = await sb

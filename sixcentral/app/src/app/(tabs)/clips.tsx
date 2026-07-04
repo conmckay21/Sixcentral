@@ -313,7 +313,7 @@ export default function Clips() {
                       originWhitelist={['*']}
                       onLoadEnd={() => kickPlayer(soundOn)}
                       source={{
-                        html: `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>html,body{margin:0;background:#000;height:100%;overflow:hidden}iframe{position:absolute;inset:0;width:100%;height:100%;border:0}</style></head><body><iframe src="https://www.youtube-nocookie.com/embed/${item.video_id}?autoplay=1&mute=1&enablejsapi=1&origin=https%3A%2F%2Fsixcentral.co.uk&playsinline=1&rel=0&modestbranding=1" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></body></html>`,
+                        html: `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>html,body{margin:0;background:#000;height:100%;overflow:hidden}iframe{position:absolute;inset:0;width:100%;height:100%;border:0}</style></head><body><iframe src="https://www.youtube-nocookie.com/embed/${item.video_id}?autoplay=1&mute=1&enablejsapi=1&origin=https%3A%2F%2Fsixcentral.co.uk&playsinline=1&rel=0&controls=0&iv_load_policy=3" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></body></html>`,
                         baseUrl: 'https://sixcentral.co.uk',
                       }}
                       allowsInlineMediaPlayback
