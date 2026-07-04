@@ -82,55 +82,62 @@ export default function Submit() {
       return;
     }
 
-    // upload route
+    // upload route: the phone streams straight to YouTube. Our server only
+    // opens the session and verifies the result, so full-size console
+    // captures fit and no video bytes ever pass through our infrastructure.
     if (!file) return fail('Pick a video first.');
-    if (file.fileSize && file.fileSize > 100 * 1024 * 1024) {
-      return fail('Keep it under 100MB for now. Trim the clip and try again.');
+    if (file.fileSize && file.fileSize > 512 * 1024 * 1024) {
+      return fail('Keep it under 512MB. Console captures fit with room to spare.');
     }
-    setPhase('Uploading your video…');
-    const ext = (file.fileName ?? file.uri).toLowerCase().endsWith('.mov') ? 'mov' : 'mp4';
-    const path = `${session.user.id}/${Math.random().toString(36).slice(2)}-${Date.now()}.${ext}`;
-    // Signed URL + native upload streams the file straight from disk: no memory
-    // ceiling, and none of the React Native blob serialisation traps.
-    const { data: signed, error: signErr } = await supabase.storage
-      .from('clip-intake')
-      .createSignedUploadUrl(path);
-    if (signErr || !signed) return fail('Could not start the upload. Try again.');
-    const up = await FileSystem.uploadAsync(signed.signedUrl, file.uri, {
+    setPhase('Starting the upload…');
+    const jwt = (await supabase.auth.getSession()).data.session?.access_token;
+    if (!jwt) return fail('Sign in first.');
+    const mime = file.mimeType ?? 'video/mp4';
+    const sess = (await fetch('https://sixcentral.co.uk/api/clips/upload-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jwt}` },
+      body: JSON.stringify({
+        caption: caption.trim() || null,
+        category,
+        comp_entry: comp,
+        contentType: mime,
+      }),
+    })
+      .then((r) => r.json())
+      .catch(() => null)) as { ok?: boolean; uploadUrl?: string; intakeId?: string; error?: string } | null;
+    if (!sess?.ok || !sess.uploadUrl || !sess.intakeId) {
+      return fail(sess?.error ?? 'Could not start the upload. Try again.');
+    }
+    setPhase('Uploading straight to YouTube. Keep this screen open…');
+    const up = await FileSystem.uploadAsync(sess.uploadUrl, file.uri, {
       httpMethod: 'PUT',
-      headers: { 'Content-Type': file.mimeType ?? 'video/mp4' },
+      headers: { 'Content-Type': mime },
     }).catch(() => null);
     if (!up || up.status < 200 || up.status >= 300) {
       const why = up ? `status ${up.status}: ${String(up.body ?? '').slice(0, 140)}` : 'network';
       return fail(`Upload failed (${why}). Check the connection and try again.`);
     }
-    const { data: intake, error: inErr } = await supabase
-      .from('clip_intake')
-      .insert({
-        profile_id: session.user.id,
-        storage_path: path,
-        caption: caption.trim() || null,
-        category,
-        comp_entry: comp,
-        terms_version: 'v1-app',
-        agreed_at: new Date().toISOString(),
-      })
-      .select('id')
-      .single();
-    if (inErr || !intake) return fail('Could not queue the upload. Try again.');
-    setPhase('Posting it to YouTube for you. Keep this screen open, it can take a couple of minutes…');
-    const res = await fetch('https://sixcentral.co.uk/api/clips/process', {
+    let videoId: string | null = null;
+    try {
+      videoId = (JSON.parse(up.body) as { id?: string }).id ?? null;
+    } catch {
+      videoId = null;
+    }
+    if (!videoId) return fail('YouTube did not confirm the video. Try again.');
+    setPhase('Locking it in…');
+    const fin = (await fetch('https://sixcentral.co.uk/api/clips/finalise', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ intakeId: intake.id }),
-    }).catch(() => null);
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jwt}` },
+      body: JSON.stringify({ intakeId: sess.intakeId, videoId }),
+    })
+      .then((r) => r.json())
+      .catch(() => null)) as { ok?: boolean; error?: string } | null;
     setPhase('');
     setBusy(false);
-    if (res?.ok) {
+    if (fin?.ok) {
       setDone(true);
     } else {
-      const body = res ? ((await res.json().catch(() => null)) as { error?: string } | null) : null;
-      setMsg(body?.error ?? 'Processing hiccuped. Your upload is safe, a moderator can retry it.');
+      setMsg(fin?.error ?? 'Uploaded to YouTube but could not queue it. Tell a moderator.');
     }
   }
 
@@ -201,7 +208,7 @@ export default function Submit() {
           <>
             <Text style={st.help}>
               No YouTube account needed. Save the clip to your phone from the PlayStation or Xbox
-              app, pick it here, and we post it to YouTube for you with your credit. Up to 100MB.
+              app, pick it here, and we post it to YouTube for you with your credit. Full-size console captures welcome.
             </Text>
             <Pressable style={st.pick} onPress={pickVideo}>
               <Text style={st.pickText}>{file ? '🎬 Change video' : '🎬 Choose a video'}</Text>
