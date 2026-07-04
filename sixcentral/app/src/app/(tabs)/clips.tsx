@@ -50,11 +50,22 @@ export default function Clips() {
 
   const EMOJI: [string, string][] = [['fire', '🔥'], ['funny', '😂'], ['mind', '🤯'], ['trophy', '🏆']];
 
-  // Volume changes on an already-playing video are not gesture-gated, so one
-  // tap buys sound for the whole session; each fresh player re-unmutes itself.
-  function unmutePlayer() {
+  function sendPlayerCommand(func: 'playVideo' | 'unMute') {
     playerRef.current?.injectJavaScript(
-      `(function(){var f=document.querySelector('iframe');if(f&&f.contentWindow){f.contentWindow.postMessage(JSON.stringify({event:'command',func:'unMute',args:[]}),'*');f.contentWindow.postMessage(JSON.stringify({event:'command',func:'playVideo',args:[]}),'*');}})();true;`
+      `(function(){var f=document.querySelector('iframe');if(f&&f.contentWindow){f.contentWindow.postMessage(JSON.stringify({event:'command',func:'${func}',args:[]}),'*');}})();true;`
+    );
+  }
+
+  // YouTube's autoplay attribute is best-effort; a programmatic play command on
+  // the muted player makes it deterministic. Two kicks cover slow player boots.
+  // Volume changes on a playing video are not gesture-gated, so one tap buys
+  // sound for the whole session; each fresh player re-unmutes itself.
+  function kickPlayer(withSound: boolean) {
+    [500, 1600].forEach((ms) =>
+      setTimeout(() => {
+        sendPlayerCommand('playVideo');
+        if (withSound) sendPlayerCommand('unMute');
+      }, ms)
     );
   }
 
@@ -300,9 +311,7 @@ export default function Clips() {
                       ref={playerRef}
                       style={StyleSheet.absoluteFill}
                       originWhitelist={['*']}
-                      onLoadEnd={() => {
-                        if (soundOn) setTimeout(unmutePlayer, 400);
-                      }}
+                      onLoadEnd={() => kickPlayer(soundOn)}
                       source={{
                         html: `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>html,body{margin:0;background:#000;height:100%;overflow:hidden}iframe{position:absolute;inset:0;width:100%;height:100%;border:0}</style></head><body><iframe src="https://www.youtube-nocookie.com/embed/${item.video_id}?autoplay=1&mute=1&enablejsapi=1&origin=https%3A%2F%2Fsixcentral.co.uk&playsinline=1&rel=0&modestbranding=1" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></body></html>`,
                         baseUrl: 'https://sixcentral.co.uk',
@@ -328,7 +337,8 @@ export default function Clips() {
                     <Pressable
                       style={st.soundPill}
                       onPress={() => {
-                        unmutePlayer();
+                        sendPlayerCommand('unMute');
+                        sendPlayerCommand('playVideo');
                         setSoundOn(true);
                       }}
                     >

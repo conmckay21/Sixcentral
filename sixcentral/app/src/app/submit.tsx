@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import type { Session } from '@supabase/supabase-js';
+import * as FileSystem from 'expo-file-system/legacy';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 
@@ -89,14 +90,19 @@ export default function Submit() {
     setPhase('Uploading your video…');
     const ext = (file.fileName ?? file.uri).toLowerCase().endsWith('.mov') ? 'mov' : 'mp4';
     const path = `${session.user.id}/${Math.random().toString(36).slice(2)}-${Date.now()}.${ext}`;
-    // Blob keeps the video on disk and streams it; an ArrayBuffer loads the whole
-    // file into JS memory, which quietly falls over as clips get bigger.
-    const blob = await fetch(file.uri).then((r) => r.blob()).catch(() => null);
-    if (!blob) return fail('Could not read that video from your library.');
-    const { error: upErr } = await supabase.storage
+    // Signed URL + native upload streams the file straight from disk: no memory
+    // ceiling, and none of the React Native blob serialisation traps.
+    const { data: signed, error: signErr } = await supabase.storage
       .from('clip-intake')
-      .upload(path, blob, { contentType: file.mimeType ?? 'video/mp4' });
-    if (upErr) return fail(`Upload failed (${upErr.message}). Check the connection and try again.`);
+      .createSignedUploadUrl(path);
+    if (signErr || !signed) return fail('Could not start the upload. Try again.');
+    const up = await FileSystem.uploadAsync(signed.signedUrl, file.uri, {
+      httpMethod: 'PUT',
+      headers: { 'Content-Type': file.mimeType ?? 'video/mp4' },
+    }).catch(() => null);
+    if (!up || up.status < 200 || up.status >= 300) {
+      return fail(`Upload failed (${up ? 'status ' + up.status : 'network'}). Check the connection and try again.`);
+    }
     const { data: intake, error: inErr } = await supabase
       .from('clip_intake')
       .insert({
