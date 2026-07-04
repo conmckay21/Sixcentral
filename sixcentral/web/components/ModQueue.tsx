@@ -104,6 +104,19 @@ export default function ModQueue() {
     if (!sb || !session || busy) return;
     setBusy(id);
     setActionErr('');
+    if (status === 'approved') {
+      const row = clipQueue.find((r) => r.id === id);
+      if (row?.video_id) {
+        const chk = await fetch(`/api/clips/playable?v=${row.video_id}`)
+          .then((r) => r.json())
+          .catch(() => ({ playable: true }));
+        if (!chk.playable) {
+          setActionErr('That video is still processing on YouTube. Give it a couple of minutes, then approve again.');
+          setBusy(null);
+          return;
+        }
+      }
+    }
     const { error } = await sb
       .from('clip_submissions')
       .update({ status, reviewed_by: session.user.id })
