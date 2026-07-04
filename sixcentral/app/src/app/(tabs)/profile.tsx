@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useCallback } from 'react';
-import { ActivityIndicator, Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Linking, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { Session } from '@supabase/supabase-js';
@@ -53,6 +53,7 @@ export default function ProfileTab() {
   const [email, setEmail] = useState('');
   const [pw, setPw] = useState('');
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [respectOpen, setRespectOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
 
@@ -222,17 +223,18 @@ export default function ProfileTab() {
           </View>
         )}
 
-        <View style={st.statCard}>
+        <Pressable style={st.statCard} onPress={() => setRespectOpen(true)}>
           <Text style={st.statNum}>{profile?.respect?.toLocaleString('en-GB') ?? '0'}</Text>
           <Text style={st.statLbl}>Respect</Text>
-        </View>
+          <Text style={st.statHint}>How it works →</Text>
+        </Pressable>
 
         {profile && !profile.is_pro && (
           <LinearGradient colors={G.hot} {...GRAD} style={st.proCard}>
             <View style={st.proShade} />
             <Text style={st.proKicker}>SixCentral Pro</Text>
             <Text style={st.proTitle}>Full map. Unlimited tracking. Ad free.</Text>
-            <Text style={st.proPrice}>From £14.99 a year · arrives with the game</Text>
+            <Text style={st.proPrice}>Landing with the game this November.</Text>
           </LinearGradient>
         )}
 
@@ -349,6 +351,42 @@ export default function ProfileTab() {
           <Text style={st.signoutText}>Sign out</Text>
         </Pressable>
       </ScrollView>
+
+      <Modal visible={respectOpen} animationType="slide" transparent onRequestClose={() => setRespectOpen(false)}>
+        <View style={st.rWrap}>
+          <View style={st.rSheet}>
+            <Text style={st.rTitle}>
+              EARNING <Text style={{ color: C.pink }}>RESPECT</Text>
+            </Text>
+            <Text style={st.rIntro}>
+              Respect is only ever awarded for confirmed contributions. A submission earns nothing until a moderator
+              or trusted member verifies it. That gate keeps the board honest.
+            </Text>
+            {[
+              ['Accepted guide', '+100'],
+              ['Accepted clip upload', '+50'],
+              ['Confirmed location', '+25'],
+              ['Verified correction', '+15'],
+              ['Verified intel', '+15'],
+              ['Confirmed a submission', '+3'],
+              ['Upvoted answer', '+1'],
+            ].map(([label, pts]) => (
+              <View key={label} style={st.rRow}>
+                <Text style={st.rLabel}>{label}</Text>
+                <Text style={st.rPts}>{pts}</Text>
+              </View>
+            ))}
+            <Text style={st.rFoot}>
+              Upload clips right here in the app, submit intel or corrections on the site, or earn as a founding
+              contributor in the Discord. The full pipeline of map pins and collectible confirmations opens with the
+              tracker at launch.
+            </Text>
+            <Pressable style={st.rClose} onPress={() => setRespectOpen(false)}>
+              <Text style={st.rCloseText}>Close</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -367,6 +405,17 @@ const st = StyleSheet.create({
   discordLink: { color: C.cyan, fontWeight: '700', fontSize: 12, textAlign: 'center', marginTop: 14 },
   discordBtn: { borderColor: '#5865F2', borderWidth: 1, borderRadius: 12, padding: 13, alignItems: 'center', marginBottom: 14 },
   discordText: { color: '#8C96F7', fontWeight: '800', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1 },
+  statHint: { color: C.dim, fontSize: 10, fontWeight: '700', marginTop: 6 },
+  rWrap: { flex: 1, backgroundColor: 'rgba(0,0,0,0.72)', justifyContent: 'flex-end' },
+  rSheet: { backgroundColor: '#120D1B', borderTopLeftRadius: 22, borderTopRightRadius: 22, borderColor: C.line2, borderWidth: 1, padding: 22, paddingBottom: 36 },
+  rTitle: { color: C.text, fontSize: 24, fontWeight: '900', letterSpacing: 1, marginBottom: 10 },
+  rIntro: { color: C.muted, fontSize: 13, lineHeight: 19, marginBottom: 14 },
+  rRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomColor: C.line, borderBottomWidth: 1 },
+  rLabel: { color: C.text, fontSize: 14, fontWeight: '600' },
+  rPts: { color: C.green, fontSize: 14, fontWeight: '800' },
+  rFoot: { color: C.dim, fontSize: 12, lineHeight: 17, marginTop: 14 },
+  rClose: { marginTop: 16, borderColor: C.line2, borderWidth: 1, borderRadius: 12, padding: 12, alignItems: 'center' },
+  rCloseText: { color: C.text, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, fontSize: 12 },
   swap: { color: C.cyan, marginTop: 16, textAlign: 'center' },
   err: { color: C.pinkL, marginBottom: 8 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 18 },
