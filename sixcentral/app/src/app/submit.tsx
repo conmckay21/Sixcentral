@@ -101,7 +101,8 @@ export default function Submit() {
       headers: { 'Content-Type': file.mimeType ?? 'video/mp4' },
     }).catch(() => null);
     if (!up || up.status < 200 || up.status >= 300) {
-      return fail(`Upload failed (${up ? 'status ' + up.status : 'network'}). Check the connection and try again.`);
+      const why = up ? `status ${up.status}: ${String(up.body ?? '').slice(0, 140)}` : 'network';
+      return fail(`Upload failed (${why}). Check the connection and try again.`);
     }
     const { data: intake, error: inErr } = await supabase
       .from('clip_intake')
