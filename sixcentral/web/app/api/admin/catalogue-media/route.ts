@@ -134,10 +134,12 @@ export async function GET(req: Request) {
   }
 
   const remaining = todo.length - catalogued;
-  // Chain to the next batch automatically, but only while making progress.
-  if (catalogued > 0 && remaining > 0) {
+  // Chain to the next batch automatically, calling this same endpoint on the
+  // public host, but only while making progress.
+  const host = req.headers.get('host');
+  if (host && catalogued > 0 && remaining > 0) {
     waitUntil(
-      fetch(new URL(req.url).toString(), {
+      fetch(`https://${host}/api/admin/catalogue-media`, {
         headers: { authorization: req.headers.get('authorization') || '' },
       }).catch(() => {})
     );
