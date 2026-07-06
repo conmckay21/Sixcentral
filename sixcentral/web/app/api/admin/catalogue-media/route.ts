@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { waitUntil } from '@vercel/functions';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -8,12 +9,12 @@ export const maxDuration = 60;
 /**
  * Vision pass over the `media` bucket. For each image not yet catalogued, Claude
  * looks at it and writes a description, alt text and tags into media_assets.
- * Batched (a handful per call) so it never exceeds the function limit: run it
- * repeatedly until "remaining" reaches 0.
+ * Processes a batch, then chains to itself until the whole pool is done, so a
+ * single call catalogues everything. Safe to re-run: catalogued images skip.
  *
  *   curl -s -H "Authorization: Bearer YOUR_SECRET" https://sixcentral.co.uk/api/admin/catalogue-media
  */
-const BATCH = 8;
+const BATCH = 10;
 const BUCKET = 'media';
 const IMAGE = /\.(jpe?g|png|webp|gif)$/i;
 
@@ -43,7 +44,7 @@ function parseVision(text: string): { description: string; alt: string; tags: st
   }
 }
 
-async function describe(apiKey: string, mt: string, base64: string): Promise<{ description: string; alt: string; tags: string[] }> {
+async function describe(apiKey: string, mt: string, base64: string) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
@@ -68,6 +69,21 @@ async function describe(apiKey: string, mt: string, base64: string): Promise<{ d
   return parseVision(text);
 }
 
+// List every image in the bucket, recursing into any folders.
+async function listImages(sb: SupabaseClient, prefix = ''): Promise<string[]> {
+  const { data } = await sb.storage.from(BUCKET).list(prefix, { limit: 1000 });
+  const out: string[] = [];
+  for (const f of (data as any[]) || []) {
+    const path = prefix ? `${prefix}/${f.name}` : f.name;
+    if (!f.id) {
+      out.push(...(await listImages(sb, path))); // folder
+    } else if (IMAGE.test(f.name)) {
+      out.push(path);
+    }
+  }
+  return out;
+}
+
 function authorised(req: Request): boolean {
   const secret = process.env.CRON_SECRET;
   if (!secret) return true;
@@ -84,12 +100,7 @@ export async function GET(req: Request) {
   if (!apiKey) return NextResponse.json({ ok: false, error: 'missing ANTHROPIC_API_KEY' }, { status: 500 });
   const sb = createClient(url, key, { auth: { persistSession: false } });
 
-  // list the bucket
-  const { data: files, error: listErr } = await sb.storage.from(BUCKET).list('', { limit: 1000 });
-  if (listErr) return NextResponse.json({ ok: false, error: 'list: ' + listErr.message }, { status: 500 });
-  const images = (files || []).filter((f: any) => f.name && IMAGE.test(f.name)).map((f: any) => f.name as string);
-
-  // which are already catalogued
+  const images = await listImages(sb);
   const { data: done } = await sb.from('media_assets').select('path');
   const doneSet = new Set((done || []).map((d: any) => d.path as string));
   const todo = images.filter((name) => !doneSet.has(name));
@@ -122,11 +133,22 @@ export async function GET(req: Request) {
     }
   }
 
+  const remaining = todo.length - catalogued;
+  // Chain to the next batch automatically, but only while making progress.
+  if (catalogued > 0 && remaining > 0) {
+    waitUntil(
+      fetch(new URL(req.url).toString(), {
+        headers: { authorization: req.headers.get('authorization') || '' },
+      }).catch(() => {})
+    );
+  }
+
   return NextResponse.json({
     ok: true,
     total_images: images.length,
     catalogued_now: catalogued,
-    remaining: todo.length - catalogued,
+    remaining,
+    still_running: catalogued > 0 && remaining > 0,
     errors: errors.length ? errors : undefined,
   });
 }
