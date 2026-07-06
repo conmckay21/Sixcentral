@@ -1,5 +1,6 @@
 {
   "crons": [
-    { "path": "/api/discord/weekly-board", "schedule": "0 18 * * 0" }
+    { "path": "/api/discord/weekly-board", "schedule": "0 18 * * 0" },
+    { "path": "/api/intel-scan", "schedule": "0 11 * * *" }
   ]
 }

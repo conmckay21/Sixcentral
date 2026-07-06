@@ -1,8 +1,0 @@
-{
-  "crons": [
-    {
-      "path": "/api/intel-scan",
-      "schedule": "0 11 * * *"
-    }
-  ]
-}
