@@ -28,6 +28,22 @@ export async function GET(req: Request) {
   }
   const sb = createClient(url, key, { auth: { persistSession: false } });
 
+  // Ensure every category an article references exists first (there is a
+  // foreign key on articles.category_slug). Existing categories are left alone.
+  const catSlugs = Array.from(new Set(MOCK_ARTICLES.map((a) => a.category).filter(Boolean)));
+  const catRows = catSlugs.map((slug) => ({
+    slug,
+    name: slug.charAt(0).toUpperCase() + slug.slice(1),
+  }));
+  if (catRows.length) {
+    const { error: catErr } = await sb
+      .from('categories')
+      .upsert(catRows, { onConflict: 'slug', ignoreDuplicates: true });
+    if (catErr) {
+      return NextResponse.json({ ok: false, error: 'categories: ' + catErr.message }, { status: 500 });
+    }
+  }
+
   const rows = MOCK_ARTICLES.map((a) => ({
     slug: a.slug,
     title: a.title,
@@ -51,5 +67,5 @@ export async function GET(req: Request) {
   const { error } = await sb.from('articles').upsert(rows, { onConflict: 'slug' });
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
 
-  return NextResponse.json({ ok: true, migrated: rows.length });
+  return NextResponse.json({ ok: true, migrated: rows.length, categories: catRows.length });
 }
