@@ -30,6 +30,66 @@ const machineFields = (r: IntelRow) => ({
   last_seen_at: new Date().toISOString(),
 });
 
+// --- article dedup ---------------------------------------------------------
+// A published article "covers" a story when they share enough distinctive
+// words. Generic roundup words are stripped, so a living roundup with a vague
+// title (for example "Everything confirmed so far") does not suppress the desk.
+const GENERIC = new Set([
+  "the","a","an","and","or","of","to","in","on","for","is","are","was","be","by",
+  "with","as","at","it","this","that","from","has","have","will","new","our","so",
+  "far","what","you","your","should","which","vs","where","list","running","living",
+  "roundup","guide","buying","big","read","official","officially","everything",
+  "confirmed","gta","grand","theft","auto","vi","6","rockstar","games","game","uk",
+]);
+
+function words(text: string): Set<string> {
+  return new Set(
+    text
+      .toLowerCase()
+      .replace(/[^a-z0-9 ]+/g, " ")
+      .split(/\s+/)
+      .filter((w) => w.length > 2 && !GENERIC.has(w))
+  );
+}
+
+interface ArticleTok {
+  slug: string;
+  toks: Set<string>;
+}
+
+async function publishedArticles(sb: ReturnType<typeof admin>): Promise<ArticleTok[]> {
+  try {
+    const { data } = await sb
+      .from("articles")
+      .select("slug, title, kicker, excerpt")
+      .eq("published", true);
+    return (data || []).map((a: any) => ({
+      slug: a.slug,
+      toks: words(`${a.title || ""} ${a.kicker || ""} ${a.excerpt || ""}`),
+    }));
+  } catch {
+    return []; // no articles table or read blocked => skip dedup, safe
+  }
+}
+
+function coveredBy(row: IntelRow, arts: ArticleTok[]): string | null {
+  const rt = words(row.title);
+  if (rt.size === 0) return null;
+  let best: string | null = null;
+  let bestScore = 0;
+  for (const a of arts) {
+    if (a.toks.size < 2) continue; // skip vague roundup titles
+    let inter = 0;
+    for (const w of rt) if (a.toks.has(w)) inter++;
+    const score = inter / rt.size;
+    if (inter >= 2 && score >= 0.5 && score > bestScore) {
+      best = a.slug;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
 export interface SaveResult {
   inserted: number;
   updated: number;
@@ -37,17 +97,22 @@ export interface SaveResult {
 
 export async function saveItems(rows: IntelRow[]): Promise<SaveResult> {
   const sb = admin();
+  const arts = await publishedArticles(sb);
   let inserted = 0;
   let updated = 0;
   for (const r of rows) {
+    const match = coveredBy(r, arts);
     const { data: existing } = await sb
       .from("intel_items")
-      .select("id")
+      .select("id, covered_by_slug")
       .eq("fingerprint", r.fingerprint)
       .maybeSingle();
 
     if (existing) {
-      await sb.from("intel_items").update(machineFields(r)).eq("id", existing.id);
+      const fields: Record<string, any> = machineFields(r);
+      // fill forward only, never clobber a decision you have already made
+      if (!existing.covered_by_slug && match) fields.covered_by_slug = match;
+      await sb.from("intel_items").update(fields).eq("id", existing.id);
       updated++;
     } else {
       await sb.from("intel_items").insert({
@@ -57,6 +122,7 @@ export async function saveItems(rows: IntelRow[]): Promise<SaveResult> {
         editorial_call: r.editorial_call,
         status: "new",
         pinned: false,
+        covered_by_slug: match,
       });
       inserted++;
     }

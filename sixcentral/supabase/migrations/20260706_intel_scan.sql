@@ -33,7 +33,8 @@ create table if not exists intel_items (
   status         text not null default 'new'
                    check (status in ('new','reviewing','drafting','published','dismissed')),
   notes          text,
-  pinned         boolean not null default false
+  pinned         boolean not null default false,
+  covered_by_slug text                          -- set when an existing article already covers it
 );
 create index if not exists intel_items_rank   on intel_items (pinned desc, rank_score desc);
 create index if not exists intel_items_cat     on intel_items (category);

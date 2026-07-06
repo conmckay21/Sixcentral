@@ -94,6 +94,35 @@ stories join them.
    off a different helper, it is a one-line swap in page.tsx.
 3. vercel.json. Merge, do not replace, if you already have one.
 
+## Getting to the desk (staff link)
+
+The desk lives at /staff/intel and is deliberately unlinked, staff only. To make it
+discoverable without typing the URL, drop the StaffIntelLink component into your logged
+in UI. It self-checks is_staff and shows an Intel Desk link to staff only, nothing to
+anyone else, so it is safe in shared layout.
+
+The file is sixcentral/web/components/StaffIntelLink.tsx. Import it and place
+StaffIntelLink in your header, nav or profile menu, adjusting the import path to your
+alias if needed. That is the only manual edit to your own files.
+
+A subdomain like intel.sixcentral.co.uk was considered and skipped for now. It is a
+separate origin, so the Supabase browser session does not carry across from the main
+site, you would have to sign in again there and wire its own auth redirects. The in-app
+staff link is simpler and ships with this deploy. The subdomain stays available later if
+the internal tooling grows.
+
+## No duplicates
+
+The desk hides anything an existing article already covers. It reads your published
+articles table and matches each story on distinctive words, ignoring generic roundup
+words so a living roundup does not suppress the whole desk. A covered story gets a
+covered badge linking to the article and drops out of the default view. Show covered
+flips them back on. When you publish a new article from the desk, matching stories fall
+away on the next scan. You can also set a story to published or dismissed by hand.
+
+Three seeded stories are already marked covered by your two live articles, the confirmed
+roundup and the editions guide, which leaves 15 fresh.
+
 ## How the ranking works
 
 Two scores per story. Strength is how much to trust the claim. Rank is how much it deserves

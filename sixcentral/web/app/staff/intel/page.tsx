@@ -62,6 +62,7 @@ export default function IntelPage() {
   const [q, setQ] = useState("");
   const [errMsg, setErrMsg] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
+  const [showCovered, setShowCovered] = useState(false);
 
   const sb = getClient();
 
@@ -163,6 +164,7 @@ export default function IntelPage() {
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return items.filter((it) => {
+      if (!showCovered && it.covered_by_slug) return false;
       if (cat !== "all" && it.category !== cat) return false;
       if (status === "open" && it.status === "dismissed") return false;
       if (status !== "open" && status !== "all" && it.status !== status) return false;
@@ -172,7 +174,9 @@ export default function IntelPage() {
       }
       return true;
     });
-  }, [items, cat, status, q]);
+  }, [items, cat, status, q, showCovered]);
+
+  const coveredCount = items.filter((i) => i.covered_by_slug).length;
 
   return (
     <div className="intel-root">
@@ -249,6 +253,13 @@ export default function IntelPage() {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
               />
+              <button
+                className={showCovered ? "toggle on" : "toggle"}
+                onClick={() => setShowCovered((v) => !v)}
+                title="Stories an existing article already covers"
+              >
+                {showCovered ? "Hide covered" : `Show covered (${coveredCount})`}
+              </button>
             </div>
           </div>
 
@@ -270,6 +281,16 @@ export default function IntelPage() {
                     <span className="spread">{it.spread_count} src</span>
                     {it.corroborated && <span className="corr">corroborated</span>}
                     {it.pinned && <span className="pin-tag">pinned</span>}
+                    {it.covered_by_slug && (
+                      <a
+                        className="covered-tag"
+                        href={`/news/${it.covered_by_slug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        covered
+                      </a>
+                    )}
                   </div>
                   <div className="scores">
                     <div className="rank">
@@ -390,6 +411,9 @@ const css = `
 .right-controls{display:flex;gap:8px}
 .sel,.search{background:${C.panel};border:1px solid ${C.line};color:${C.text};border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit}
 .search{min-width:180px}
+.toggle{background:${C.panel};border:1px solid ${C.line};color:${C.dim};border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;white-space:nowrap}
+.toggle.on{color:${C.gold};border-color:${C.gold}}
+.covered-tag{font-family:'Spline Sans Mono',monospace;font-size:11px;color:${C.bg};background:${C.dim};padding:2px 8px;border-radius:5px;text-decoration:none}
 .count{font-family:'Spline Sans Mono',monospace;font-size:12px;color:${C.dim};margin-bottom:12px}
 .list{display:flex;flex-direction:column;gap:14px}
 .card{background:${C.panel};border:1px solid ${C.line};border-left:4px solid ${C.line};border-radius:12px;padding:18px 18px 16px}
