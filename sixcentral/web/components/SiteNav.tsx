@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import StaffIntelLink from '@/components/StaffIntelLink';
 
 export default function SiteNav() {
   return (
@@ -12,6 +13,7 @@ export default function SiteNav() {
           <Link href="/crew">Crew</Link>
           <Link href="/clips">Clips</Link>
           <Link href="/news/everything-confirmed">News</Link>
+          <StaffIntelLink />
           <Link href="/account" className="nav__cta">
             Account
           </Link>
