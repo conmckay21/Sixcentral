@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { IntelRow } from "./engine";
+import { MOCK_ARTICLES } from "@/content/mock";
 
 function admin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -58,18 +59,30 @@ interface ArticleTok {
 }
 
 async function publishedArticles(sb: ReturnType<typeof admin>): Promise<ArticleTok[]> {
+  // The real published articles live in the site content (MOCK_ARTICLES), not the
+  // articles table, so dedup against those. The DB table is also checked so this
+  // keeps working if content is migrated into Supabase later.
+  const toks: ArticleTok[] = MOCK_ARTICLES.map((a) => ({
+    slug: a.slug,
+    toks: words(`${a.title} ${a.kicker ?? ""} ${a.excerpt ?? ""}`),
+  }));
   try {
     const { data } = await sb
       .from("articles")
       .select("slug, title, kicker, excerpt")
       .eq("published", true);
-    return (data || []).map((a: any) => ({
-      slug: a.slug,
-      toks: words(`${a.title || ""} ${a.kicker || ""} ${a.excerpt || ""}`),
-    }));
+    for (const a of (data as any[]) || []) {
+      if (!toks.some((t) => t.slug === a.slug)) {
+        toks.push({
+          slug: a.slug,
+          toks: words(`${a.title || ""} ${a.kicker || ""} ${a.excerpt || ""}`),
+        });
+      }
+    }
   } catch {
-    return []; // no articles table or read blocked => skip dedup, safe
+    // DB table is optional; site content is the source of truth for now.
   }
+  return toks;
 }
 
 function coveredBy(row: IntelRow, arts: ArticleTok[]): string | null {
