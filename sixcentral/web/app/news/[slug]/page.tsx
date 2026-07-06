@@ -3,6 +3,9 @@ import { notFound } from 'next/navigation';
 import LongformArticle from '@/components/LongformArticle';
 import { getAllArticles, getArticleBySlug, getRelated } from '@/lib/content';
 
+// Regenerate from the database periodically, and render new slugs on demand.
+export const revalidate = 300;
+
 export async function generateStaticParams() {
   const articles = await getAllArticles();
   return articles.map((a) => ({ slug: a.slug }));
