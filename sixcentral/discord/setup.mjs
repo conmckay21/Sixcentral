@@ -193,6 +193,7 @@ async function main() {
       const found = existingChannels.find((c) => c.type === 0 && c.name === ch.name);
       if (found) {
         await api('PATCH', `/channels/${found.id}`, {
+          parent_id: cat.id,
           topic: ch.topic,
           rate_limit_per_user: ch.slowmode ?? 0,
           permission_overwrites: overwrites,
