@@ -19,29 +19,27 @@ export interface IntelRow {
   published_at: string | null;
 }
 
-// Words too common to help cluster a GTA story. Everything left over is signal.
+// How many stories the desk keeps per scan. Above this, the long tail of
+// single-source tier-3 chatter is dropped.
+const MAX_STORIES = 40;
+
 const STOP = new Set([
   "the","a","an","and","or","of","to","in","on","for","is","are","was","were",
   "be","by","with","as","at","it","its","this","that","from","has","have","will",
-  "could","would","new","gta","grand","theft","auto","vi","6","rockstar","games","game",
+  "could","would","new","gta","grand","theft","auto","vi","six","rockstar","games",
+  "game","just","says","said","after","your","you","how","why","what","when","who",
+  "get","gets","are","now","out","one","two","all","not","but","its","his","her",
 ]);
 
-function tokens(title: string): string[] {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9 ]+/g, " ")
-    .split(/\s+/)
-    .filter((w) => w.length > 2 && !STOP.has(w));
-}
-
-// Cluster signature: the 5 longest salient tokens, sorted. Same story from
-// different outlets lands on the same signature, so we can count the spread.
-function signature(title: string): string {
-  const t = Array.from(new Set(tokens(title)))
-    .sort((a, b) => b.length - a.length)
-    .slice(0, 5)
-    .sort();
-  return t.join("-") || title.toLowerCase().slice(0, 24);
+// Distinctive words in a headline, used both to cluster and to name a story.
+function sigSet(title: string): Set<string> {
+  return new Set(
+    title
+      .toLowerCase()
+      .replace(/[^a-z0-9 ]+/g, " ")
+      .split(/\s+/)
+      .filter((w) => w.length >= 4 && !STOP.has(w))
+  );
 }
 
 const TIER1 = ["rockstar", "take-two", "take two", "newswire"];
@@ -49,7 +47,7 @@ const TIER2 = [
   "ign","eurogamer","gamesradar","pc gamer","pcgamer","video games chronicle","vgc",
   "bloomberg","the verge","kotaku","polygon","gamespot","variety","insider gaming",
   "dexerto","engadget","gta boom","gtaboom","rock paper shotgun","vg247","techtimes",
-  "comicbook","beebom","gamingbible","gamesindustry",
+  "comicbook","beebom","gamingbible","gamesindustry","push square","tweaktown",
 ];
 
 function tierFor(outlet: string, kind: string, engagement = 0): number {
@@ -69,7 +67,7 @@ function categorise(text: string, tier: number): Category {
     return "debunk";
   if (/leak|datamine|datamined|teapot|kurtaj|dataminer/.test(t)) return "leak";
   if (
-    /backlash|criticis|outrage|boycott|refund|\bdisc\b|scalp|petition|controvers|lawsuit|melenchon|disappoint|expensive|anti-consumer|preservation/.test(
+    /backlash|criticis|outrage|boycott|refund|\bdisc\b|scalp|petition|controvers|lawsuit|melenchon|disappoint|expensive|anti-consumer|preservation|unfair/.test(
       t
     )
   )
@@ -91,25 +89,47 @@ function clamp(n: number, lo = 0, hi = 100): number {
   return Math.max(lo, Math.min(hi, n));
 }
 
+interface Cluster {
+  key: Set<string>;
+  items: RawItem[];
+}
+
+// Greedy clustering: an item joins a cluster when it shares at least two
+// distinctive words and at least half of the smaller word set. The cluster key
+// stays fixed to its first headline so clusters do not slowly absorb everything.
+function cluster(items: RawItem[]): Cluster[] {
+  const clusters: Cluster[] = [];
+  for (const item of items) {
+    const st = sigSet(item.title);
+    let best: Cluster | null = null;
+    let bestShared = 0;
+    for (const c of clusters) {
+      let shared = 0;
+      for (const t of st) if (c.key.has(t)) shared++;
+      const minSize = Math.min(st.size, c.key.size) || 1;
+      if (shared >= 2 && shared >= Math.ceil(minSize * 0.5) && shared > bestShared) {
+        best = c;
+        bestShared = shared;
+      }
+    }
+    if (best) best.items.push(item);
+    else clusters.push({ key: st, items: [item] });
+  }
+  return clusters;
+}
+
 export async function runScan(): Promise<{
   rows: IntelRow[];
   rawCount: number;
   sourcesPolled: number;
 }> {
   const raw = await gatherRaw();
-
-  const clusters = new Map<string, RawItem[]>();
-  for (const item of raw) {
-    const sig = signature(item.title);
-    const arr = clusters.get(sig) || [];
-    arr.push(item);
-    clusters.set(sig, arr);
-  }
+  const clusters = cluster(raw);
 
   const rows: IntelRow[] = [];
-  for (const [sig, group] of clusters) {
+  for (const group of clusters) {
     const byOutlet = new Map<string, RawItem>();
-    for (const g of group) if (!byOutlet.has(g.outlet)) byOutlet.set(g.outlet, g);
+    for (const g of group.items) if (!byOutlet.has(g.outlet)) byOutlet.set(g.outlet, g);
     const distinct = Array.from(byOutlet.values());
     const spread = distinct.length;
 
@@ -121,6 +141,11 @@ export async function runScan(): Promise<{
     const tier = Math.min(
       ...distinct.map((d) => tierFor(d.outlet, d.kind, d.engagement))
     );
+
+    // Quality gate: keep corroborated stories or reputable/official single
+    // sources. Drops the single-source tier-3/4 tail that was the noise.
+    if (spread < 2 && tier > 2) continue;
+
     const dates = distinct
       .map((d) => d.publishedAt)
       .filter(Boolean)
@@ -151,8 +176,13 @@ export async function runScan(): Promise<{
       `Carried by ${spread} source${spread === 1 ? "" : "s"} (${outletsLine}). ` +
       (lead.snippet ? lead.snippet : "See sources for detail.");
 
+    // Fingerprint from the two most distinctive words keeps the same story
+    // stable across daily runs without being so strict that variants split.
+    const keyWords = Array.from(sigSet(lead.title)).sort((a, b) => b.length - a.length).slice(0, 3).sort();
+    const fingerprint = keyWords.join("-") || lead.title.toLowerCase().slice(0, 24);
+
     rows.push({
-      fingerprint: sig,
+      fingerprint,
       title: lead.title.slice(0, 240),
       summary: summary.slice(0, 1200),
       key_points: keyPoints,
@@ -171,6 +201,14 @@ export async function runScan(): Promise<{
     });
   }
 
-  rows.sort((a, b) => b.rank_score - a.rank_score);
-  return { rows, rawCount: raw.length, sourcesPolled: SOURCE_GROUPS };
+  // De-dupe any fingerprint collisions, keep the higher-ranked, then cap.
+  const byFp = new Map<string, IntelRow>();
+  for (const r of rows) {
+    const prev = byFp.get(r.fingerprint);
+    if (!prev || r.rank_score > prev.rank_score) byFp.set(r.fingerprint, r);
+  }
+  const deduped = Array.from(byFp.values()).sort((a, b) => b.rank_score - a.rank_score);
+  const capped = deduped.slice(0, MAX_STORIES);
+
+  return { rows: capped, rawCount: raw.length, sourcesPolled: SOURCE_GROUPS };
 }

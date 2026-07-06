@@ -28,24 +28,34 @@ async function timedFetch(url: string, init: RequestInit = {}): Promise<Response
 }
 
 // ---------------------------------------------------------------------------
-// Google News RSS: the primary engine. Its <source> attribution lets us count
-// how many distinct outlets carry the same story (the spread metric).
+// Relevance and junk gates. These are the difference between a usable desk and
+// 200 rows of livestream titles and football scores.
 // ---------------------------------------------------------------------------
-const NEWS_QUERIES = [
-  "GTA 6",
-  "Grand Theft Auto VI",
-  "GTA 6 leak",
-  "GTA 6 trailer 3",
-  "Rockstar Games GTA 6",
-];
+const GTA6 = /\bgta\s*(6|vi)\b|grand theft auto\s*(6|vi|six)|\bgtavi\b/i;
+
+function aboutGta6(title: string, snippet = ""): boolean {
+  return GTA6.test(`${title} ${snippet}`);
+}
+
+const JUNK =
+  /(come chat|let.?s see|reaction|livestream|\blive\b|giveaway|\bvs\.?\s|best[- ]selling|tier list|\bhalo\b|quitting|hopium|watch now|full stream)/i;
+const VIDEOID_TAIL = /\([a-z0-9_-]{8,}\)\s*$/i;
+
+function isJunk(title: string): boolean {
+  return JUNK.test(title) || VIDEOID_TAIL.test(title);
+}
+
+// ---------------------------------------------------------------------------
+// Google News RSS: primary engine and spread counter.
+// ---------------------------------------------------------------------------
+const NEWS_QUERIES = ["GTA 6", "Grand Theft Auto VI", "GTA 6 leak", "GTA 6 trailer"];
 
 function newsUrl(q: string): string {
-  const query = encodeURIComponent(`${q} when:2d`); // last 2 days keeps it fresh + fast
+  const query = encodeURIComponent(`${q} when:2d`);
   return `https://news.google.com/rss/search?q=${query}&hl=en-GB&gl=GB&ceid=GB:en`;
 }
 
 function splitOutlet(title: string): { title: string; outlet: string | null } {
-  // Google News titles arrive as "Headline - Outlet"
   const idx = title.lastIndexOf(" - ");
   if (idx > 20) {
     return { title: title.slice(0, idx).trim(), outlet: title.slice(idx + 3).trim() };
@@ -62,6 +72,7 @@ async function fetchGoogleNews(): Promise<RawItem[]> {
       const xml = await res.text();
       for (const it of parseFeed(xml)) {
         const parsed = splitOutlet(it.title);
+        if (!aboutGta6(parsed.title, it.summary) || isJunk(parsed.title)) continue;
         out.push({
           title: parsed.title,
           url: it.link,
@@ -77,7 +88,7 @@ async function fetchGoogleNews(): Promise<RawItem[]> {
 }
 
 // ---------------------------------------------------------------------------
-// Optional direct press feeds (bonus attribution). Any dead feed is ignored.
+// Optional direct press feeds. Dead feeds are ignored.
 // ---------------------------------------------------------------------------
 const PRESS_FEEDS: { outlet: string; url: string }[] = [
   { outlet: "Eurogamer", url: "https://www.eurogamer.net/feed" },
@@ -94,8 +105,7 @@ async function fetchPress(): Promise<RawItem[]> {
       if (!res.ok) return;
       const xml = await res.text();
       for (const it of parseFeed(xml)) {
-        const hay = `${it.title} ${it.summary}`.toLowerCase();
-        if (!hay.includes("gta") && !hay.includes("grand theft auto")) continue;
+        if (!aboutGta6(it.title, it.summary) || isJunk(it.title)) continue;
         out.push({
           title: it.title,
           url: it.link,
@@ -111,7 +121,8 @@ async function fetchPress(): Promise<RawItem[]> {
 }
 
 // ---------------------------------------------------------------------------
-// Reddit (community pulse). Keyless JSON is fine for one pull a day.
+// Reddit: community pulse. The subreddit implies relevance, so only junk is
+// filtered, not the GTA 6 gate.
 // ---------------------------------------------------------------------------
 const SUBS = ["GTA6", "GTAVI"];
 
@@ -130,7 +141,7 @@ async function fetchReddit(): Promise<RawItem[]> {
       for (const k of kids) {
         const d = k.data || {};
         const score = (d.score || 0) + (d.num_comments || 0);
-        if (score < 40 || d.stickied) continue;
+        if (score < 60 || d.stickied || isJunk(d.title || "")) continue;
         out.push({
           title: d.title || "",
           url:
@@ -151,51 +162,21 @@ async function fetchReddit(): Promise<RawItem[]> {
   return out;
 }
 
-// ---------------------------------------------------------------------------
-// YouTube (optional). Skipped cleanly when YOUTUBE_API_KEY is not set.
-// ---------------------------------------------------------------------------
-const YT_QUERIES = ["GTA 6 leak", "GTA 6 trailer 3", "GTA 6 news"];
-
+// YouTube is intentionally not part of the core gather: it dragged in
+// livestreams and reaction videos that swamped the desk. Kept here so it can be
+// switched back on later behind a stricter filter if wanted.
 async function fetchYouTube(): Promise<RawItem[]> {
-  const key = process.env.YOUTUBE_API_KEY;
-  if (!key) return [];
-  const after = new Date(Date.now() - 2 * 864e5).toISOString();
-  const out: RawItem[] = [];
-  await Promise.allSettled(
-    YT_QUERIES.map(async (q) => {
-      const url =
-        `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video` +
-        `&order=date&maxResults=10&publishedAfter=${after}` +
-        `&q=${encodeURIComponent(q)}&key=${key}`;
-      const res = await timedFetch(url);
-      if (!res.ok) return;
-      const json: any = await res.json();
-      for (const it of json.items || []) {
-        const s = it.snippet || {};
-        const vid = it.id?.videoId;
-        if (!vid) continue;
-        out.push({
-          title: s.title || "",
-          url: `https://www.youtube.com/watch?v=${vid}`,
-          outlet: `YouTube \u2022 ${s.channelTitle || "channel"}`,
-          publishedAt: s.publishedAt || null,
-          snippet: String(s.description || "").slice(0, 400),
-          kind: "youtube",
-        });
-      }
-    })
-  );
-  return out;
+  return [];
 }
+void fetchYouTube;
 
-export const SOURCE_GROUPS = 4; // google news, press, reddit, youtube
+export const SOURCE_GROUPS = 3; // google news, press, reddit
 
 export async function gatherRaw(): Promise<RawItem[]> {
   const results = await Promise.allSettled([
     fetchGoogleNews(),
     fetchPress(),
     fetchReddit(),
-    fetchYouTube(),
   ]);
   const all: RawItem[] = [];
   for (const r of results) if (r.status === "fulfilled") all.push(...r.value);
