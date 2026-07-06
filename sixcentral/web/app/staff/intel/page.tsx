@@ -63,6 +63,10 @@ export default function IntelPage() {
   const [errMsg, setErrMsg] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
   const [showCovered, setShowCovered] = useState(false);
+  const [drafts, setDrafts] = useState<Record<string, any>>({});
+  const [building, setBuilding] = useState<Record<string, boolean>>({});
+  const [wantGallery, setWantGallery] = useState<Record<string, boolean>>({});
+  const [draftBusy, setDraftBusy] = useState<Record<string, string>>({});
 
   const sb = getClient();
 
@@ -107,6 +111,13 @@ export default function IntelPage() {
       .limit(300);
     if (error) throw error;
     setItems(rows || []);
+    const slugs = (rows || []).map((r: any) => r.draft_slug).filter(Boolean);
+    if (slugs.length) {
+      const { data: arts } = await client.from("articles").select("*").in("slug", slugs);
+      const map: Record<string, any> = {};
+      for (const a of arts || []) map[(a as any).slug] = a;
+      setDrafts(map);
+    }
     const { data: run } = await client
       .from("intel_runs")
       .select("*")
@@ -124,6 +135,64 @@ export default function IntelPage() {
     if (error) {
       setItems(before);
       setErrMsg("Save failed: " + error.message);
+    }
+  }
+
+  async function authHeader(): Promise<Record<string, string>> {
+    const base = { "content-type": "application/json" };
+    if (!sb) return base;
+    const { data } = await sb.auth.getSession();
+    const token = data?.session?.access_token;
+    return token ? { ...base, authorization: `Bearer ${token}` } : base;
+  }
+
+  async function buildDraft(it: any) {
+    setBuilding((b) => ({ ...b, [it.id]: true }));
+    setErrMsg("");
+    try {
+      const res = await fetch("/api/admin/build-draft", {
+        method: "POST",
+        headers: await authHeader(),
+        body: JSON.stringify({ intel_id: it.id, gallery: !!wantGallery[it.id] }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error || "build failed");
+      setDrafts((d) => ({ ...d, [json.slug]: json.draft }));
+      setItems((prev) => prev.map((x) => (x.id === it.id ? { ...x, draft_slug: json.slug } : x)));
+    } catch (e: any) {
+      setErrMsg("Draft build failed: " + String(e?.message || e));
+    } finally {
+      setBuilding((b) => ({ ...b, [it.id]: false }));
+    }
+  }
+
+  async function draftAction(it: any, action: "publish" | "discard") {
+    const slug = it.draft_slug;
+    if (!slug) return;
+    setDraftBusy((b) => ({ ...b, [it.id]: action }));
+    try {
+      const res = await fetch("/api/admin/draft-action", {
+        method: "POST",
+        headers: await authHeader(),
+        body: JSON.stringify({ slug, action, intel_id: it.id }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error || "action failed");
+      if (action === "publish") {
+        setDrafts((d) => ({ ...d, [slug]: { ...d[slug], published: true } }));
+        setItems((prev) => prev.map((x) => (x.id === it.id ? { ...x, status: "published" } : x)));
+      } else {
+        setDrafts((d) => {
+          const n = { ...d };
+          delete n[slug];
+          return n;
+        });
+        setItems((prev) => prev.map((x) => (x.id === it.id ? { ...x, draft_slug: null } : x)));
+      }
+    } catch (e: any) {
+      setErrMsg("Action failed: " + String(e?.message || e));
+    } finally {
+      setDraftBusy((b) => ({ ...b, [it.id]: "" }));
     }
   }
 
@@ -383,6 +452,87 @@ export default function IntelPage() {
                     if (e.target.value !== (it.notes || "")) patch(it.id, { notes: e.target.value });
                   }}
                 />
+
+                <div className="draft-tools">
+                  <label className="gal">
+                    <input
+                      type="checkbox"
+                      checked={!!wantGallery[it.id]}
+                      onChange={(e) => setWantGallery((g) => ({ ...g, [it.id]: e.target.checked }))}
+                    />
+                    Add gallery (3 images)
+                  </label>
+                  <button className="build" disabled={!!building[it.id]} onClick={() => buildDraft(it)}>
+                    {building[it.id] ? "Writing…" : it.draft_slug ? "Rebuild draft" : "Build draft"}
+                  </button>
+                </div>
+
+                {it.draft_slug && drafts[it.draft_slug] && (
+                  <div className="draft">
+                    <div className="draft-head">
+                      <span className="draft-kicker">{drafts[it.draft_slug].kicker}</span>
+                      {drafts[it.draft_slug].published ? (
+                        <a className="live-tag" href={`/news/${it.draft_slug}`} target="_blank" rel="noreferrer">
+                          published, view live
+                        </a>
+                      ) : (
+                        <span className="draft-tag">draft</span>
+                      )}
+                    </div>
+                    <h3 className="draft-title">{drafts[it.draft_slug].title}</h3>
+                    {drafts[it.draft_slug].hero_image && drafts[it.draft_slug].hero_image.src && (
+                      <img
+                        className="draft-hero"
+                        src={drafts[it.draft_slug].hero_image.src}
+                        alt={drafts[it.draft_slug].hero_image.alt || ""}
+                      />
+                    )}
+                    <div className="draft-body">
+                      {(Array.isArray(drafts[it.draft_slug].body) ? drafts[it.draft_slug].body : []).map(
+                        (blk: any, bi: number) =>
+                          blk.type === "h2" ? (
+                            <h4 key={bi}>{blk.text}</h4>
+                          ) : blk.type === "ul" ? (
+                            <ul key={bi}>
+                              {(blk.items || []).map((li: string, li2: number) => (
+                                <li key={li2}>{li}</li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p key={bi}>{blk.text}</p>
+                          )
+                      )}
+                    </div>
+                    {Array.isArray(drafts[it.draft_slug].gallery) && drafts[it.draft_slug].gallery.length > 0 && (
+                      <div className="draft-gallery">
+                        {drafts[it.draft_slug].gallery.map((g: any, gi: number) => (
+                          <img key={gi} src={g.src} alt={g.alt || ""} />
+                        ))}
+                      </div>
+                    )}
+                    {!drafts[it.draft_slug].published && (
+                      <div className="draft-actions">
+                        <button
+                          className="publish"
+                          disabled={draftBusy[it.id] === "publish"}
+                          onClick={() => draftAction(it, "publish")}
+                        >
+                          {draftBusy[it.id] === "publish" ? "Publishing…" : "Publish"}
+                        </button>
+                        <button className="ghost" disabled={!!building[it.id]} onClick={() => buildDraft(it)}>
+                          Rewrite
+                        </button>
+                        <button
+                          className="discard"
+                          disabled={draftBusy[it.id] === "discard"}
+                          onClick={() => draftAction(it, "discard")}
+                        >
+                          {draftBusy[it.id] === "discard" ? "Discarding…" : "Discard"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </article>
             ))}
             {filtered.length === 0 && <div className="note">Nothing matches those filters.</div>}
@@ -447,4 +597,25 @@ const css = `
 .ghost{background:transparent;border:1px solid ${C.line};color:${C.dim};border-radius:7px;padding:7px 12px;font-size:13px;cursor:pointer}
 .copy{background:${C.cyan};border:none;color:#04211f;font-weight:700;border-radius:7px;padding:8px 14px;font-size:13px;cursor:pointer;margin-left:auto}
 .notes{width:100%;background:${C.bg};border:1px solid ${C.line};color:${C.text};border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit;resize:vertical;min-height:44px}
+.draft-tools{display:flex;align-items:center;gap:14px;margin-top:12px;flex-wrap:wrap}
+.gal{display:flex;align-items:center;gap:7px;font-size:12px;color:${C.dim};cursor:pointer}
+.gal input{accent-color:${C.pink}}
+.build{background:${C.pink};border:none;color:#fff;font-weight:700;border-radius:8px;padding:9px 16px;font-size:13px;cursor:pointer}
+.build:disabled{opacity:.6;cursor:default}
+.draft{margin-top:14px;border:1px solid ${C.line};border-radius:12px;background:${C.bg};padding:16px}
+.draft-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.draft-kicker{font-family:'Spline Sans Mono',monospace;font-size:11px;color:${C.gold};text-transform:uppercase;letter-spacing:.5px}
+.draft-tag{font-family:'Spline Sans Mono',monospace;font-size:11px;color:${C.dim};border:1px solid ${C.line};padding:2px 8px;border-radius:5px}
+.live-tag{font-family:'Spline Sans Mono',monospace;font-size:11px;color:#04211f;background:${C.green};padding:2px 8px;border-radius:5px;text-decoration:none}
+.draft-title{font-size:20px;margin:2px 0 10px;line-height:1.3}
+.draft-hero{width:100%;border-radius:10px;margin-bottom:12px;display:block}
+.draft-body p{font-size:14px;line-height:1.6;color:#d6cfe4;margin:0 0 10px}
+.draft-body h4{font-size:15px;margin:14px 0 6px;color:${C.text}}
+.draft-body ul{margin:0 0 10px;padding-left:18px;font-size:14px;color:#d6cfe4;line-height:1.5}
+.draft-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 12px}
+.draft-gallery img{width:100%;height:90px;object-fit:cover;border-radius:8px}
+.draft-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.publish{background:${C.green};border:none;color:#04211f;font-weight:700;border-radius:8px;padding:9px 18px;font-size:13px;cursor:pointer}
+.discard{background:transparent;border:1px solid ${C.pink};color:${C.pink};border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer}
+.publish:disabled,.discard:disabled{opacity:.6;cursor:default}
 `;
