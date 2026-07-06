@@ -8,13 +8,16 @@ export const maxDuration = 60;
 
 /**
  * Vision pass over the `media` bucket. For each image not yet catalogued, Claude
- * looks at it and writes a description, alt text and tags into media_assets.
- * Processes a batch, then chains to itself until the whole pool is done, so a
- * single call catalogues everything. Safe to re-run: catalogued images skip.
+ * describes it into media_assets. Processes images in parallel waves within a
+ * time budget, then chains to the next batch, so a single call gets through the
+ * whole pool. Safe to re-run: catalogued images skip, and if it ever stalls,
+ * running it again picks up where it left off.
  *
  *   curl -s -H "Authorization: Bearer YOUR_SECRET" https://sixcentral.co.uk/api/admin/catalogue-media
  */
-const BATCH = 10;
+const BATCH = 30;         // images attempted per invocation
+const CONCURRENCY = 6;    // parallel vision calls per wave
+const TIME_BUDGET_MS = 50000;
 const BUCKET = 'media';
 const IMAGE = /\.(jpe?g|png|webp|gif)$/i;
 
@@ -69,17 +72,33 @@ async function describe(apiKey: string, mt: string, base64: string) {
   return parseVision(text);
 }
 
-// List every image in the bucket, recursing into any folders.
+async function catalogueOne(sb: SupabaseClient, apiKey: string, name: string): Promise<void> {
+  const { data: blob, error: dlErr } = await sb.storage.from(BUCKET).download(name);
+  if (dlErr || !blob) throw new Error(dlErr?.message || 'download failed');
+  const base64 = Buffer.from(await blob.arrayBuffer()).toString('base64');
+  const info = await describe(apiKey, mediaType(name), base64);
+  const publicUrl = sb.storage.from(BUCKET).getPublicUrl(name).data.publicUrl;
+  const { error: upErr } = await sb.from('media_assets').upsert(
+    {
+      path: name,
+      url: publicUrl,
+      description: info.description,
+      alt: info.alt,
+      tags: info.tags,
+      catalogued_at: new Date().toISOString(),
+    },
+    { onConflict: 'path' }
+  );
+  if (upErr) throw new Error(upErr.message);
+}
+
 async function listImages(sb: SupabaseClient, prefix = ''): Promise<string[]> {
   const { data } = await sb.storage.from(BUCKET).list(prefix, { limit: 1000 });
   const out: string[] = [];
   for (const f of (data as any[]) || []) {
     const path = prefix ? `${prefix}/${f.name}` : f.name;
-    if (!f.id) {
-      out.push(...(await listImages(sb, path))); // folder
-    } else if (IMAGE.test(f.name)) {
-      out.push(path);
-    }
+    if (!f.id) out.push(...(await listImages(sb, path)));
+    else if (IMAGE.test(f.name)) out.push(path);
   }
   return out;
 }
@@ -106,36 +125,20 @@ export async function GET(req: Request) {
   const todo = images.filter((name) => !doneSet.has(name));
   const batch = todo.slice(0, BATCH);
 
+  const started = Date.now();
   let catalogued = 0;
   const errors: string[] = [];
-  for (const name of batch) {
-    try {
-      const { data: blob, error: dlErr } = await sb.storage.from(BUCKET).download(name);
-      if (dlErr || !blob) throw new Error(dlErr?.message || 'download failed');
-      const base64 = Buffer.from(await blob.arrayBuffer()).toString('base64');
-      const info = await describe(apiKey, mediaType(name), base64);
-      const publicUrl = sb.storage.from(BUCKET).getPublicUrl(name).data.publicUrl;
-      const { error: upErr } = await sb.from('media_assets').upsert(
-        {
-          path: name,
-          url: publicUrl,
-          description: info.description,
-          alt: info.alt,
-          tags: info.tags,
-          catalogued_at: new Date().toISOString(),
-        },
-        { onConflict: 'path' }
-      );
-      if (upErr) throw new Error(upErr.message);
-      catalogued++;
-    } catch (e: any) {
-      errors.push(`${name}: ${String(e?.message || e)}`);
-    }
+  for (let i = 0; i < batch.length; i += CONCURRENCY) {
+    if (Date.now() - started > TIME_BUDGET_MS) break;
+    const wave = batch.slice(i, i + CONCURRENCY);
+    const results = await Promise.allSettled(wave.map((name) => catalogueOne(sb, apiKey, name)));
+    results.forEach((r, j) => {
+      if (r.status === 'fulfilled') catalogued++;
+      else errors.push(`${wave[j]}: ${String((r.reason && r.reason.message) || r.reason)}`);
+    });
   }
 
   const remaining = todo.length - catalogued;
-  // Chain to the next batch automatically, calling this same endpoint on the
-  // public host, but only while making progress.
   const host = req.headers.get('host');
   if (host && catalogued > 0 && remaining > 0) {
     waitUntil(
@@ -150,7 +153,7 @@ export async function GET(req: Request) {
     total_images: images.length,
     catalogued_now: catalogued,
     remaining,
-    still_running: catalogued > 0 && remaining > 0,
-    errors: errors.length ? errors : undefined,
+    still_running: !!host && catalogued > 0 && remaining > 0,
+    errors: errors.length ? errors.slice(0, 5) : undefined,
   });
 }
