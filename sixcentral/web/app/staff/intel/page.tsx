@@ -180,14 +180,24 @@ export default function IntelPage() {
       if (!res.ok || !json.ok) throw new Error(json.error || "action failed");
       if (action === "publish") {
         setDrafts((d) => ({ ...d, [slug]: { ...d[slug], published: true } }));
-        setItems((prev) => prev.map((x) => (x.id === it.id ? { ...x, status: "published" } : x)));
+        setItems((prev) =>
+          prev.map((x) =>
+            x.id === it.id ? { ...x, status: "published", covered_by_slug: slug } : x
+          )
+        );
       } else {
         setDrafts((d) => {
           const n = { ...d };
           delete n[slug];
           return n;
         });
-        setItems((prev) => prev.map((x) => (x.id === it.id ? { ...x, draft_slug: null } : x)));
+        setItems((prev) =>
+          prev.map((x) =>
+            x.id === it.id
+              ? { ...x, draft_slug: null, covered_by_slug: x.covered_by_slug === slug ? null : x.covered_by_slug }
+              : x
+          )
+        );
       }
     } catch (e: any) {
       setErrMsg("Action failed: " + String(e?.message || e));

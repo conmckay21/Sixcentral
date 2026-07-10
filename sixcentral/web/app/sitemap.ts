@@ -3,12 +3,16 @@ import { getGuides, getAllArticles } from '@/lib/content';
 
 const BASE = 'https://sixcentral.co.uk';
 
+// Rebuild the sitemap on the same cadence as the content, not once per deploy.
+export const revalidate = 300;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [guides, articles] = await Promise.all([getGuides(), getAllArticles()]);
 
   return [
     { url: BASE, lastModified: new Date(), changeFrequency: 'daily', priority: 1 },
     { url: `${BASE}/guides`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
+    { url: `${BASE}/news`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
     { url: `${BASE}/crew`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.6 },
     { url: `${BASE}/contribute`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.4 },
     { url: `${BASE}/clips`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.7 },

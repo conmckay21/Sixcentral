@@ -8,6 +8,11 @@ import { getLatestArticles, getFeatured, getRumours } from '@/lib/content';
 
 export const metadata = { alternates: { canonical: '/' } };
 
+// Without this the home page is prerendered once at build time and never again,
+// so anything published from the Intel Desk never reaches it. Publishing also
+// revalidates this path on demand, so 60s is only the safety net.
+export const revalidate = 60;
+
 export default async function HomePage() {
   const [articles, featured, rumours] = await Promise.all([
     getLatestArticles(8),
@@ -99,6 +104,7 @@ export default async function HomePage() {
             <h2>
               Latest <span className="c">news</span>
             </h2>
+            <Link href="/news">All news &rarr;</Link>
           </div>
           <Carousel label="Latest news">
             {articles

@@ -18,8 +18,8 @@ export default function SiteFooter() {
             <div className="footer__col">
               <h4>Explore</h4>
               <Link href="/guides">Guides</Link>
-              <Link href="/news/everything-confirmed">News</Link>
-              <Link href="/#rumour-mill">The Rumour Mill</Link>
+              <Link href="/news">News</Link>
+              <Link href="/news#rumour-mill">The Rumour Mill</Link>
               <Link href="/clips">Clips</Link>
               <Link href="/privacy">Privacy</Link>
               <Link href="/terms">Terms</Link>
