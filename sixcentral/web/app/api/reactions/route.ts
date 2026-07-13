@@ -7,11 +7,8 @@ export const dynamic = 'force-dynamic';
 const ANON_RE = /^[0-9a-f-]{16,64}$/i;
 
 async function counts(admin: ReturnType<typeof adminClient>, slug: string) {
-  const [up, down] = await Promise.all([
-    admin.from('article_reactions').select('id', { count: 'exact', head: true }).eq('article_slug', slug).eq('value', 1),
-    admin.from('article_reactions').select('id', { count: 'exact', head: true }).eq('article_slug', slug).eq('value', -1),
-  ]);
-  return { up: up.count ?? 0, down: down.count ?? 0 };
+  const { data } = await admin.from('articles').select('up_count, down_count').eq('slug', slug).maybeSingle();
+  return { up: data?.up_count ?? 0, down: data?.down_count ?? 0 };
 }
 
 export async function GET(req: Request) {

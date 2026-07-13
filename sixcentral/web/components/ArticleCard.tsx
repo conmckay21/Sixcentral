@@ -34,6 +34,9 @@ export default function ArticleCard({ article }: { article: Article }) {
         <div className="ccard__d">
           {rumour ? 'Unconfirmed · tracked ' : 'Facts checked '}
           {formatDate(article.updatedAt)}
+          {(article.upCount ?? 0) + (article.downCount ?? 0) > 0 && (
+            <> · 👍 {article.upCount ?? 0} · 👎 {article.downCount ?? 0}</>
+          )}
         </div>
       </div>
     </Link>

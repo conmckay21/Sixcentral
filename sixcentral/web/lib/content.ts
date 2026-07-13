@@ -25,6 +25,8 @@ function mapArticle(r: any): Article {
         ? r.updated_at.slice(0, 10)
         : r.updated_at,
     readingMins: r.reading_mins ?? 5,
+    upCount: r.up_count ?? 0,
+    downCount: r.down_count ?? 0,
     body: Array.isArray(r.body) ? r.body : [],
     gradient: r.gradient ?? '',
     motif: r.motif ?? undefined,

@@ -17,6 +17,8 @@ const SITE = 'https://sixcentral.co.uk';
 type Clip = { id: string; video_id: string; profile_id: string };
 type ContentItem = {
   category?: string;
+  upCount?: number;
+  downCount?: number;
   slug: string;
   title: string;
   kicker: string;
@@ -267,6 +269,9 @@ export default function Home() {
               <Text style={st.newsTitle} numberOfLines={2}>
                 {item.title}
               </Text>
+                  {(item.upCount ?? 0) + (item.downCount ?? 0) > 0 && (
+                    <Text style={st.reactMeta}>{'\\u{1F44D}'} {item.upCount ?? 0} · {'\\u{1F44E}'} {item.downCount ?? 0}</Text>
+                  )}
             </Pressable>
           )}
         />
@@ -306,6 +311,9 @@ export default function Home() {
                   <Text style={st.newsTitle} numberOfLines={2}>
                     {item.title}
                   </Text>
+                  {(item.upCount ?? 0) + (item.downCount ?? 0) > 0 && (
+                    <Text style={st.reactMeta}>{'\\u{1F44D}'} {item.upCount ?? 0} · {'\\u{1F44E}'} {item.downCount ?? 0}</Text>
+                  )}
                 </Pressable>
               )}
             />
@@ -341,6 +349,9 @@ export default function Home() {
                   <Text style={st.newsTitle} numberOfLines={2}>
                     {item.title}
                   </Text>
+                  {(item.upCount ?? 0) + (item.downCount ?? 0) > 0 && (
+                    <Text style={st.reactMeta}>{'\\u{1F44D}'} {item.upCount ?? 0} · {'\\u{1F44E}'} {item.downCount ?? 0}</Text>
+                  )}
                 </Pressable>
               )}
             />
@@ -404,6 +415,7 @@ export default function Home() {
 }
 
 const st = StyleSheet.create({
+  reactMeta: { color: C.dim, fontSize: 11, marginTop: 4 },
   safe: { flex: 1, backgroundColor: C.bg },
   wrap: { padding: 18, paddingBottom: 40 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },

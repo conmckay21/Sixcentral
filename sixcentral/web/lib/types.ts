@@ -22,7 +22,9 @@ export type ContentBase = {
   category: string; // category slug
   excerpt: string;
   updatedAt: string;
-  publishedAt?: string; // ISO date
+  publishedAt?: string;
+  upCount?: number;
+  downCount?: number; // ISO date
   readingMins: number;
   // simple block content for the scaffold; swap for MDX / rich text later
   body: Array<{ type: 'p' | 'h2' | 'ul'; text?: string; items?: string[] }>;
