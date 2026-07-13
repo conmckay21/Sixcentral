@@ -270,7 +270,7 @@ export default function Home() {
                 {item.title}
               </Text>
                   {(item.upCount ?? 0) + (item.downCount ?? 0) > 0 && (
-                    <Text style={st.reactMeta}>{'\\u{1F44D}'} {item.upCount ?? 0} · {'\\u{1F44E}'} {item.downCount ?? 0}</Text>
+                    <Text style={st.reactMeta}>👍 {item.upCount ?? 0} · 👎 {item.downCount ?? 0}</Text>
                   )}
             </Pressable>
           )}
@@ -312,7 +312,7 @@ export default function Home() {
                     {item.title}
                   </Text>
                   {(item.upCount ?? 0) + (item.downCount ?? 0) > 0 && (
-                    <Text style={st.reactMeta}>{'\\u{1F44D}'} {item.upCount ?? 0} · {'\\u{1F44E}'} {item.downCount ?? 0}</Text>
+                    <Text style={st.reactMeta}>👍 {item.upCount ?? 0} · 👎 {item.downCount ?? 0}</Text>
                   )}
                 </Pressable>
               )}
@@ -350,7 +350,7 @@ export default function Home() {
                     {item.title}
                   </Text>
                   {(item.upCount ?? 0) + (item.downCount ?? 0) > 0 && (
-                    <Text style={st.reactMeta}>{'\\u{1F44D}'} {item.upCount ?? 0} · {'\\u{1F44E}'} {item.downCount ?? 0}</Text>
+                    <Text style={st.reactMeta}>👍 {item.upCount ?? 0} · 👎 {item.downCount ?? 0}</Text>
                   )}
                 </Pressable>
               )}
