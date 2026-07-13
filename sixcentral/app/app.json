@@ -52,11 +52,11 @@
       }
     },
     "owner": "mckay21",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
     "updates": {
       "url": "https://u.expo.dev/ef1968be-aa57-4737-b75f-7935b9ccf397"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }
