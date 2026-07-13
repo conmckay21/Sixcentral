@@ -11,9 +11,11 @@ function isGuide(c: AnyContent): c is Guide {
 export default function LongformArticle({
   content,
   related,
+  reactions,
 }: {
   content: AnyContent;
   related: AnyContent[];
+  reactions?: React.ReactNode;
 }) {
   return (
     <article className="article">
@@ -82,6 +84,8 @@ export default function LongformArticle({
             </div>
           </div>
         )}
+
+        {reactions}
 
         {related.length > 0 && (
           <>

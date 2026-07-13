@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import LongformArticle from '@/components/LongformArticle';
+import ArticleReactions from '@/components/ArticleReactions';
 import { getAllArticles, getArticleBySlug, getRelated } from '@/lib/content';
 import { SITE_URL } from '@/lib/site';
 
@@ -58,7 +59,7 @@ export default async function NewsDetail({ params }: { params: { slug: string } 
   };
   return (
     <>
-      <LongformArticle content={article} related={related} />
+      <LongformArticle content={article} related={related} reactions={<ArticleReactions slug={article.slug} />} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
     </>
   );

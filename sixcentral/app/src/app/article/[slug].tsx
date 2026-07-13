@@ -3,7 +3,9 @@ import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { C, G, GRAD } from '@/lib/theme';
+import { supabase } from '@/lib/supabase';
 import { SITE } from '@/lib/site';
 
 type Block = { type: 'p' | 'h2' | 'ul'; text?: string; items?: string[] };
@@ -110,9 +112,88 @@ export default function Article() {
           );
         })}
 
+        <Reactions slug={String(slug)} />
+
         <Text style={st.foot}>Verified before it is published. sixcentral.co.uk</Text>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function Reactions({ slug }: { slug: string }) {
+  const [up, setUp] = useState<number | null>(null);
+  const [down, setDown] = useState<number | null>(null);
+  const [mine, setMine] = useState<0 | 1 | -1>(0);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(`sc-vote:${slug}`)
+      .then((v) => {
+        const n = Number(v ?? '0');
+        if (n === 1 || n === -1) setMine(n);
+      })
+      .catch(() => {});
+    fetch(`${SITE}/api/reactions?slug=${encodeURIComponent(slug)}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((j: { up: number; down: number }) => {
+        setUp(j.up);
+        setDown(j.down);
+      })
+      .catch(() => {
+        setUp(0);
+        setDown(0);
+      });
+  }, [slug]);
+
+  async function vote(v: 1 | -1) {
+    if (busy || up === null || down === null) return;
+    const next = mine === v ? 0 : v;
+    setUp(up + (next === 1 ? 1 : 0) - (mine === 1 ? 1 : 0));
+    setDown(down + (next === -1 ? 1 : 0) - (mine === -1 ? 1 : 0));
+    setMine(next);
+    setBusy(true);
+    AsyncStorage.setItem(`sc-vote:${slug}`, String(next)).catch(() => {});
+    try {
+      let anonId = (await AsyncStorage.getItem('sc-anon-id')) ?? '';
+      if (!anonId) {
+        anonId = `${Date.now().toString(16)}-${Math.random().toString(16).slice(2, 10)}-${Math.random().toString(16).slice(2, 10)}`;
+        await AsyncStorage.setItem('sc-anon-id', anonId);
+      }
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      const res = await fetch(`${SITE}/api/reactions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ slug, value: next, anonId }),
+      });
+      if (res.ok) {
+        const j = await res.json();
+        setUp(j.up);
+        setDown(j.down);
+      }
+    } catch {}
+    setBusy(false);
+  }
+
+  return (
+    <View style={st.reactWrap}>
+      <Text style={st.reactKicker}>Good intel?</Text>
+      <View style={st.reactRow}>
+        <Pressable onPress={() => vote(1)} style={[st.reactBtn, mine === 1 && st.reactBtnUp]}>
+          <Text style={[st.reactText, mine === 1 && { color: C.green ?? '#35E27C' }]}>
+            {'\u{1F44D}'} {up === null ? '\u00B7' : up}
+          </Text>
+        </Pressable>
+        <Pressable onPress={() => vote(-1)} style={[st.reactBtn, mine === -1 && st.reactBtnDown]}>
+          <Text style={[st.reactText, mine === -1 && { color: '#FF9E45' }]}>
+            {'\u{1F44E}'} {down === null ? '\u00B7' : down}
+          </Text>
+        </Pressable>
+      </View>
+    </View>
   );
 }
 
@@ -134,5 +215,12 @@ const st = StyleSheet.create({
   bullet: { color: C.pink, fontWeight: '900', marginTop: 2 },
   liText: { color: C.muted, fontSize: 14, lineHeight: 21, flex: 1 },
   foot: { color: C.dim, fontSize: 11, marginTop: 24, textTransform: 'uppercase', letterSpacing: 1 },
+  reactWrap: { marginTop: 26, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.09)', paddingTop: 16 },
+  reactKicker: { color: C.dim, fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 },
+  reactRow: { flexDirection: 'row', gap: 10 },
+  reactBtn: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', borderRadius: 999, paddingVertical: 8, paddingHorizontal: 16 },
+  reactBtnUp: { borderColor: '#35E27C', backgroundColor: 'rgba(53,226,124,0.10)' },
+  reactBtnDown: { borderColor: '#FF9E45', backgroundColor: 'rgba(255,158,69,0.10)' },
+  reactText: { color: C.muted, fontSize: 14, fontWeight: '700' },
   muted: { color: C.muted, lineHeight: 20 },
 });
