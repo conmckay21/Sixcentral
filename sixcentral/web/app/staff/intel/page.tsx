@@ -452,6 +452,12 @@ export default function IntelPage() {
                   <button className="copy" onClick={() => copyBrief(it)}>
                     {copied === it.id ? "Copied" : "Copy brief"}
                   </button>
+                  <button
+                    className="ghost"
+                    onClick={() => patch(it.id, { status: it.status === "dismissed" ? "new" : "dismissed" })}
+                  >
+                    {it.status === "dismissed" ? "Restore" : "Dismiss"}
+                  </button>
                 </div>
 
                 <textarea
