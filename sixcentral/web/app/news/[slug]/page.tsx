@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import LongformArticle from '@/components/LongformArticle';
 import { getAllArticles, getArticleBySlug, getRelated } from '@/lib/content';
+import { SITE_URL } from '@/lib/site';
 
 // Regenerate from the database periodically, and render new slugs on demand.
 export const revalidate = 300;
@@ -22,9 +23,14 @@ export async function generateMetadata({
     title: article.title,
     description: article.excerpt,
     alternates: { canonical: `/news/${article.slug}` },
-    ...(article.heroImage
-      ? { openGraph: { images: [{ url: article.heroImage.src, alt: article.heroImage.alt }] } }
-      : {}),
+    openGraph: {
+      type: 'article',
+      publishedTime: article.publishedAt,
+      modifiedTime: article.updatedAt,
+      ...(article.heroImage
+        ? { images: [{ url: article.heroImage.src, alt: article.heroImage.alt }] }
+        : {}),
+    },
   };
 }
 
@@ -33,5 +39,27 @@ export default async function NewsDetail({ params }: { params: { slug: string } 
   if (!article) notFound();
 
   const related = await getRelated(article);
-  return <LongformArticle content={article} related={related} />;
+  const ld = {
+    '@context': 'https://schema.org',
+    '@type': 'NewsArticle',
+    headline: article.title,
+    description: article.excerpt,
+    datePublished: article.publishedAt ?? article.updatedAt,
+    dateModified: article.updatedAt,
+    ...(article.heroImage ? { image: [article.heroImage.src] } : {}),
+    author: [{ '@type': 'Organization', name: 'SixCentral', url: SITE_URL }],
+    publisher: {
+      '@type': 'Organization',
+      name: 'SixCentral',
+      logo: { '@type': 'ImageObject', url: `${SITE_URL}/app/app-icon.png` },
+    },
+    mainEntityOfPage: `${SITE_URL}/news/${article.slug}`,
+    isAccessibleForFree: true,
+  };
+  return (
+    <>
+      <LongformArticle content={article} related={related} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
+    </>
+  );
 }

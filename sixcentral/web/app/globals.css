@@ -3,7 +3,6 @@
    Tokens mirror /shared/tokens.ts (keep them in sync).
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500;600;700&display=swap');
 
 :root {
   --bg: #0B0810;
@@ -26,9 +25,9 @@
   --dim: #6F6488;
 
   --sunset: linear-gradient(115deg, #FF2E88 0%, #FF7A4D 58%, #FFC83D 100%);
-  --display: 'Anton', Impact, sans-serif;
-  --body: 'Space Grotesk', system-ui, sans-serif;
-  --mono: 'Spline Sans Mono', ui-monospace, monospace;
+  --display: var(--font-anton), Impact, sans-serif;
+  --body: var(--font-grotesk), system-ui, sans-serif;
+  --mono: var(--font-spline), ui-monospace, monospace;
 
   --wrap: 1120px;
 }

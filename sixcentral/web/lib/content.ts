@@ -19,6 +19,11 @@ function mapArticle(r: any): Article {
     category: r.category_slug ?? '',
     excerpt: r.excerpt ?? '',
     updatedAt: typeof r.updated_at === 'string' ? r.updated_at.slice(0, 10) : r.updated_at,
+    publishedAt: r.published_at
+      ? String(r.published_at).slice(0, 10)
+      : typeof r.updated_at === 'string'
+        ? r.updated_at.slice(0, 10)
+        : r.updated_at,
     readingMins: r.reading_mins ?? 5,
     body: Array.isArray(r.body) ? r.body : [],
     gradient: r.gradient ?? '',

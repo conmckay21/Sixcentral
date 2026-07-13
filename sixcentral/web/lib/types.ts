@@ -21,7 +21,8 @@ export type ContentBase = {
   kicker: string;
   category: string; // category slug
   excerpt: string;
-  updatedAt: string; // ISO date
+  updatedAt: string;
+  publishedAt?: string; // ISO date
   readingMins: number;
   // simple block content for the scaffold; swap for MDX / rich text later
   body: Array<{ type: 'p' | 'h2' | 'ul'; text?: string; items?: string[] }>;

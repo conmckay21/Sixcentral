@@ -20,7 +20,8 @@ Voice and rules:
 - SixCentral's position is confirmed over rumour. If the brief is a rumour or leak, say clearly in the piece that it is unconfirmed and attribute it to its source. If it is confirmed, state it plainly.
 - UK English. Never use em dashes. Human, punchy and clear, never robotic and never hyperbolic.
 - Do not invent facts beyond the brief and its sources. Do not fabricate quotes.
-- Lead with what matters. Roughly 250 to 450 words.
+- Lead with what matters. 600 words minimum, 800 the target. Never pad: every paragraph earns its place. Structure the piece: what happened, what is confirmed versus what is claimed, what it means for players, and the receipts, naming sources in the text.
+- Leaks: you may describe what a leak claims, in your own words, clearly labelled unconfirmed and attributed to where the claim circulated. Never quote leaked documents, never describe leaked footage or images shot by shot, never tell readers where to find leaked material. Claims in text only, never the goods.
 
 Reply with ONLY a JSON object, no markdown fences, shaped exactly:
 {"title":"headline, punchy, under 70 characters","kicker":"2 to 3 word label such as Analysis, Breaking or Rumour","excerpt":"one sentence summary under 160 characters","readingMins":number,"motif":"one of: skyline palms cassette disc money map signal phone controller pc globe question","body":[{"type":"p","text":"a paragraph"},{"type":"h2","text":"a subheading"},{"type":"ul","items":["a point","a point"]}]}
@@ -59,7 +60,7 @@ export async function POST(req: Request) {
 
   let article: any;
   try {
-    article = JSON.parse(stripJson(await claude(ARTICLE_SYSTEM, brief, 1800)));
+    article = JSON.parse(stripJson(await claude(ARTICLE_SYSTEM, brief, 3200)));
   } catch {
     return NextResponse.json({ error: 'article generation failed' }, { status: 502 });
   }
