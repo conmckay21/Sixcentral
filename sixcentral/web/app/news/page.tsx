@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import ArticleCard from '@/components/ArticleCard';
 import NewsletterSignup from '@/components/NewsletterSignup';
-import { getLatestArticles, getRumours } from '@/lib/content';
+import { getLatestArticles, getRumours, getControversies } from '@/lib/content';
 
 export const metadata: Metadata = {
   title: 'GTA 6 news, checked before it ships',
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function NewsIndex() {
-  const [articles, rumours] = await Promise.all([getLatestArticles(60), getRumours(60)]);
+  const [articles, rumours, offences] = await Promise.all([getLatestArticles(60), getRumours(60), getControversies(6)]);
 
   return (
     <>
@@ -85,6 +85,27 @@ export default async function NewsIndex() {
           <NewsletterSignup source="news" />
         </div>
       </section>
+      {offences.length > 0 && (
+        <section className="section" id="rap-sheet">
+          <div className="wrap">
+            <div className="section__head">
+              <h2>
+                The <span className="g">Rap Sheet</span>
+              </h2>
+              <Link href="/rap-sheet" className="mono" style={{ fontSize: '0.72rem', color: 'var(--gold)' }}>
+                Every offence on the record &rarr;
+              </Link>
+            </div>
+            <div className="grid grid--3">
+              {offences.map((a) => (
+                <ArticleCard key={a.slug} article={a} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+
     </>
   );
 }

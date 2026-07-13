@@ -67,11 +67,12 @@ export async function getLatestArticles(limit = 6): Promise<Article[]> {
       .select('*')
       .eq('published', true)
       .eq('is_rumour', false)
+      .neq('category_slug', 'controversy')
       .order('updated_at', { ascending: false })
       .limit(limit);
     if (data && data.length) return data.map(mapArticle);
   }
-  return byNewest(MOCK_ARTICLES.filter((a) => !a.isRumour)).slice(0, limit);
+  return byNewest(MOCK_ARTICLES.filter((a) => !a.isRumour && a.category !== 'controversy')).slice(0, limit);
 }
 
 /** Rumour Mill: explicitly unconfirmed pieces, kept out of Latest News. */
@@ -88,6 +89,22 @@ export async function getRumours(limit = 6): Promise<Article[]> {
     if (data && data.length) return data.map(mapArticle);
   }
   return byNewest(MOCK_ARTICLES.filter((a) => a.isRumour)).slice(0, limit);
+}
+
+/** The Rap Sheet: documented controversies, every offence on the record. */
+export async function getControversies(limit = 6): Promise<Article[]> {
+  const sb = getSupabase();
+  if (sb) {
+    const { data } = await sb
+      .from('articles')
+      .select('*')
+      .eq('published', true)
+      .eq('category_slug', 'controversy')
+      .order('updated_at', { ascending: false })
+      .limit(limit);
+    if (data && data.length) return data.map(mapArticle);
+  }
+  return byNewest(MOCK_ARTICLES.filter((a) => a.category === 'controversy')).slice(0, limit);
 }
 
 /** Every article, facts and rumours: for routing, sitemaps and lookups. */

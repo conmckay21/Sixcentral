@@ -21,6 +21,10 @@ export default function SiteFooter() {
               <Link href="/news">News</Link>
               <Link href="/news#rumour-mill">The Rumour Mill</Link>
               <Link href="/clips">Clips</Link>
+              <Link href="/countdown">Countdown</Link>
+              <Link href="/rap-sheet">The Rap Sheet</Link>
+              <Link href="/about">About</Link>
+              <Link href="/editorial-policy">Editorial policy</Link>
               <Link href="/privacy">Privacy</Link>
               <Link href="/terms">Terms</Link>
             </div>

@@ -16,6 +16,7 @@ const SITE = 'https://sixcentral.co.uk';
 
 type Clip = { id: string; video_id: string; profile_id: string };
 type ContentItem = {
+  category?: string;
   slug: string;
   title: string;
   kicker: string;
@@ -93,6 +94,7 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
   const [feed, setFeed] = useState<ContentItem[]>([]);
   const [rumours, setRumours] = useState<ContentItem[]>([]);
+  const [rapSheet, setRapSheet] = useState<ContentItem[]>([]);
   const [focused, setFocused] = useState(true);
   useFocusEffect(
     useCallback(() => {
@@ -102,14 +104,16 @@ export default function Home() {
   );
   const newsRail = useAutoRail(Math.min(Math.max(feed.length - 1, 0), 8), focused);
   const rumourRail = useAutoRail(Math.min(rumours.length, 8), focused);
+  const rapRail = useAutoRail(Math.min(rapSheet.length, 8), focused);
   const [blocked, setBlocked] = useState<Set<string>>(new Set());
 
   const loadContent = useCallback(() => {
     return fetch(`${SITE}/api/content`)
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((j: { articles: ContentItem[] }) => {
-        setFeed(j.articles.filter((a) => !a.isRumour));
+        setFeed(j.articles.filter((a) => !a.isRumour && a.category !== 'controversy'));
         setRumours(j.articles.filter((a) => a.isRumour));
+        setRapSheet(j.articles.filter((a) => a.category === 'controversy'));
       })
       .catch(() => {});
   }, []);
@@ -299,6 +303,41 @@ export default function Home() {
                     <LinearGradient colors={G.cool} {...GRAD} style={[st.newsThumb, st.rumourThumb]} />
                   )}
                   <Text style={st.rumourChipText}>Rumour · Heat {item.credibility ?? 2}/5</Text>
+                  <Text style={st.newsTitle} numberOfLines={2}>
+                    {item.title}
+                  </Text>
+                </Pressable>
+              )}
+            />
+          </>
+        )}
+
+        {rapSheet.length > 0 && (
+          <>
+            <SectionTitle right={<Text style={st.railNote}>Every offence on the record</Text>}>The Rap Sheet</SectionTitle>
+            <FlatList
+              horizontal
+              data={rapSheet.slice(0, 8)}
+              keyExtractor={(a) => a.slug}
+              showsHorizontalScrollIndicator={false}
+              snapToInterval={242}
+              decelerationRate="fast"
+              style={st.newsRail}
+              ref={rapRail.ref}
+              onScrollBeginDrag={rapRail.onTouch}
+              onScrollEndDrag={rapRail.onSettle}
+              onMomentumScrollEnd={rapRail.onSettle}
+              renderItem={({ item }) => (
+                <Pressable
+                  style={st.newsCard}
+                  onPress={() => router.push({ pathname: '/article/[slug]', params: { slug: item.slug } })}
+                >
+                  {item.heroImage ? (
+                    <Image source={{ uri: item.heroImage.src }} style={[st.newsThumb, st.rumourThumb]} resizeMode="cover" />
+                  ) : (
+                    <LinearGradient colors={G.cool} {...GRAD} style={[st.newsThumb, st.rumourThumb]} />
+                  )}
+                  <Text style={st.rumourChipText}>Controversy · On the record</Text>
                   <Text style={st.newsTitle} numberOfLines={2}>
                     {item.title}
                   </Text>

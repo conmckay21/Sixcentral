@@ -5,7 +5,7 @@ import NewsletterSignup from '@/components/NewsletterSignup';
 import HeroMedia from '@/components/HeroMedia';
 import ArticleCard from '@/components/ArticleCard';
 import Carousel from '@/components/Carousel';
-import { getLatestArticles, getFeatured, getRumours } from '@/lib/content';
+import { getLatestArticles, getFeatured, getRumours, getControversies } from '@/lib/content';
 
 export const metadata = { alternates: { canonical: '/' } };
 
@@ -15,10 +15,11 @@ export const metadata = { alternates: { canonical: '/' } };
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const [articles, featured, rumours] = await Promise.all([
+  const [articles, featured, rumours, controversies] = await Promise.all([
     getLatestArticles(8),
     getFeatured(),
     getRumours(8),
+    getControversies(4),
   ]);
 
   return (
@@ -133,6 +134,26 @@ export default async function HomePage() {
           </Carousel>
         </div>
       </section>
+
+      {controversies.length > 0 && (
+        <section className="section" id="rap-sheet">
+          <div className="wrap">
+            <div className="section__head">
+              <h2>
+                The <span className="g">Rap Sheet</span>
+              </h2>
+              <Link href="/rap-sheet" className="mono" style={{ fontSize: '0.72rem', color: 'var(--gold, #FFC83D)' }}>
+                Every offence on the record &rarr;
+              </Link>
+            </div>
+            <div className="grid grid--3">
+              {controversies.map((a) => (
+                <ArticleCard key={a.slug} article={a} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Launch list */}
       <section className="section" id="newsletter">
