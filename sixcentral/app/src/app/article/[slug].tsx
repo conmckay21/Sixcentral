@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { C, G, GRAD } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
+import { voteBus } from '@/lib/voteBus';
 import { SITE } from '@/lib/site';
 
 type Block = { type: 'p' | 'h2' | 'ul'; text?: string; items?: string[] };
@@ -148,9 +149,12 @@ function Reactions({ slug }: { slug: string }) {
   async function vote(v: 1 | -1) {
     if (busy || up === null || down === null) return;
     const next = mine === v ? 0 : v;
-    setUp(up + (next === 1 ? 1 : 0) - (mine === 1 ? 1 : 0));
-    setDown(down + (next === -1 ? 1 : 0) - (mine === -1 ? 1 : 0));
+    const nextUp = up + (next === 1 ? 1 : 0) - (mine === 1 ? 1 : 0);
+    const nextDown = down + (next === -1 ? 1 : 0) - (mine === -1 ? 1 : 0);
+    setUp(nextUp);
+    setDown(nextDown);
     setMine(next);
+    voteBus.emit(slug, { up: nextUp, down: nextDown });
     setBusy(true);
     AsyncStorage.setItem(`sc-vote:${slug}`, String(next)).catch(() => {});
     try {
@@ -173,6 +177,7 @@ function Reactions({ slug }: { slug: string }) {
         const j = await res.json();
         setUp(j.up);
         setDown(j.down);
+        voteBus.emit(slug, { up: j.up, down: j.down });
       }
     } catch {}
     setBusy(false);

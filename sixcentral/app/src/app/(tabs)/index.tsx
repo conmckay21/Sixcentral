@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { fetchBlockedIds } from '@/lib/blocks';
 import { supabase } from '@/lib/supabase';
+import { voteBus } from '@/lib/voteBus';
 import { C, G, GRAD } from '@/lib/theme';
 import { Chip, SectionTitle } from '@/components/ui';
 
@@ -108,6 +109,16 @@ export default function Home() {
   const rumourRail = useAutoRail(Math.min(rumours.length, 8), focused);
   const rapRail = useAutoRail(Math.min(rapSheet.length, 8), focused);
   const [blocked, setBlocked] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    return voteBus.on((slug, c) => {
+      const apply = (arr: ContentItem[]) =>
+        arr.map((a) => (a.slug === slug ? { ...a, upCount: c.up, downCount: c.down } : a));
+      setFeed((prev) => apply(prev));
+      setRumours((prev) => apply(prev));
+      setRapSheet((prev) => apply(prev));
+    });
+  }, []);
 
   const loadContent = useCallback(() => {
     return fetch(`${SITE}/api/content`)
@@ -232,9 +243,7 @@ export default function Home() {
               <Text style={st.bigTitle}>{feed[0].title}</Text>
               <Text style={st.bigSub}>
                 Read in the app →
-                {(feed[0].upCount ?? 0) + (feed[0].downCount ?? 0) > 0
-                  ? `   👍 ${feed[0].upCount ?? 0} · 👎 ${feed[0].downCount ?? 0}`
-                  : ''}
+                {`   👍 ${feed[0].upCount ?? 0} · 👎 ${feed[0].downCount ?? 0}`}
               </Text>
             </View>
           ) : (
@@ -274,9 +283,7 @@ export default function Home() {
               <Text style={st.newsTitle} numberOfLines={2}>
                 {item.title}
               </Text>
-                  {(item.upCount ?? 0) + (item.downCount ?? 0) > 0 && (
-                    <Text style={st.reactMeta}>👍 {item.upCount ?? 0} · 👎 {item.downCount ?? 0}</Text>
-                  )}
+                  <Text style={st.reactMeta}>👍 {item.upCount ?? 0} · 👎 {item.downCount ?? 0}</Text>
             </Pressable>
           )}
         />
@@ -316,9 +323,7 @@ export default function Home() {
                   <Text style={st.newsTitle} numberOfLines={2}>
                     {item.title}
                   </Text>
-                  {(item.upCount ?? 0) + (item.downCount ?? 0) > 0 && (
-                    <Text style={st.reactMeta}>👍 {item.upCount ?? 0} · 👎 {item.downCount ?? 0}</Text>
-                  )}
+                  <Text style={st.reactMeta}>👍 {item.upCount ?? 0} · 👎 {item.downCount ?? 0}</Text>
                 </Pressable>
               )}
             />
@@ -354,9 +359,7 @@ export default function Home() {
                   <Text style={st.newsTitle} numberOfLines={2}>
                     {item.title}
                   </Text>
-                  {(item.upCount ?? 0) + (item.downCount ?? 0) > 0 && (
-                    <Text style={st.reactMeta}>👍 {item.upCount ?? 0} · 👎 {item.downCount ?? 0}</Text>
-                  )}
+                  <Text style={st.reactMeta}>👍 {item.upCount ?? 0} · 👎 {item.downCount ?? 0}</Text>
                 </Pressable>
               )}
             />
