@@ -230,7 +230,12 @@ export default function Home() {
               <View style={st.bigReadShade} />
               <Text style={st.bigKicker}>The big read · {feed[0].kicker}</Text>
               <Text style={st.bigTitle}>{feed[0].title}</Text>
-              <Text style={st.bigSub}>Read in the app →</Text>
+              <Text style={st.bigSub}>
+                Read in the app →
+                {(feed[0].upCount ?? 0) + (feed[0].downCount ?? 0) > 0
+                  ? `   👍 ${feed[0].upCount ?? 0} · 👎 ${feed[0].downCount ?? 0}`
+                  : ''}
+              </Text>
             </View>
           ) : (
             <LinearGradient colors={G.hot} {...GRAD} style={st.bigRead}>

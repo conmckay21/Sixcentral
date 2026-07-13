@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAllArticles, getGuides } from '@/lib/content';
 
-export const revalidate = 300;
+export const revalidate = 60;
 
 const SITE = 'https://sixcentral.co.uk';
 const abs = (u: string) => (u.startsWith('/') ? `${SITE}${u}` : u);

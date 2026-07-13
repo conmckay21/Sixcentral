@@ -63,6 +63,11 @@ export default async function HomePage() {
                 >
                   {featured.title}
                 </div>
+                {(featured.upCount ?? 0) + (featured.downCount ?? 0) > 0 && (
+                  <div className="mono" style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.85)', marginTop: 8 }}>
+                    👍 {featured.upCount ?? 0} · 👎 {featured.downCount ?? 0}
+                  </div>
+                )}
               </div>
             </div>
           </Link>
