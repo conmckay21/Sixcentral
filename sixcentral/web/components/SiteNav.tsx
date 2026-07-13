@@ -13,6 +13,7 @@ export default function SiteNav() {
           <Link href="/crew">Crew</Link>
           <Link href="/clips">Clips</Link>
           <Link href="/news">News</Link>
+          <Link href="/app">App</Link>
           <StaffIntelLink />
           <Link href="/account" className="nav__cta">
             Account

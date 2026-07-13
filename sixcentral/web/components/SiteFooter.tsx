@@ -26,7 +26,7 @@ export default function SiteFooter() {
             </div>
             <div className="footer__col">
               <h4>Community</h4>
-              <Link href="/#app">The app</Link>
+              <Link href="/app">The app</Link>
               <Link href="/crew">The Come-Up</Link>
               <Link href="/contribute">Contribute</Link>
               <Link href="/#app">Clip of the Month</Link>

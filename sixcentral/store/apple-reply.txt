@@ -1,0 +1,19 @@
+Thank you for the review.
+
+We do not hold rights to the third-party content referenced, so we have removed it
+from our metadata rather than seek authorisation.
+
+Changes made:
+
+1. The app icon has been redesigned. It is now the SixCentral monogram and contains
+   no element resembling any third-party mark.
+2. All screenshots have been recaptured. No screenshot contains third-party names,
+   logos or artwork.
+3. The subtitle, keyword field, promotional text and description no longer reference
+   any third-party product or company.
+
+SixCentral is an independent, unofficial fan resource. We claim no affiliation with,
+endorsement by, or sponsorship from any game publisher or developer, and the
+description states this explicitly.
+
+Version 1.0 is resubmitted with a new build carrying the revised icon.

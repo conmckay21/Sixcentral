@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   description:
     'The UK companion for Grand Theft Auto VI. Verified guides, real news and an interactive tracker, built by fans who check their facts.',
   metadataBase: new URL('https://sixcentral.co.uk'),
+  itunes: { appId: '6787364671' },
   openGraph: {
     title: 'SixCentral | GTA 6 guides, news & tools',
     description: 'The UK companion for Grand Theft Auto VI.',

@@ -1,0 +1,29 @@
+SUBTITLE  (limit 30, this is 28)
+Guides, news, maps and clips
+
+KEYWORDS  (limit 100, this is 88, no space after commas)
+open world,crime,walkthrough,guides,news,countdown,tracker,map,clips,community,checklist
+
+PROMOTIONAL TEXT  (limit 170)
+Guides written by people who actually play. News checked before it goes live. Clips from the community. Counting down to 19 November 2026.
+
+COPYRIGHT
+2026 SixCentral
+
+DESCRIPTION
+SixCentral is your companion for the biggest open world launch of the decade.
+
+Guides that actually help. News you can trust. A community that finds things first.
+
+WHAT YOU GET
+Guides and walkthroughs written by people who play, not scraped from a wiki
+Daily news, checked before it goes live, with rumour kept clearly separate from fact
+A launch countdown ticking down to 19 November 2026
+Clips from the community, straight from your phone or your console
+Respect, our reputation system: contribute, get credit, climb the board
+An interactive map, unlocking when the game arrives
+
+BUILT IN THE UK
+We are a small independent team, not a content farm. Everything is written by hand, fact checked, and dated so you know how fresh it is.
+
+SixCentral is an independent, unofficial fan resource. We are not affiliated with, endorsed by, or sponsored by any game publisher or developer.

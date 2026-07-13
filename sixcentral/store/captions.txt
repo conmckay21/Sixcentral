@@ -1,0 +1,9 @@
+Screenshot captions, in order. Four screenshots. Home and Map removed.
+
+1. Guides     Every guide, in your pocket
+2. Progress   Track every collectible
+3. Clips      Clips from the community
+4. Profile    Earn Respect, climb the board
+
+Footer of every frame: brand/screenshots/wordmark-footer.png
+Nothing else changes in the template.

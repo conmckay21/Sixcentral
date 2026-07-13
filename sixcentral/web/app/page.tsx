@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Countdown from '@/components/Countdown';
+import AppStoreBadge from '@/components/AppStoreBadge';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import HeroMedia from '@/components/HeroMedia';
 import ArticleCard from '@/components/ArticleCard';
@@ -163,13 +164,18 @@ export default async function HomePage() {
                   margin: '8px 0',
                 }}
               >
-                Track your 100% on the go
+                Now on the App Store
               </h2>
               <p style={{ color: 'var(--muted)', maxWidth: '52ch' }}>
-                An interactive map, collectible tracking that syncs with these guides, a community
-                clip feed, and a reputation ladder for the people mapping the game. Coming to iOS
-                and Android.
+                Verified news, the countdown, community clips and The Come-Up, free on iPhone.
+                The Leonida map and 100% tracker unlock at launch. Android is in the works.
               </p>
+              <div style={{ marginTop: 18, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                <AppStoreBadge />
+                <Link href="/app" className="mono" style={{ fontSize: '0.74rem', color: 'var(--cyan)' }}>
+                  What&rsquo;s inside &rarr;
+                </Link>
+              </div>
             </div>
             <div
               className="card"

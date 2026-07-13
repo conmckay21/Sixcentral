@@ -1,0 +1,17 @@
+Demo account: connor+applereview@sixcentral.co.uk / Leonida-Review-8842!
+
+1. The Map tab shows a locked teaser by design. The interactive map is complete behind
+   a server flag and unlocks remotely once official mapping material is available for
+   the game we cover. The teaser is the intended pre-launch experience, not placeholder
+   content.
+
+2. Clip uploads post to our own YouTube channel as unlisted, crediting the submitter,
+   then enter a human moderation queue. Users can report any clip and block any user
+   in app. Three reports auto-remove a clip pending review.
+
+3. SixCentral is an independent, unofficial fan resource. We claim no affiliation with
+   any publisher or developer. The app icon, screenshots, subtitle, keywords and
+   promotional text contain no third-party trademarks, and the description carries an
+   explicit statement of non-affiliation.
+
+Contact: connor@sixcentral.co.uk
