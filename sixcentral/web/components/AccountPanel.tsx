@@ -38,14 +38,7 @@ type FriendEdge = {
   addressee_p: { handle: string } | null;
 };
 
-const PRESETS = [
-  { src: '/avatars/preset-skyline.svg', label: 'Skyline' },
-  { src: '/avatars/preset-palms.svg', label: 'Palms' },
-  { src: '/avatars/preset-cassette.svg', label: 'Cassette' },
-  { src: '/avatars/preset-disc.svg', label: 'Disc' },
-  { src: '/avatars/preset-controller.svg', label: 'Pad' },
-  { src: '/avatars/preset-vi.svg', label: 'VI' },
-];
+type Preset = { key: string; label: string; src: string; min_rank_id: number };
 
 /** Stored verbatim as the consent record for the account-page toggle. */
 const ACCOUNT_CONSENT =
@@ -91,6 +84,7 @@ export default function AccountPanel() {
   const [avatarMsg, setAvatarMsg] = useState('');
 
   const [flairs, setFlairs] = useState<Flair[]>([]);
+  const [presets, setPresets] = useState<Preset[]>([]);
   const [flairMsg, setFlairMsg] = useState('');
   const [bio, setBio] = useState('');
   const [platform, setPlatform] = useState<string>('');
@@ -110,10 +104,11 @@ export default function AccountPanel() {
   const loadProfile = useCallback(
     async (uid: string) => {
       if (!sb) return;
-      const [{ data: p }, { data: r }, { data: f }] = await Promise.all([
+      const [{ data: p }, { data: r }, { data: f }, { data: av }] = await Promise.all([
         sb.from('public_profiles').select('*').eq('id', uid).single(),
         sb.from('ranks').select('*').order('id'),
         sb.from('flairs').select('*').order('min_rank_id'),
+        sb.from('avatars').select('*').order('min_rank_id'),
       ]);
       if (p) {
         const prof = p as Profile;
@@ -129,6 +124,7 @@ export default function AccountPanel() {
       }
       if (r) setRanks(r as Rank[]);
       if (f) setFlairs(f as Flair[]);
+      if (av) setPresets(av as Preset[]);
       loadFriends();
     },
     [sb],
@@ -774,14 +770,23 @@ export default function AccountPanel() {
           </div>
 
           <div className="acct__field">
-            <label>Preset avatars</label>
+            <label>Preset avatars {profile.is_staff ? '(staff: all unlocked)' : '(more unlock as you climb)'}</label>
             <div className="presets">
-              {PRESETS.map((p) => (
-                <button key={p.src} className="preset" title={p.label} onClick={() => usePreset(p.src)}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.src} alt={p.label} />
-                </button>
-              ))}
+              {presets.map((p) => {
+                const unlocked = profile.is_staff || profile.rank_id >= p.min_rank_id;
+                const lockName = ranks.find((r) => r.id === p.min_rank_id)?.name ?? '';
+                return (
+                  <button
+                    key={p.key}
+                    className={`preset${p.src === profile.avatar_url ? ' on' : ''}${unlocked ? '' : ' locked'}`}
+                    title={unlocked ? p.label : `${p.label} — unlocks at ${lockName}`}
+                    onClick={() => unlocked && usePreset(p.src)}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={p.src} alt={p.label} />
+                  </button>
+                );
+              })}
             </div>
           </div>
 

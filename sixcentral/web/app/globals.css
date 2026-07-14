@@ -650,3 +650,17 @@ select.nl__input { appearance: none; }
   .ccard { flex-basis: 240px; }
   .carousel__btn { display: none; }
 }
+/* ============================================================
+   SixCentral — rank cosmetics additions
+   APPEND THE BLOCK BELOW TO THE END OF web/app/globals.css
+   Nothing here overrides existing rules; it only adds.
+   ============================================================ */
+
+/* ---- Gated preset avatars ---- */
+.preset.on { border-color: var(--pink); box-shadow: 0 0 10px rgba(255, 46, 136, 0.55); }
+.preset.locked { opacity: 0.32; cursor: default; filter: grayscale(0.7); }
+.preset.locked:hover { border-color: var(--line2); transform: none; }
+
+/* ---- Flair treatments: the two new tiers ---- */
+.flair-cyan_edge  { border-color: #1FE5D6 !important; box-shadow: 0 0 0 2px rgba(31, 229, 214, 0.3); }
+.flair-amber_ring { border-color: var(--orange) !important; box-shadow: 0 0 12px rgba(255, 158, 69, 0.7); }
