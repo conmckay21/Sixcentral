@@ -10,8 +10,9 @@ import { C, G, GRAD } from '@/lib/theme';
 import { flairColor } from '@/lib/flairs';
 import Avatar from '@/components/Avatar';
 
-const PRESETS = ['vi', 'skyline', 'palms', 'cassette', 'disc', 'controller'] as const;
 type Flair = { key: string; label: string; min_rank_id: number };
+type Preset = { key: string; label: string; src: string; min_rank_id: number };
+type Rank = { id: number; name: string };
 
 export default function Account() {
   const router = useRouter();
@@ -35,6 +36,8 @@ export default function Account() {
   const [isPro, setIsPro] = useState(false);
   const [handle, setHandle] = useState('');
   const [flairs, setFlairs] = useState<Flair[]>([]);
+  const [presets, setPresets] = useState<Preset[]>([]);
+  const [ranks, setRanks] = useState<Rank[]>([]);
 
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
@@ -51,13 +54,15 @@ export default function Account() {
         setReady(true);
         return;
       }
-      const [{ data: p }, { data: f }] = await Promise.all([
+      const [{ data: p }, { data: f }, { data: av }, { data: rk }] = await Promise.all([
         supabase
           .from('public_profiles')
           .select('handle, avatar_url, flair, bio, platform, psn_id, xbox_gamertag, ids_public, rank_id, is_staff, is_pro, date_of_birth')
           .eq('id', data.session.user.id)
           .single(),
         supabase.from('flairs').select('key, label, min_rank_id').order('min_rank_id'),
+        supabase.from('avatars').select('key, label, src, min_rank_id').order('min_rank_id'),
+        supabase.from('ranks').select('id, name').order('id'),
       ]);
       if (p) {
         setHandle(p.handle as string);
@@ -74,6 +79,8 @@ export default function Account() {
         setIsPro(!!p.is_pro);
       }
       if (f) setFlairs(f as Flair[]);
+      if (av) setPresets(av as Preset[]);
+      if (rk) setRanks(rk as Rank[]);
       setReady(true);
     });
   }, []);
@@ -131,10 +138,22 @@ export default function Account() {
     await setAvatar(data.publicUrl);
   }
 
+  function rankName(id: number): string {
+    return ranks.find((r) => r.id === id)?.name ?? `rank ${id}`;
+  }
+
+  async function choosePreset(p: Preset) {
+    if (!session) return;
+    if (!isStaff && rankId < p.min_rank_id) {
+      return flash(false, `${p.label} unlocks at ${rankName(p.min_rank_id)}. Keep climbing.`);
+    }
+    await setAvatar(p.src);
+  }
+
   async function chooseFlair(f: Flair) {
     if (!session) return;
     const locked = !isStaff && rankId < f.min_rank_id;
-    if (locked) return flash(false, `${f.label} unlocks at rank ${f.min_rank_id}. Keep climbing.`);
+    if (locked) return flash(false, `${f.label} unlocks at ${rankName(f.min_rank_id)}. Keep climbing.`);
     setFlair(f.key);
     const { error } = await supabase.from('profiles').update({ flair: f.key }).eq('id', session.user.id);
     flash(!error, error ? 'That flair is still locked for you.' : `${f.label} equipped ✓`);
@@ -240,12 +259,28 @@ export default function Account() {
           </Pressable>
         </View>
         <View style={st.presetRow}>
-          {PRESETS.map((k) => (
-            <Pressable key={k} onPress={() => setAvatar(`/avatars/preset-${k}.svg`)}>
-              <Avatar url={`/avatars/preset-${k}.svg`} size={50} ring={avatarUrl === `/avatars/preset-${k}.svg` ? C.cyan : C.line2} />
-            </Pressable>
-          ))}
+          {presets.map((p) => {
+            const locked = !isStaff && rankId < p.min_rank_id;
+            const on = avatarUrl === p.src;
+            return (
+              <Pressable
+                key={p.key}
+                style={locked ? st.presetLocked : undefined}
+                onPress={() => choosePreset(p)}
+              >
+                <Avatar url={p.src} size={50} ring={on ? C.cyan : C.line2} />
+                {locked && (
+                  <View style={st.presetLockBadge}>
+                    <Text style={st.presetLockText}>🔒</Text>
+                  </View>
+                )}
+              </Pressable>
+            );
+          })}
         </View>
+        <Text style={st.presetHint}>
+          {isStaff ? 'Staff: every avatar unlocked.' : 'More avatars unlock as you climb the ladder.'}
+        </Text>
 
         <Text style={st.label}>Flair</Text>
         <View style={st.flairRow}>
@@ -401,6 +436,10 @@ const st = StyleSheet.create({
   photoBtn: { borderColor: C.pink, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11 },
   photoBtnText: { color: C.pinkL, fontWeight: '800', fontSize: 12 },
   presetRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 12 },
+  presetLocked: { opacity: 0.35 },
+  presetLockBadge: { position: 'absolute', right: -2, bottom: -2, backgroundColor: C.bg, borderRadius: 9, width: 18, height: 18, alignItems: 'center', justifyContent: 'center' },
+  presetLockText: { fontSize: 9 },
+  presetHint: { color: C.dim, fontSize: 11, marginTop: 10 },
   flairRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   flairChip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 7 },
   flairDot: { width: 8, height: 8, borderRadius: 4 },
