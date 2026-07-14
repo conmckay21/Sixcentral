@@ -14,6 +14,20 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
+/** Carve the JSON object out of a response, tolerating chatter around it. */
+function jsonSlice(text: string): string {
+  const t = stripJson(text);
+  const a = t.indexOf('{');
+  const b = t.lastIndexOf('}');
+  return a >= 0 && b > a ? t.slice(a, b + 1) : t;
+}
+
+function failDetail(e: any, raw: string): string {
+  const detail = String(e?.message || e).slice(0, 200);
+  const peek = raw ? ' | raw: ' + raw.slice(0, 160).replace(/\s+/g, ' ') : '';
+  return detail + peek;
+}
+
 export async function POST(req: Request) {
   const admin = adminClient();
   const staff = await staffUserId(req, admin);
@@ -43,11 +57,16 @@ export async function POST(req: Request) {
         : 'Nothing used recently.',
     ].join('\n');
 
+    let raw = '';
     let out: any;
     try {
-      out = JSON.parse(stripJson(await claude(ANGLES_SYSTEM, brief, 2000)));
-    } catch {
-      return NextResponse.json({ error: 'angle generation failed' }, { status: 502 });
+      raw = await claude(ANGLES_SYSTEM, brief, 3000);
+      out = JSON.parse(jsonSlice(raw));
+    } catch (e: any) {
+      return NextResponse.json(
+        { error: 'angle generation failed: ' + failDetail(e, raw) },
+        { status: 502 }
+      );
     }
     const angles = (Array.isArray(out.angles) ? out.angles : [])
       .filter((a: any) => a && a.title)
@@ -92,11 +111,16 @@ export async function POST(req: Request) {
       context,
     ].join('\n');
 
+    let raw = '';
     let out: any;
     try {
-      out = JSON.parse(stripJson(await claude(PACK_SYSTEM, brief, 2000)));
-    } catch {
-      return NextResponse.json({ error: 'pack generation failed' }, { status: 502 });
+      raw = await claude(PACK_SYSTEM, brief, 2600);
+      out = JSON.parse(jsonSlice(raw));
+    } catch (e: any) {
+      return NextResponse.json(
+        { error: 'pack generation failed: ' + failDetail(e, raw) },
+        { status: 502 }
+      );
     }
     const posts = (Array.isArray(out.posts) ? out.posts : []).filter(
       (x: any) => x && x.platform && x.body
