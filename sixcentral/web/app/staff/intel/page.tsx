@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import SocialDesk from "./SocialDesk";
 
 // Self-contained styling using the SixCentral palette so this page does not
 // depend on any specific globals.css variable names.
@@ -67,6 +68,7 @@ export default function IntelPage() {
   const [building, setBuilding] = useState<Record<string, boolean>>({});
   const [wantGallery, setWantGallery] = useState<Record<string, boolean>>({});
   const [draftBusy, setDraftBusy] = useState<Record<string, string>>({});
+  const [desk, setDesk] = useState<"articles" | "social">("articles");
 
   const sb = getClient();
 
@@ -300,7 +302,26 @@ export default function IntelPage() {
 
       {phase === "ready" && (
         <>
-          <div className="controls">
+          <div className="desk-tabs">
+            <button
+              className={desk === "articles" ? "dtab on" : "dtab"}
+              onClick={() => setDesk("articles")}
+            >
+              Articles
+            </button>
+            <button
+              className={desk === "social" ? "dtab on" : "dtab"}
+              onClick={() => setDesk("social")}
+            >
+              Social
+            </button>
+          </div>
+
+          {desk === "social" && <SocialDesk authHeader={authHeader} />}
+
+          {desk === "articles" && (
+            <>
+              <div className="controls">
             <div className="chips">
               <button className={cat === "all" ? "chip on" : "chip"} onClick={() => setCat("all")}>
                 All
@@ -553,6 +574,8 @@ export default function IntelPage() {
             ))}
             {filtered.length === 0 && <div className="note">Nothing matches those filters.</div>}
           </div>
+            </>
+          )}
         </>
       )}
     </div>
@@ -570,6 +593,9 @@ const css = `
 .note{background:${C.panel};border:1px solid ${C.line};border-radius:10px;padding:18px;color:${C.dim};font-size:14px}
 .note.err{border-color:${C.pink};color:#ffd0e2}
 .note.small{padding:10px 14px;margin-bottom:12px;font-size:13px}
+.desk-tabs{display:flex;gap:8px;margin-bottom:18px}
+.dtab{background:${C.panel};border:1px solid ${C.line};color:${C.dim};border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;font-family:'Spline Sans Mono',monospace}
+.dtab.on{color:${C.pink};border-color:${C.pink}}
 .controls{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .chip{background:${C.panel};border:1px solid ${C.line};color:${C.dim};border-radius:999px;padding:6px 14px;font-size:13px;cursor:pointer;text-transform:capitalize}
