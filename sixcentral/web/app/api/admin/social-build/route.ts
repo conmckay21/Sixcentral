@@ -29,15 +29,26 @@ function failDetail(e: any, raw: string): string {
   return detail + peek;
 }
 
-/** Best-matching catalogue image for the angle. Optional, never blocks a pack. */
+/**
+ * Catalogue image for the pack. Starts from a rotating fallback so a pack can
+ * never come out imageless, then lets the model upgrade it to a proper match.
+ * Accepts near-miss answers rather than demanding an exact path string.
+ */
 async function pickImage(admin: any, angle: SocialAngle): Promise<any | null> {
+  let assets: any[] = [];
   try {
     const { data: assetsData } = await admin
       .from('media_assets')
       .select('path,url,alt,credit,description')
       .limit(400);
-    const assets: any[] = assetsData || [];
-    if (!assets.length) return null;
+    assets = assetsData || [];
+  } catch {
+    return null;
+  }
+  if (!assets.length) return null;
+
+  let chosen: any = assets[Math.floor(Math.random() * assets.length)];
+  try {
     const catalogue = assets
       .map((a) => `${a.path} :: ${a.description || ''}`)
       .join('\n')
@@ -45,20 +56,26 @@ async function pickImage(admin: any, angle: SocialAngle): Promise<any | null> {
     const raw = await claude(
       IMAGE_PICK_SYSTEM,
       `Angle: ${angle.title}\n${angle.rationale || ''}\n\nCatalogue:\n${catalogue}`,
-      200
+      400
     );
     const pick = JSON.parse(jsonSlice(raw));
-    const found = assets.find((a) => a.path === pick.pick);
-    if (!found) return null;
-    return {
-      url: found.url,
-      alt: found.alt || angle.title,
-      credit: found.credit || 'Rockstar Games',
-      path: found.path,
-    };
+    const wanted = String(pick.pick || '').trim().toLowerCase();
+    if (wanted) {
+      const found =
+        assets.find((a) => String(a.path).toLowerCase() === wanted) ||
+        assets.find((a) => wanted.includes(String(a.path).toLowerCase())) ||
+        assets.find((a) => String(a.path).toLowerCase().includes(wanted));
+      if (found) chosen = found;
+    }
   } catch {
-    return null;
+    /* keep the fallback */
   }
+  return {
+    url: chosen.url,
+    alt: chosen.alt || angle.title,
+    credit: chosen.credit || 'Rockstar Games',
+    path: chosen.path,
+  };
 }
 
 export async function POST(req: Request) {
