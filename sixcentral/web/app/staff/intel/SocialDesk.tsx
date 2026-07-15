@@ -21,6 +21,8 @@ const PLATFORM_LABEL: Record<string, string> = {
   instagram: "Instagram",
   tiktok: "TikTok",
   discord: "Discord",
+  facebook: "Facebook",
+  reddit: "Reddit",
 };
 
 const PLATFORM_COLOUR: Record<string, string> = {
@@ -29,6 +31,16 @@ const PLATFORM_COLOUR: Record<string, string> = {
   instagram: C.pink,
   tiktok: C.purple,
   discord: C.gold,
+  facebook: C.purple,
+  reddit: C.gold,
+};
+
+const SEND_LABEL: Record<string, string> = {
+  x: "Post to X",
+  x_poll: "Post to X",
+  discord: "Post to Discord",
+  instagram: "Post to Instagram",
+  facebook: "Post to Facebook",
 };
 
 const CHAR_LIMIT: Record<string, number> = {
@@ -59,6 +71,7 @@ export default function SocialDesk({
   const [history, setHistory] = useState<any[]>([]);
   const [errMsg, setErrMsg] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
+  const [sending, setSending] = useState<string | null>(null);
 
   useEffect(() => {
     loadHistory();
@@ -128,6 +141,26 @@ export default function SocialDesk({
     }
   }
 
+  async function sendPost(post: any) {
+    setSending(post.id);
+    setErrMsg("");
+    try {
+      const json = await api("/api/admin/social-post", { id: post.id });
+      const patch = (list: any[]) =>
+        list.map((x) =>
+          x.id === post.id
+            ? { ...x, posted_at: json.posted_at, post_url: json.post_url || null, status: "used" }
+            : x
+        );
+      setPosts((p) => ({ ...p, [post.angle_id]: patch(p[post.angle_id] || []) }));
+      setHistory((h) => patch(h));
+    } catch (e: any) {
+      setErrMsg("Post failed: " + String(e?.message || e));
+    } finally {
+      setSending(null);
+    }
+  }
+
   function copyText(p: any): string {
     let t = String(p.body || "");
     if (p.platform === "x_poll" && Array.isArray(p.poll_options) && p.poll_options.length) {
@@ -168,6 +201,7 @@ export default function SocialDesk({
   function PostCard({ p }: { p: any }) {
     const limit = CHAR_LIMIT[p.platform];
     const over = limit ? String(p.body || "").length > limit : false;
+    const postable = !!SEND_LABEL[p.platform];
     return (
       <div className="soc-post">
         <div className="soc-post-top">
@@ -185,7 +219,7 @@ export default function SocialDesk({
             {String(p.body || "").length}
             {limit ? `/${limit}` : ""}
           </span>
-          {p.status === "used" && <span className="soc-used-tag">used</span>}
+          {p.status === "used" && !p.posted_at && <span className="soc-used-tag">used</span>}
         </div>
         <p className="soc-body">{p.body}</p>
         {Array.isArray(p.poll_options) && p.poll_options.length > 0 && (
@@ -201,21 +235,57 @@ export default function SocialDesk({
           </div>
         )}
         <div className="soc-post-actions">
+          {p.posted_at ? (
+            p.post_url ? (
+              <a className="soc-posted" href={p.post_url} target="_blank" rel="noreferrer">
+                posted, view
+              </a>
+            ) : (
+              <span className="soc-posted">posted</span>
+            )
+          ) : postable ? (
+            <button className="soc-send" disabled={sending === p.id} onClick={() => sendPost(p)}>
+              {sending === p.id ? "Posting…" : SEND_LABEL[p.platform]}
+            </button>
+          ) : null}
           <button className="soc-copy" onClick={() => copyPost(p)}>
             {copied === p.id ? "Copied" : "Copy"}
           </button>
-          {p.status === "used" ? (
-            <button className="soc-ghost" onClick={() => setStatus(p, "draft")}>
-              Back to draft
-            </button>
-          ) : (
-            <button className="soc-ghost" onClick={() => setStatus(p, "used")}>
-              Mark used
+          {!p.posted_at &&
+            (p.status === "used" ? (
+              <button className="soc-ghost" onClick={() => setStatus(p, "draft")}>
+                Back to draft
+              </button>
+            ) : (
+              <button className="soc-ghost" onClick={() => setStatus(p, "used")}>
+                Mark used
+              </button>
+            ))}
+          {!p.posted_at && (
+            <button className="soc-bin" onClick={() => setStatus(p, "binned")}>
+              Bin
             </button>
           )}
-          <button className="soc-bin" onClick={() => setStatus(p, "binned")}>
-            Bin
-          </button>
+        </div>
+      </div>
+    );
+  }
+
+  function Pack({ list }: { list: any[] }) {
+    const withImg = list.find((p) => p.image && p.image.url);
+    const img = withImg ? withImg.image : null;
+    return (
+      <div className="soc-packwrap">
+        {img && (
+          <div className="soc-packimg">
+            <img src={img.url} alt={img.alt || ""} />
+            {img.credit && <span>{img.credit}</span>}
+          </div>
+        )}
+        <div className="soc-pack">
+          {list.map((p) => (
+            <PostCard key={p.id} p={p} />
+          ))}
         </div>
       </div>
     );
@@ -230,7 +300,8 @@ export default function SocialDesk({
           <h2>Social Desk</h2>
           <p>
             The news side reports. This side starts the argument. Angles are scored for how hard
-            they pull replies, and every pack comes ready to paste.
+            they pull replies, packs come with an image and post straight to X, Instagram,
+            Facebook and Discord.
           </p>
         </div>
         <button className="soc-find" disabled={anglesBusy} onClick={findAngles}>
@@ -267,13 +338,7 @@ export default function SocialDesk({
             <button className="soc-write" disabled={!!packBusy[i]} onClick={() => writePack(i)}>
               {packBusy[i] ? "Writing…" : packOf[i] ? "Rewrite pack" : "Write pack"}
             </button>
-            {packOf[i] && posts[packOf[i]] && (
-              <div className="soc-pack">
-                {posts[packOf[i]].map((p) => (
-                  <PostCard key={p.id} p={p} />
-                ))}
-              </div>
-            )}
+            {packOf[i] && posts[packOf[i]] && <Pack list={posts[packOf[i]]} />}
           </article>
         ))}
       </div>
@@ -284,11 +349,7 @@ export default function SocialDesk({
           {historyGroups.map((g) => (
             <div className="soc-hgroup" key={g.angle_id}>
               <h3>{g.angle_title}</h3>
-              <div className="soc-pack">
-                {g.posts.map((p) => (
-                  <PostCard key={p.id} p={p} />
-                ))}
-              </div>
+              <Pack list={g.posts} />
             </div>
           ))}
         </div>
@@ -318,7 +379,11 @@ const socialCss = `
 .soc-srcline{font-family:'Spline Sans Mono',monospace;font-size:11px;color:${C.dim};margin:0 0 10px}
 .soc-write{background:transparent;border:1px solid ${C.pink};color:${C.pink};font-weight:700;border-radius:8px;padding:8px 15px;font-size:13px;cursor:pointer;margin-top:6px}
 .soc-write:disabled{opacity:.6;cursor:default}
-.soc-pack{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.soc-packwrap{margin-top:14px}
+.soc-packimg{position:relative;border-radius:10px;overflow:hidden;border:1px solid ${C.line};margin-bottom:10px}
+.soc-packimg img{width:100%;max-height:280px;object-fit:cover;display:block}
+.soc-packimg span{position:absolute;right:8px;bottom:6px;font-family:'Spline Sans Mono',monospace;font-size:10px;color:rgba(255,255,255,.75);background:rgba(0,0,0,.45);padding:2px 7px;border-radius:4px}
+.soc-pack{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:760px){.soc-pack{grid-template-columns:1fr}}
 .soc-post{background:${C.bg};border:1px solid ${C.line};border-radius:10px;padding:13px 14px;display:flex;flex-direction:column}
 .soc-post-top{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
@@ -332,6 +397,9 @@ const socialCss = `
 .soc-poll span{font-size:12px;color:${C.text};border:1px solid ${C.line};border-radius:999px;padding:4px 11px;background:${C.panel}}
 .soc-tags{font-family:'Spline Sans Mono',monospace;font-size:11px;color:${C.cyan};margin:0 0 8px;line-height:1.6}
 .soc-post-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+.soc-send{background:${C.green};border:none;color:#04211f;font-weight:700;border-radius:7px;padding:7px 13px;font-size:12px;cursor:pointer}
+.soc-send:disabled{opacity:.6;cursor:default}
+.soc-posted{font-family:'Spline Sans Mono',monospace;font-size:11px;color:#04211f;background:${C.green};padding:4px 10px;border-radius:5px;text-decoration:none}
 .soc-copy{background:${C.cyan};border:none;color:#04211f;font-weight:700;border-radius:7px;padding:7px 13px;font-size:12px;cursor:pointer}
 .soc-ghost{background:transparent;border:1px solid ${C.line};color:${C.dim};border-radius:7px;padding:7px 11px;font-size:12px;cursor:pointer}
 .soc-bin{background:transparent;border:1px solid ${C.pink};color:${C.pink};border-radius:7px;padding:7px 11px;font-size:12px;cursor:pointer}

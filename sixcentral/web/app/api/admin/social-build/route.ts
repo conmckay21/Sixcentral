@@ -4,6 +4,7 @@ import { adminClient, staffUserId, claude, stripJson } from '@/lib/draft';
 import {
   ANGLES_SYSTEM,
   PACK_SYSTEM,
+  IMAGE_PICK_SYSTEM,
   EVERGREEN_DEBATES,
   deskDigest,
   recentAngleTitles,
@@ -28,6 +29,38 @@ function failDetail(e: any, raw: string): string {
   return detail + peek;
 }
 
+/** Best-matching catalogue image for the angle. Optional, never blocks a pack. */
+async function pickImage(admin: any, angle: SocialAngle): Promise<any | null> {
+  try {
+    const { data: assetsData } = await admin
+      .from('media_assets')
+      .select('path,url,alt,credit,description')
+      .limit(400);
+    const assets: any[] = assetsData || [];
+    if (!assets.length) return null;
+    const catalogue = assets
+      .map((a) => `${a.path} :: ${a.description || ''}`)
+      .join('\n')
+      .slice(0, 14000);
+    const raw = await claude(
+      IMAGE_PICK_SYSTEM,
+      `Angle: ${angle.title}\n${angle.rationale || ''}\n\nCatalogue:\n${catalogue}`,
+      200
+    );
+    const pick = JSON.parse(jsonSlice(raw));
+    const found = assets.find((a) => a.path === pick.pick);
+    if (!found) return null;
+    return {
+      url: found.url,
+      alt: found.alt || angle.title,
+      credit: found.credit || 'Rockstar Games',
+      path: found.path,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(req: Request) {
   const admin = adminClient();
   const staff = await staffUserId(req, admin);
@@ -46,7 +79,7 @@ export async function POST(req: Request) {
   if (p.op === 'angles') {
     const [digest, used] = await Promise.all([deskDigest(admin), recentAngleTitles(admin)]);
     const brief = [
-      'Desk stories, open and uncovered, ranked:',
+      'Desk stories, open and uncovered, hottest and highest ranked:',
       digest || '(the desk is quiet today)',
       '',
       'Evergreen debate bank:',
@@ -76,7 +109,7 @@ export async function POST(req: Request) {
   }
 
   // --- op: pack --------------------------------------------------------------
-  // Writes the six-post pack for one angle and saves it as drafts.
+  // Writes the eight-post pack for one angle, picks a catalogue image, saves as drafts.
   if (p.op === 'pack') {
     const angle = p.angle;
     if (!angle || !angle.title) return NextResponse.json({ error: 'missing angle' }, { status: 400 });
@@ -114,7 +147,7 @@ export async function POST(req: Request) {
     let raw = '';
     let out: any;
     try {
-      raw = await claude(PACK_SYSTEM, brief, 2600);
+      raw = await claude(PACK_SYSTEM, brief, 3200);
       out = JSON.parse(jsonSlice(raw));
     } catch (e: any) {
       return NextResponse.json(
@@ -126,6 +159,8 @@ export async function POST(req: Request) {
       (x: any) => x && x.platform && x.body
     );
     if (!posts.length) return NextResponse.json({ error: 'pack came back empty' }, { status: 502 });
+
+    const image = await pickImage(admin, angle);
 
     const angleId = randomUUID();
     const rows = posts.map((x: any) => ({
@@ -139,6 +174,7 @@ export async function POST(req: Request) {
       poll_options: Array.isArray(x.poll_options) ? x.poll_options.slice(0, 4) : null,
       hashtags: Array.isArray(x.hashtags) ? x.hashtags.slice(0, 8) : null,
       char_count: String(x.body).length,
+      image,
       status: 'draft',
     }));
     const { data: saved, error } = await admin.from('social_posts').insert(rows).select('*');
