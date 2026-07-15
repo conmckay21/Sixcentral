@@ -69,6 +69,9 @@ export default function SocialDesk({
   const [packOf, setPackOf] = useState<Record<number, string>>({});
   const [posts, setPosts] = useState<Record<string, any[]>>({});
   const [history, setHistory] = useState<any[]>([]);
+  const [custom, setCustom] = useState("");
+  const [customBusy, setCustomBusy] = useState(false);
+  const [customPacks, setCustomPacks] = useState<string[]>([]);
   const [errMsg, setErrMsg] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
   const [sending, setSending] = useState<string | null>(null);
@@ -127,6 +130,31 @@ export default function SocialDesk({
     }
   }
 
+  async function writeCustom(title: string, rationale?: string | null) {
+    const t = String(title || "").trim();
+    if (!t) return;
+    setCustomBusy(true);
+    setErrMsg("");
+    try {
+      const angle = {
+        title: t,
+        rationale: rationale || "",
+        heat: 0,
+        format: "any",
+        source_intel_id: null,
+        source_title: null,
+      };
+      const json = await api("/api/admin/social-build", { op: "pack", angle });
+      setPosts((p) => ({ ...p, [json.angle_id]: json.posts || [] }));
+      setCustomPacks((c) => [json.angle_id, ...c]);
+      setCustom("");
+    } catch (e: any) {
+      setErrMsg("Pack failed: " + String(e?.message || e));
+    } finally {
+      setCustomBusy(false);
+    }
+  }
+
   async function setStatus(post: any, status: "used" | "draft" | "binned") {
     try {
       await api("/api/admin/social-action", { action: status, id: post.id });
@@ -182,7 +210,10 @@ export default function SocialDesk({
     );
   }
 
-  const inlineAngleIds = useMemo(() => new Set(Object.values(packOf)), [packOf]);
+  const inlineAngleIds = useMemo(
+    () => new Set([...Object.values(packOf), ...customPacks]),
+    [packOf, customPacks]
+  );
 
   const historyGroups = useMemo(() => {
     const groups: { angle_id: string; angle_title: string; posts: any[] }[] = [];
@@ -311,10 +342,35 @@ export default function SocialDesk({
 
       {errMsg && <div className="soc-err">{errMsg}</div>}
 
-      {angles.length === 0 && !anglesBusy && (
+      <div className="soc-custom">
+        <textarea
+          className="soc-custom-in"
+          placeholder="Run your own angle. One punchy line, the pack writer does the rest."
+          value={custom}
+          onChange={(e) => setCustom(e.target.value)}
+        />
+        <button
+          className="soc-write"
+          disabled={customBusy || !custom.trim()}
+          onClick={() => writeCustom(custom)}
+        >
+          {customBusy ? "Writing…" : "Write pack"}
+        </button>
+      </div>
+
+      {customPacks.map((aid) =>
+        posts[aid] ? (
+          <div className="soc-customres" key={aid}>
+            <h3>{posts[aid][0] ? posts[aid][0].angle_title : ""}</h3>
+            <Pack list={posts[aid]} />
+          </div>
+        ) : null
+      )}
+
+      {angles.length === 0 && !anglesBusy && customPacks.length === 0 && (
         <div className="soc-empty">
-          Hit Find angles. It reads the open desk plus the evergreen debate bank and returns the
-          eight most argumentative things to post about today.
+          Hit Find angles for the eight most argumentative things to post about today, or drop
+          your own angle in the box above.
         </div>
       )}
 
@@ -348,7 +404,18 @@ export default function SocialDesk({
           <h2>Recent packs</h2>
           {historyGroups.map((g) => (
             <div className="soc-hgroup" key={g.angle_id}>
-              <h3>{g.angle_title}</h3>
+              <div className="soc-hhead">
+                <h3>{g.angle_title}</h3>
+                <button
+                  className="soc-rewrite"
+                  disabled={customBusy}
+                  onClick={() =>
+                    writeCustom(g.angle_title, g.posts[0] ? g.posts[0].angle_rationale : null)
+                  }
+                >
+                  Rewrite pack
+                </button>
+              </div>
               <Pack list={g.posts} />
             </div>
           ))}
@@ -367,6 +434,10 @@ const socialCss = `
 .soc-find:disabled{opacity:.6;cursor:default}
 .soc-err{background:${C.panel};border:1px solid ${C.pink};color:#ffd0e2;border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:12px}
 .soc-empty{background:${C.panel};border:1px solid ${C.line};border-radius:10px;padding:18px;color:${C.dim};font-size:14px}
+.soc-custom{display:flex;gap:10px;align-items:flex-start;margin-bottom:14px}
+.soc-custom-in{flex:1;background:${C.panel};border:1px solid ${C.line};color:${C.text};border-radius:10px;padding:10px 12px;font-size:13px;font-family:inherit;resize:vertical;min-height:44px}
+.soc-customres{margin-bottom:16px}
+.soc-customres h3{font-size:15px;color:${C.text};margin:0 0 4px;font-weight:600}
 .soc-angles{display:flex;flex-direction:column;gap:14px}
 .soc-angle{background:${C.panel};border:1px solid ${C.line};border-left:4px solid ${C.pink};border-radius:12px;padding:18px}
 .soc-angle-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -379,6 +450,9 @@ const socialCss = `
 .soc-srcline{font-family:'Spline Sans Mono',monospace;font-size:11px;color:${C.dim};margin:0 0 10px}
 .soc-write{background:transparent;border:1px solid ${C.pink};color:${C.pink};font-weight:700;border-radius:8px;padding:8px 15px;font-size:13px;cursor:pointer;margin-top:6px}
 .soc-write:disabled{opacity:.6;cursor:default}
+.soc-rewrite{background:transparent;border:1px solid ${C.line};color:${C.dim};border-radius:7px;padding:6px 12px;font-size:12px;cursor:pointer;white-space:nowrap}
+.soc-rewrite:hover{color:${C.pink};border-color:${C.pink}}
+.soc-rewrite:disabled{opacity:.6;cursor:default}
 .soc-packwrap{margin-top:14px}
 .soc-packimg{position:relative;border-radius:10px;overflow:hidden;border:1px solid ${C.line};margin-bottom:10px}
 .soc-packimg img{width:100%;max-height:280px;object-fit:cover;display:block}
@@ -406,5 +480,6 @@ const socialCss = `
 .soc-history{margin-top:30px;border-top:1px solid ${C.line};padding-top:18px}
 .soc-history h2{font-family:'Anton',sans-serif;font-size:20px;margin:0 0 12px;text-transform:uppercase;letter-spacing:.5px}
 .soc-hgroup{margin-bottom:18px}
-.soc-hgroup h3{font-size:14px;color:${C.dim};margin:0 0 8px;font-weight:600}
+.soc-hhead{display:flex;justify-content:space-between;gap:10px;align-items:center;margin:0 0 8px}
+.soc-hhead h3{font-size:14px;color:${C.dim};margin:0;font-weight:600}
 `;
