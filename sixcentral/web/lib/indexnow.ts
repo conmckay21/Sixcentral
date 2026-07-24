@@ -6,9 +6,10 @@ const HOST = "sixcentral.co.uk";
  * Propagates to Bing (and therefore ChatGPT search), Yandex, Seznam, Naver.
  * Google does not use IndexNow.
  *
- * Fire and forget: never throws, never blocks publishing.
+ * Never throws and can never hang past 4 seconds, so it is safe to await
+ * inside a publish action without risking the publish itself.
  * Call after the DB write succeeds, e.g.
- *   pingIndexNow(["/news/" + slug, "/news", "/"]);
+ *   await pingIndexNow(["/news/" + slug, "/news", "/"]);
  */
 export async function pingIndexNow(paths: string[]): Promise<void> {
   const urlList = paths.map((p) => {
@@ -20,6 +21,7 @@ export async function pingIndexNow(paths: string[]): Promise<void> {
     await fetch("https://api.indexnow.org/indexnow", {
       method: "POST",
       headers: { "Content-Type": "application/json; charset=utf-8" },
+      signal: AbortSignal.timeout(4000),
       body: JSON.stringify({
         host: HOST,
         key: INDEXNOW_KEY,

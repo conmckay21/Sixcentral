@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { adminClient, staffUserId } from '@/lib/draft';
+import { pingIndexNow } from '@/lib/indexnow';
 
 /** Push a change straight to every cached surface the article appears on. */
 function refreshSurfaces(slug: string) {
@@ -42,6 +43,10 @@ export async function POST(req: Request) {
         .eq('id', intel_id);
     }
     refreshSurfaces(slug);
+    // tell Bing (and therefore ChatGPT search) the moment it exists.
+    // awaited on purpose: Vercel kills background work once the response
+    // is sent, and the helper can never throw or hang past 4s.
+    await pingIndexNow([`/news/${slug}`, '/news', '/']);
     return NextResponse.json({ ok: true, published: true, url: `/news/${slug}` });
   }
 
