@@ -27,7 +27,7 @@ Reply with ONLY a JSON object, no markdown fences, shaped exactly:
 {"title":"headline, punchy, under 70 characters","kicker":"2 to 3 word label such as Analysis, Breaking or Rumour","excerpt":"one sentence summary under 160 characters","readingMins":number,"motif":"one of: skyline palms cassette disc money map signal phone controller pc globe question","body":[{"type":"p","text":"a paragraph"},{"type":"h2","text":"a subheading"},{"type":"ul","items":["a point","a point"]}]}
 The body must be several paragraphs with at least one h2 subheading. Use a ul only where it genuinely helps.`;
 
-const PICK_SYSTEM_BASE = `You choose images for a GTA 6 news article from a catalogue of described images. Pick the single best hero image whose subject and mood match the article.`;
+const PICK_SYSTEM_BASE = `You choose images for a GTA 6 news article from a catalogue of described images. Pick the single best hero image whose subject and mood match the article. Prefer a specific scene, location or character over generic promotional key art or box art. Only choose promotional artwork when nothing else in the catalogue is a defensible fit.`;
 const PICK_SYSTEM_TAIL = `Reply with ONLY JSON, no fences: {"hero":"exact path","gallery":["exact path","exact path","exact path"]}. Use exact path strings from the catalogue. If no gallery is requested, return an empty array.`;
 
 export async function POST(req: Request) {
@@ -67,18 +67,36 @@ export async function POST(req: Request) {
   const body = Array.isArray(article.body) ? article.body : [{ type: 'p', text: String(article.body || '') }];
 
   // 2) pick images from the catalogue
+  const RECENT_EXCLUDE = 8;
+  const { data: recentRows } = await admin
+    .from('articles')
+    .select('hero_image')
+    .not('hero_image', 'is', null)
+    .order('updated_at', { ascending: false })
+    .limit(RECENT_EXCLUDE);
+  const recentSrcs = new Set(
+    (recentRows || []).map((r: any) => r?.hero_image?.src).filter(Boolean)
+  );
+
   const { data: assetsData } = await admin
     .from('media_assets')
     .select('path,url,alt,credit,description')
+    .order('path', { ascending: true })
     .limit(400);
-  const assets: any[] = assetsData || [];
-  let hero: any = assets[0] || null;
+  const allAssets: any[] = assetsData || [];
+  const fresh = allAssets.filter((a) => !recentSrcs.has(a.url));
+  const assets: any[] = fresh.length >= 20 ? fresh : allAssets;
+
+  let hero: any = assets.length ? assets[Math.floor(Math.random() * assets.length)] : null;
   let galleryPicks: any[] = [];
+
   if (assets.length) {
     const catalogue = assets
-      .map((a) => `${a.path} :: ${a.description || ''}`)
-      .join('\n')
-      .slice(0, 14000);
+      .map(
+        (a) =>
+          `${a.path} :: ${(a.description || a.alt || '').replace(/\s+/g, ' ').slice(0, 140)}`
+      )
+      .join('\n');
     const sys =
       PICK_SYSTEM_BASE +
       (gallery ? ' Also pick 3 different gallery images that complement the hero. ' : ' ') +
@@ -90,7 +108,12 @@ export async function POST(req: Request) {
         )
       );
       const byPath = new Map(assets.map((a) => [a.path, a]));
-      hero = byPath.get(pick.hero) || hero;
+      const picked = byPath.get(pick.hero);
+      if (picked) {
+        hero = picked;
+      } else {
+        console.warn('[build-draft] hero not in catalogue:', pick.hero);
+      }
       if (gallery && Array.isArray(pick.gallery)) {
         galleryPicks = pick.gallery
           .map((p: string) => byPath.get(p))
@@ -98,10 +121,11 @@ export async function POST(req: Request) {
           .filter((a: any) => a.path !== (hero && hero.path))
           .slice(0, 3);
       }
-    } catch {
-      /* fall back to first asset as hero */
+    } catch (e) {
+      console.warn('[build-draft] image pick failed, random fallback:', e);
     }
   }
+
   const heroImage = hero
     ? { src: hero.url, alt: hero.alt || article.title, credit: hero.credit || 'Rockstar Games' }
     : null;
