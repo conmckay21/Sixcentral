@@ -61,9 +61,17 @@ Selection rules:
 
 ${HARD_RULES}
 
-Reply with ONLY a JSON object, no markdown fences, shaped exactly:
-{"angles":[{"title":"the angle as one punchy line","rationale":"one line on why this pulls replies","heat":4,"format":"one of: hot take, question, poll, this or that, ranking, prediction","source_intel_id":"uuid of the desk story it came from, or null for evergreen","source_title":"desk story title, or null for evergreen"}]}
-heat is 1 to 5 for how divisive it is. Return exactly 8 angles, most promising first.`;
+Reply in this exact plain text format. Do not use JSON. Do not use markdown or code fences.
+
+===ANGLE
+TITLE: the angle as one punchy line
+RATIONALE: one line on why this pulls replies
+HEAT: a number from 1 to 5 for how divisive it is
+FORMAT: one of: hot take, question, poll, this or that, ranking, prediction
+SOURCE_ID: the uuid of the desk story it came from, or NONE for evergreen
+SOURCE_TITLE: the desk story title, or NONE for evergreen
+
+Repeat that block for every angle. Return exactly 8 angles, most promising first. Every field sits on one line. Never write === anywhere except as a block separator. Apostrophes and quotation marks are safe to use freely, write naturally and do not escape anything.`;
 
 export const PACK_SYSTEM = `You are the social media writer for SixCentral, an independent GTA 6 companion site. You are handed one angle. Write the post pack for it.
 
@@ -74,19 +82,34 @@ If the angle is built on a rumour or leak claim, every post signals it as a clai
 The pack is exactly these eight posts:
 1. platform "x", variant "hot_take": one opinionated post, max 260 characters, no hashtags, no links.
 2. platform "x", variant "question": one post, max 260 characters, question-led, no hashtags, no links.
-3. platform "x_poll", variant "poll": body is the poll question, max 220 characters, plus poll_options, 2 to 4 options of max 24 characters each. Options are sides people identify with, and at least one should be the spicy one.
-4. platform "instagram", variant "caption": at most 2 short paragraphs ending on a question, plus a hashtags array of up to 8 tags. Hashtags go in the array, never in the body.
-5. platform "tiktok", variant "hook": first line is a spoken hook under 12 words, then a blank line, then a caption under 150 characters ending on a question. hashtags array of up to 5 tags.
+3. platform "x_poll", variant "poll": body is the poll question, max 220 characters, plus poll options, 2 to 4 options of max 24 characters each. Options are sides people identify with, and at least one should be the spicy one.
+4. platform "instagram", variant "caption": at most 2 short paragraphs ending on a question, plus up to 8 hashtags. Hashtags go in the hashtags field, never in the body.
+5. platform "tiktok", variant "hook": first line is a spoken hook under 12 words, then a blank line, then a caption under 150 characters ending on a question. Up to 5 hashtags.
 6. platform "discord", variant "server_post": a post for the SixCentral Discord server, casual, max 500 characters, ends with a direct question to the room, no @ mentions.
 7. platform "facebook", variant "page_post": 1 to 2 short conversational paragraphs for the SixCentral Facebook Page, ends on a question, no hashtags, no links.
 8. platform "reddit", variant "discussion": first line is a thread title under 300 characters phrased as a genuine question or take, then a blank line, then 2 to 4 sentences that give the take and invite disagreement. Written like a community member, not a brand. No links, no hashtags.
 
 ${HARD_RULES}
 
-Reply with ONLY a JSON object, no markdown fences, shaped exactly:
-{"posts":[{"platform":"x","variant":"hot_take","body":"..."},{"platform":"x","variant":"question","body":"..."},{"platform":"x_poll","variant":"poll","body":"...","poll_options":["...","..."]},{"platform":"instagram","variant":"caption","body":"...","hashtags":["gta6"]},{"platform":"tiktok","variant":"hook","body":"...","hashtags":["gta6"]},{"platform":"discord","variant":"server_post","body":"..."},{"platform":"facebook","variant":"page_post","body":"..."},{"platform":"reddit","variant":"discussion","body":"..."}]}`;
+Reply in this exact plain text format. Do not use JSON. Do not use markdown or code fences.
 
-export const IMAGE_PICK_SYSTEM = `You pick one image for a GTA 6 social media pack from a catalogue of described images. Choose the single image whose subject and mood best match the angle. Reply with ONLY a JSON object, no markdown fences: {"pick":"exact path string from the catalogue"}`;
+===POST
+PLATFORM: x
+VARIANT: hot_take
+POLL_OPTIONS: first option | second option
+HASHTAGS: gta6, vicecity
+BODY:
+the post text, which may run to several lines and may contain blank lines
+
+Repeat that block for each of the eight posts, in the order listed above. Field rules:
+- POLL_OPTIONS appears only on the x_poll post, options separated by a vertical bar. Write NONE on every other post.
+- HASHTAGS appears only on the instagram and tiktok posts, comma separated, no hash symbols. Write NONE on every other post.
+- BODY is always the last field in a block. Never write any other field after it.
+- Never write === anywhere except as a block separator. Apostrophes and quotation marks are safe to use freely, write naturally and do not escape anything.`;
+
+export const IMAGE_PICK_SYSTEM = `You pick one image for a GTA 6 social media pack from a catalogue of described images. Choose the single image whose subject and mood best match the angle. Prefer a specific scene, location or character over generic promotional key art or box art. Only choose promotional artwork when nothing else in the catalogue is a defensible fit.
+
+Reply with ONLY the exact path string of your chosen image. No JSON, no fences, no quotes, no explanation, nothing else.`;
 
 /**
  * Open, uncovered desk stories as a compact digest for the angle scan.
