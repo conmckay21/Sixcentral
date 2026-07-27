@@ -47,8 +47,9 @@ another paragraph
 - another bullet point
 
 Rules for the body:
-- Open every block with its own ===P, ===H2 or ===UL marker on its own line.
-- ===P is one paragraph. ===H2 is one subheading. ===UL is a list, one item per line, each starting with a hyphen.
+- Every block starts with its marker, ===P, ===H2 or ===UL, on a line of its own. The content begins on the next line.
+- ===P is one paragraph. ===H2 is one short subheading and nothing else. ===UL is a list, one item per line, each starting with a hyphen.
+- Every paragraph gets its own ===P marker. Do not run several paragraphs under one marker.
 - Use ===UL only where a list genuinely helps. Most of the piece is paragraphs.
 - Never write === anywhere except as a block marker.
 - Apostrophes and quotation marks are safe to use freely, write naturally and do not escape anything.`;
@@ -62,7 +63,16 @@ function fieldLine(text: string, name: string): string {
   return m ? m[1].trim() : '';
 }
 
-/** Split the delimited article into head fields and typed body blocks. */
+/** Remove any block marker that survived the split, so none reach the page. */
+function scrub(text: string): string {
+  return text.replace(/={2,}\s*(P|H2|UL)\b[ \t]*/gi, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Split the delimited article into head fields and typed body blocks.
+ * Tolerant by design: the marker may sit alone on its line or run inline with
+ * the content, and content that arrives without a marker is treated as prose.
+ */
 function parseArticle(raw: string): {
   title: string;
   kicker: string;
@@ -76,30 +86,62 @@ function parseArticle(raw: string): {
   const bodyRaw = marker ? raw.slice((marker.index || 0) + marker[0].length) : '';
 
   const body: any[] = [];
-  const parts = bodyRaw.split(/^===(P|H2|UL)[ \t]*$/im);
-  for (let i = 1; i < parts.length; i += 2) {
-    const tag = String(parts[i] || '').toUpperCase();
-    const content = String(parts[i + 1] || '').trim();
-    if (!content) continue;
-    if (tag === 'UL') {
-      const items = content
-        .split('\n')
-        .map((l) => l.replace(/^[-*•]\s*/, '').trim())
-        .filter(Boolean);
-      if (items.length) body.push({ type: 'ul', items });
-    } else {
-      body.push({
-        type: tag === 'H2' ? 'h2' : 'p',
-        text: content.replace(/\s+/g, ' ').trim(),
-      });
+
+  const pushParagraphs = (content: string) => {
+    for (const para of content.split(/\n\s*\n/)) {
+      const text = scrub(para);
+      if (text) body.push({ type: 'p', text });
     }
+  };
+
+  const pushBlock = (tag: string, content: string) => {
+    const text = content.replace(/^\n+/, '').trimEnd();
+    if (!text.trim()) return;
+
+    if (tag === 'H2') {
+      // A heading is one line. Anything after it is prose that lost its marker.
+      const nl = text.indexOf('\n');
+      const heading = scrub(nl >= 0 ? text.slice(0, nl) : text);
+      if (heading) body.push({ type: 'h2', text: heading });
+      if (nl >= 0) pushParagraphs(text.slice(nl + 1));
+      return;
+    }
+
+    if (tag === 'UL') {
+      const lines = text.split('\n');
+      const items: string[] = [];
+      let i = 0;
+      for (; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) {
+          if (items.length) break;
+          continue;
+        }
+        if (/^[-*•]/.test(line)) {
+          const item = scrub(line.replace(/^[-*•]\s*/, ''));
+          if (item) items.push(item);
+        } else break;
+      }
+      if (items.length) body.push({ type: 'ul', items: items.slice(0, 12) });
+      const rest = lines.slice(i).join('\n');
+      if (rest.trim()) pushParagraphs(rest);
+      return;
+    }
+
+    pushParagraphs(text);
+  };
+
+  const parts = bodyRaw.split(/^={2,}(P|H2|UL)\b[ \t]*/im);
+  if (parts[0] && parts[0].trim()) pushParagraphs(parts[0]);
+  for (let i = 1; i < parts.length; i += 2) {
+    pushBlock(String(parts[i] || '').toUpperCase(), String(parts[i + 1] || ''));
   }
 
   const mins = parseInt(fieldLine(head, 'READING_MINS'), 10);
   return {
-    title: fieldLine(head, 'TITLE'),
-    kicker: fieldLine(head, 'KICKER'),
-    excerpt: fieldLine(head, 'EXCERPT'),
+    title: scrub(fieldLine(head, 'TITLE')),
+    kicker: scrub(fieldLine(head, 'KICKER')),
+    excerpt: scrub(fieldLine(head, 'EXCERPT')),
     readingMins: Number.isFinite(mins) && mins > 0 ? mins : 6,
     motif: fieldLine(head, 'MOTIF') || 'signal',
     body,
