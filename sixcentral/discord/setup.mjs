@@ -46,6 +46,7 @@ async function api(method, path, body) {
 // ---- permissions (bit strings) ----
 const VIEW = 1n << 10n;          // VIEW_CHANNEL
 const SEND = 1n << 11n;          // SEND_MESSAGES
+const THREADS = (1n << 34n) | (1n << 38n); // CREATE_PUBLIC_THREADS | SEND_MESSAGES_IN_THREADS
 const P = (v) => v.toString();
 
 // ---- the ladder, bottom to top (creation order sets sidebar order) ----
@@ -96,6 +97,8 @@ const PLAN = [
   { category: 'PLATFORMS', channels: [
     { name: 'ps5-lounge',  mode: 'console', consoleRole: 'PlayStation', topic: 'PS5 crew: matchmaking and platform chat. Pick PlayStation in #welcome to unlock.' },
     { name: 'xbox-lounge', mode: 'console', consoleRole: 'Xbox',        topic: 'Xbox crew: matchmaking and platform chat. Pick Xbox in #welcome to unlock.' },
+    { name: 'ps5-raids',   mode: 'console', consoleRole: 'PlayStation', slowmode: 5, topic: 'GTA Online raids, PS5 only. Tap Start a raid, crews form here, gamertags in the thread.' },
+    { name: 'xbox-raids',  mode: 'console', consoleRole: 'Xbox',        slowmode: 5, topic: 'GTA Online raids, Xbox only. Tap Start a raid, crews form here, gamertags in the thread.' },
   ]},
   { category: 'COMMUNITY', channels: [
     { name: 'general', mode: 'open', topic: 'Everything else.' },
@@ -185,10 +188,10 @@ async function main() {
       if (ch.mode === 'console') {
         const consoleRoleId = roleIds[ch.consoleRole];
         overwrites.push({ id: everyone.id, type: 0, deny: P(VIEW) });
-        if (consoleRoleId) overwrites.push({ id: consoleRoleId, type: 0, allow: P(VIEW | SEND) });
-        overwrites.push({ id: mod, type: 0, allow: P(VIEW | SEND) });
+        if (consoleRoleId) overwrites.push({ id: consoleRoleId, type: 0, allow: P(VIEW | SEND | THREADS) });
+        overwrites.push({ id: mod, type: 0, allow: P(VIEW | SEND | THREADS) });
       }
-      if (botRole) overwrites.push({ id: botRole.id, type: 0, allow: P(VIEW | SEND) });
+      if (botRole) overwrites.push({ id: botRole.id, type: 0, allow: P(VIEW | SEND | THREADS) });
 
       const found = existingChannels.find((c) => c.type === 0 && c.name === ch.name);
       if (found) {

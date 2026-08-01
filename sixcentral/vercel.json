@@ -3,6 +3,10 @@
     {
       "path": "/api/intel-scan",
       "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/discord/raid-sweep",
+      "schedule": "*/15 * * * *"
     }
   ]
 }

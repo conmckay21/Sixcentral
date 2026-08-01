@@ -2,6 +2,18 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { waitUntil } from '@vercel/functions';
 import { discordApi, verifyDiscordRequest, GUILD_ID } from '@/lib/discord';
 import { HELPER_SYSTEM } from '@/lib/gtaFacts';
+import {
+  buildRaidPicker,
+  closeLobby,
+  createLobby,
+  getStoredTagFast,
+  hostModal,
+  isPlatform,
+  joinLobby,
+  joinModal,
+  leaveLobby,
+} from '@/lib/raids';
+import type { Platform } from '@/lib/raids';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -18,13 +30,18 @@ export const maxDuration = 60;
  */
 
 type Option = { name: string; value?: string };
+type ModalRow = { components?: { custom_id: string; value?: string }[] };
 type Interaction = {
   type: number;
   token: string;
-  data?: { name?: string; options?: Option[]; custom_id?: string };
+  channel_id?: string;
+  data?: { name?: string; options?: Option[]; custom_id?: string; values?: string[]; components?: ModalRow[] };
   member?: { user?: { id: string } };
   user?: { id: string };
 };
+
+/** A reply the raid flow edits into the deferred ephemeral message. */
+type Reply = string | { content: string; components?: unknown[] };
 
 /** Stored verbatim as the consent record. Matches the #welcome gate message. */
 const DISCORD_CONSENT =
@@ -63,12 +80,144 @@ export async function POST(req: Request) {
   const discordId = interaction.member?.user?.id ?? interaction.user?.id;
   if (!discordId) return immediate('Could not identify you. Try again.');
 
+  // Raid Finder first: some steps must answer with a modal, which cannot
+  // follow a deferred ACK, so these are routed before the generic path.
+  const raid = await routeRaid(interaction, discordId);
+  if (raid) {
+    if ('modal' in raid) return Response.json(raid.modal);
+    waitUntil(finish(interaction.token, raid.job));
+    return Response.json({ type: 5, data: { flags: EPHEMERAL } });
+  }
+
   const job = routeJob(interaction, discordId);
   if (!job) return immediate('Unknown command.');
 
   // ACK now, work after. The edit lands in the same ephemeral message.
   waitUntil(finish(interaction.token, job));
   return Response.json({ type: 5, data: { flags: EPHEMERAL } });
+}
+
+// ---------------------------------------------------------------------------
+// The Raid Finder - start, join, leave, close. Lives in lib/raids; this is
+// only the interaction routing, including the two modal steps.
+// ---------------------------------------------------------------------------
+function modalField(interaction: Interaction, id: string): string {
+  for (const row of interaction.data?.components ?? []) {
+    for (const c of row.components ?? []) {
+      if (c.custom_id === id) return (c.value ?? '').trim();
+    }
+  }
+  return '';
+}
+
+async function routeRaid(
+  interaction: Interaction,
+  discordId: string,
+): Promise<{ modal: unknown } | { job: () => Promise<Reply> } | null> {
+  const customId = interaction.data?.custom_id ?? '';
+  if (!customId.startsWith('raid_')) return null;
+  const [kind, a, b] = customId.split(':');
+  const offline = () => Promise.resolve('The Raid Finder is briefly offline. Try again shortly.');
+
+  // Buttons and the type picker
+  if (interaction.type === 3) {
+    if (kind === 'raid_start' && isPlatform(a)) {
+      return {
+        job: async () => {
+          const sb = await serviceClient();
+          if (!sb) return offline();
+          return buildRaidPicker(sb, a);
+        },
+      };
+    }
+    if (kind === 'raid_pick' && isPlatform(a)) {
+      const raidTypeId = interaction.data?.values?.[0];
+      if (!raidTypeId) return { job: () => Promise.resolve('Pick a raid from the list.') };
+      const sb = await serviceClient();
+      const stored = sb ? await getStoredTagFast(sb, discordId, a) : null;
+      return { modal: hostModal(raidTypeId, a, stored) };
+    }
+    if (kind === 'raid_join' && a) {
+      const sb = await serviceClient();
+      if (!sb) return { job: offline };
+      const looked = await Promise.race([
+        (async () => {
+          const { data } = await sb
+            .from('raid_lobbies')
+            .select('platform')
+            .eq('id', a)
+            .maybeSingle();
+          const platform = data?.platform as Platform | undefined;
+          if (!platform) return { platform: null, tag: null };
+          return { platform, tag: await getStoredTagFast(sb, discordId, platform, 900) };
+        })().catch(() => ({ platform: null as Platform | null, tag: null as string | null })),
+        new Promise<{ platform: Platform | null; tag: string | null }>((r) =>
+          setTimeout(() => r({ platform: null, tag: null }), 1500),
+        ),
+      ]);
+      if (looked.tag) {
+        const tag = looked.tag;
+        return { job: () => joinLobby(sb, a, discordId, tag) };
+      }
+      return { modal: joinModal(a, looked.platform) };
+    }
+    if (kind === 'raid_leave' && a) {
+      return {
+        job: async () => {
+          const sb = await serviceClient();
+          if (!sb) return offline();
+          return leaveLobby(sb, a, discordId);
+        },
+      };
+    }
+    if (kind === 'raid_close' && a) {
+      return {
+        job: async () => {
+          const sb = await serviceClient();
+          if (!sb) return offline();
+          return closeLobby(sb, a, discordId);
+        },
+      };
+    }
+  }
+
+  // Modal submissions
+  if (interaction.type === 5) {
+    if (kind === 'raid_host_modal' && a && isPlatform(b)) {
+      const channelId = interaction.channel_id;
+      const gamertag = modalField(interaction, 'gamertag');
+      const note = modalField(interaction, 'note');
+      return {
+        job: async () => {
+          if (!channelId) return 'Could not tell which channel this raid belongs to. Try again.';
+          if (!gamertag) return 'A gamertag is needed so your crew can add you.';
+          const sb = await serviceClient();
+          if (!sb) return offline();
+          return createLobby(sb, {
+            raidTypeId: a,
+            platform: b,
+            hostDiscordId: discordId,
+            gamertag,
+            note,
+            channelId,
+          });
+        },
+      };
+    }
+    if (kind === 'raid_join_modal' && a) {
+      const gamertag = modalField(interaction, 'gamertag');
+      return {
+        job: async () => {
+          if (!gamertag) return 'A gamertag is needed so the host can add you.';
+          const sb = await serviceClient();
+          if (!sb) return offline();
+          return joinLobby(sb, a, discordId, gamertag);
+        },
+      };
+    }
+  }
+
+  return { job: () => Promise.resolve('That raid control is not recognised.') };
 }
 
 function routeJob(interaction: Interaction, discordId: string): (() => Promise<string>) | null {
@@ -94,21 +243,25 @@ function routeJob(interaction: Interaction, discordId: string): (() => Promise<s
   return null;
 }
 
-async function finish(token: string, job: () => Promise<string>) {
-  let content: string;
+async function finish(token: string, job: () => Promise<Reply>) {
+  let reply: Reply;
   try {
-    content = await job();
+    reply = await job();
   } catch {
-    content = 'Something hiccuped. Try again in a moment.';
+    reply = 'Something hiccuped. Try again in a moment.';
   }
-  await editOriginal(token, content);
+  await editOriginal(token, reply);
 }
 
-async function editOriginal(token: string, content: string) {
+async function editOriginal(token: string, reply: Reply) {
+  const payload =
+    typeof reply === 'string'
+      ? { content: reply.slice(0, 1900) }
+      : { content: reply.content.slice(0, 1900), components: reply.components ?? [] };
   await fetch(`https://discord.com/api/v10/webhooks/${APP_ID}/${token}/messages/@original`, {
     method: 'PATCH',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ content: content.slice(0, 1900) }),
+    body: JSON.stringify(payload),
   });
 }
 
