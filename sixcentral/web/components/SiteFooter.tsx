@@ -46,6 +46,8 @@ export default function SiteFooter() {
           sponsored by Rockstar Games or Take-Two Interactive. Grand Theft Auto and all related
           marks are trademarks of their respective owners. All artwork on this site is original.
           Some pages contain affiliate links; we may earn a commission on qualifying purchases.
+          Apple, the Apple logo and App Store are trademarks of Apple Inc. Google Play and the
+          Google Play logo are trademarks of Google LLC.
         </p>
       </div>
     </footer>

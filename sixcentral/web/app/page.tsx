@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Countdown from '@/components/Countdown';
 import AppStoreBadge from '@/components/AppStoreBadge';
+import PlayStoreBadge from '@/components/PlayStoreBadge';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import HeroMedia from '@/components/HeroMedia';
 import ArticleCard from '@/components/ArticleCard';
@@ -190,14 +191,15 @@ export default async function HomePage() {
                   margin: '8px 0',
                 }}
               >
-                Now on the App Store
+                Now on iPhone and Android
               </h2>
               <p style={{ color: 'var(--muted)', maxWidth: '52ch' }}>
-                Verified news, the countdown, community clips and The Come-Up, free on iPhone.
-                The Leonida map and 100% tracker unlock at launch. Android is in the works.
+                Verified news, the countdown, community clips and The Come-Up, free on iPhone
+                and Android. The Leonida map and 100% tracker unlock at launch.
               </p>
               <div style={{ marginTop: 18, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                <AppStoreBadge />
+                <AppStoreBadge height={46} />
+                <PlayStoreBadge height={46} />
                 <Link href="/app" className="mono" style={{ fontSize: '0.74rem', color: 'var(--cyan)' }}>
                   What&rsquo;s inside &rarr;
                 </Link>

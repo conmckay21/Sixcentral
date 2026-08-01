@@ -1,18 +1,19 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import AppStoreBadge from '@/components/AppStoreBadge';
+import PlayStoreBadge from '@/components/PlayStoreBadge';
 import NewsletterSignup from '@/components/NewsletterSignup';
-import { APP_STORE_URL, SITE_URL } from '@/lib/site';
+import { APP_STORE_URL, PLAY_STORE_URL, SITE_URL } from '@/lib/site';
 
 export const metadata = {
-  title: 'The SixCentral app for iPhone',
+  title: 'The SixCentral app for iPhone and Android',
   description:
-    'The GTA 6 companion, now on the App Store. Verified news, the countdown, community clips and The Come-Up today; the Leonida map and 100% tracker unlock at launch. Free on iPhone.',
+    'The GTA 6 companion, on the App Store and Google Play. Verified news, the countdown, community clips and The Come-Up today; the Leonida map and 100% tracker unlock at launch. Free on iPhone and Android.',
   alternates: { canonical: '/app' },
   openGraph: {
-    title: 'The SixCentral app for iPhone',
+    title: 'The SixCentral app for iPhone and Android',
     description:
-      'The GTA 6 companion, now on the App Store. Free on iPhone; Android in the works.',
+      'The GTA 6 companion, on the App Store and Google Play. Free on iPhone and Android.',
   },
 };
 
@@ -79,20 +80,21 @@ export default function AppPage() {
         <div className="wrap hero__grid">
           <div>
             <div className="kicker" style={{ color: 'var(--pink-l)' }}>
-              The companion app · now on the App Store
+              The companion app · App Store and Google Play
             </div>
             <h1>
               SixCentral, <span className="c">in your pocket</span>
             </h1>
             <p>
-              The GTA 6 companion is live on iPhone. Verified news, the countdown, community
-              clips and The Come-Up today, with the Leonida map and 100% tracker primed for
-              launch night.
+              The GTA 6 companion is live on iPhone and Android. Verified news, the countdown,
+              community clips and The Come-Up today, with the Leonida map and 100% tracker
+              primed for launch night.
             </p>
-            <div style={{ marginTop: 22, display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
+            <div style={{ marginTop: 22, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
               <AppStoreBadge height={56} />
+              <PlayStoreBadge height={56} />
               <span className="mono" style={{ fontSize: '0.7rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>
-                Free on iPhone · Android in the works
+                Free on iPhone and Android
               </span>
             </div>
           </div>
@@ -125,9 +127,7 @@ export default function AppPage() {
             <h2>
               In the app <span className="c">today</span>
             </h2>
-            <a href={APP_STORE_URL} target="_blank" rel="noopener noreferrer">
-              Get it free &rarr;
-            </a>
+            <a href="#download">Get it free &rarr;</a>
           </div>
           <div className="grid grid--3">
             {TODAY.map((f) => (
@@ -230,11 +230,18 @@ export default function AppPage() {
         </div>
       </section>
 
-      {/* Android + launch list */}
-      <section className="section">
+      {/* Download + launch list */}
+      <section className="section" id="download">
         <div className="wrap">
           <div className="grid grid--2">
-            <div className="card" style={{ padding: 30 }}>
+            <div
+              className="card"
+              style={{
+                padding: 30,
+                background: 'linear-gradient(160deg, rgba(255,200,61,0.1), var(--bg2))',
+                borderColor: 'var(--gold)',
+              }}
+            >
               <div className="kicker" style={{ color: 'var(--gold)' }}>Android</div>
               <h3
                 style={{
@@ -245,23 +252,23 @@ export default function AppPage() {
                   margin: '8px 0',
                 }}
               >
-                In the works
+                Now on Google Play
               </h3>
               <p style={{ color: 'var(--muted)', maxWidth: '52ch' }}>
-                The Android build is on the bench and the launch list hears first. One email when
-                it lands, nothing else. iPhone crew can{' '}
-                <a href={APP_STORE_URL} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--cyan)' }}>
-                  get it today
-                </a>
-                .
+                The Android build has landed. Same app, both stores, one account: your Respect,
+                your progress and your handle sync wherever you sign in.
               </p>
+              <div style={{ marginTop: 18, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                <PlayStoreBadge />
+                <AppStoreBadge />
+              </div>
             </div>
             <NewsletterSignup source="app-page" />
           </div>
           <p className="disclaimer">
             SixCentral is an independent fan-made companion and is not affiliated with, endorsed
-            by, or sponsored by Rockstar Games or Take-Two Interactive. Requires an iPhone; see
-            the App Store listing for details.
+            by, or sponsored by Rockstar Games or Take-Two Interactive. Requires an iPhone or an
+            Android phone; see the store listings for details.
           </p>
         </div>
       </section>
@@ -273,11 +280,11 @@ export default function AppPage() {
             '@context': 'https://schema.org',
             '@type': 'SoftwareApplication',
             name: 'SixCentral',
-            operatingSystem: 'iOS',
+            operatingSystem: 'iOS, Android',
             applicationCategory: 'EntertainmentApplication',
             offers: { '@type': 'Offer', price: '0', priceCurrency: 'GBP' },
             url: `${SITE_URL}/app`,
-            installUrl: APP_STORE_URL,
+            installUrl: [APP_STORE_URL, PLAY_STORE_URL],
           }),
         }}
       />

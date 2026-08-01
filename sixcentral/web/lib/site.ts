@@ -21,6 +21,13 @@ export const APP_STORE_ID = '6787364671';
 export const APP_STORE_URL = `https://apps.apple.com/gb/app/id${APP_STORE_ID}`;
 
 /**
+ * The live Google Play listing. The package-id URL is Google's canonical
+ * form and resolves in every storefront, so it never goes stale.
+ */
+export const PLAY_PACKAGE = 'uk.co.sixcentral.app';
+export const PLAY_STORE_URL = `https://play.google.com/store/apps/details?id=${PLAY_PACKAGE}`;
+
+/**
  * Flip to true once the Discord provider is configured in Supabase
  * (Auth -> Providers -> Discord). Until then the account page offers
  * email magic-link sign-in only.

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Anton, Space_Grotesk, Spline_Sans_Mono } from 'next/font/google';
-import { SITE_URL, APP_STORE_URL } from '@/lib/site';
+import { SITE_URL, APP_STORE_URL, PLAY_STORE_URL } from '@/lib/site';
 import './globals.css';
 import SiteNav from '@/components/SiteNav';
 import SiteFooter from '@/components/SiteFooter';
@@ -16,7 +16,7 @@ const ORG_LD = [
     name: 'SixCentral',
     url: SITE_URL,
     logo: `${SITE_URL}/app/app-icon.png`,
-    sameAs: ['https://discord.gg/8xsC3tymm', APP_STORE_URL],
+    sameAs: ['https://discord.gg/8xsC3tymm', APP_STORE_URL, PLAY_STORE_URL],
   },
   {
     '@context': 'https://schema.org',

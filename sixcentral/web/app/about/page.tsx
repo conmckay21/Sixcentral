@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import AppStoreBadge from '@/components/AppStoreBadge';
+import PlayStoreBadge from '@/components/PlayStoreBadge';
 
 export const metadata: Metadata = {
   title: 'About SixCentral',
@@ -55,8 +56,9 @@ export default function About() {
           </p>
           <div style={{ marginTop: 26, display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
             <AppStoreBadge />
+            <PlayStoreBadge />
             <span className="mono" style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              Free on iPhone · Android in the works
+              Free on iPhone and Android
             </span>
           </div>
         </div>
