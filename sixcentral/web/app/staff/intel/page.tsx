@@ -210,7 +210,7 @@ export default function IntelPage() {
 
   function copyBrief(it: any) {
     const lines: string[] = [];
-    lines.push(`[${String(it.category).toUpperCase()}] ${it.title}`);
+    lines.push(`[${it.topic === "online" ? "ONLINE " : ""}${String(it.category).toUpperCase()}] ${it.title}`);
     lines.push(
       `Strength ${Math.round(it.strength_score)}/100 | Rank ${it.rank_score} | ` +
         `${it.spread_count} source${it.spread_count === 1 ? "" : "s"} | ${TIER_LABEL[it.source_tier] || "Unverified"}` +
@@ -377,6 +377,11 @@ export default function IntelPage() {
                     <span className="cat" style={{ background: CAT_COLOUR[it.category] || C.line }}>
                       {it.category}
                     </span>
+                    {it.topic === "online" && (
+                      <span className="cat" style={{ background: C.cyan, color: "#06232a" }}>
+                        gta online
+                      </span>
+                    )}
                     <span className="tier">{TIER_LABEL[it.source_tier] || "Unverified"}</span>
                     <span className="spread">{it.spread_count} src</span>
                     {it.corroborated && <span className="corr">corroborated</span>}

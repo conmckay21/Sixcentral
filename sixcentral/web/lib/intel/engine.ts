@@ -1,4 +1,5 @@
 import { gatherRaw, RawItem, SOURCE_GROUPS } from "./sources";
+import type { Topic } from "./sources";
 
 export type Category = "confirmed" | "rumour" | "leak" | "controversy" | "debunk";
 
@@ -17,6 +18,7 @@ export interface IntelRow {
   auto_category: Category;
   editorial_call: string;
   published_at: string | null;
+  topic: Topic;
 }
 
 // How many stories the desk keeps per scan. Above this, the long tail of
@@ -26,7 +28,7 @@ const MAX_STORIES = 40;
 const STOP = new Set([
   "the","a","an","and","or","of","to","in","on","for","is","are","was","were",
   "be","by","with","as","at","it","its","this","that","from","has","have","will",
-  "could","would","new","gta","grand","theft","auto","vi","six","rockstar","games",
+  "could","would","new","gta","grand","theft","auto","vi","six","rockstar","games","online","gtao",
   "game","just","says","said","after","your","you","how","why","what","when","who",
   "get","gets","are","now","out","one","two","all","not","but","its","his","her",
 ]);
@@ -138,6 +140,14 @@ export async function runScan(): Promise<{
       .sort((a, b) => a.title.length - b.title.length);
     const lead = newsFirst[0] || distinct[0];
 
+    const onlineCount = distinct.filter((d) => d.topic === "online").length;
+    const topic: Topic =
+      onlineCount * 2 > distinct.length
+        ? "online"
+        : onlineCount * 2 === distinct.length
+          ? lead.topic
+          : "gta6";
+
     const tier = Math.min(
       ...distinct.map((d) => tierFor(d.outlet, d.kind, d.engagement))
     );
@@ -198,6 +208,7 @@ export async function runScan(): Promise<{
       auto_category: cat,
       editorial_call: callFor(cat, tier),
       published_at: published,
+      topic,
     });
   }
 

@@ -13,12 +13,13 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
-const ARTICLE_SYSTEM = `You are the writer for SixCentral, an independent GTA 6 companion site. Write a complete news article from the intel brief provided.
+const ARTICLE_SYSTEM = `You are the writer for SixCentral, an independent GTA 6 and GTA Online companion site. Write a complete news article from the intel brief provided.
 
 Voice and rules:
 - SixCentral's position is confirmed over rumour. If the brief is a rumour or leak, say clearly in the piece that it is unconfirmed and attribute it to its source. If it is confirmed, state it plainly.
 - UK English. Never use em dashes. Human, punchy and clear, never robotic and never hyperbolic.
 - Do not invent facts beyond the brief and its sources. Do not fabricate quotes.
+- The brief names the game. GTA Online stories are about the live game people are playing this week: write them in that register, current and practical, and never dress GTA Online news up as GTA 6 news. One line of GTA 6 context is plenty where it genuinely helps.
 
 Length and shape:
 - 1200 words minimum, 1400 the target. This is a proper piece, not a news brief.
@@ -165,10 +166,12 @@ export async function POST(req: Request) {
   const { data: story } = await admin.from('intel_items').select('*').eq('id', intel_id).maybeSingle();
   if (!story) return NextResponse.json({ error: 'story not found' }, { status: 404 });
   const s: any = story;
+  const isOnline = s.topic === 'online';
 
   // 1) write the article
   const brief = [
     `Category: ${s.category}`,
+    `Game: ${isOnline ? 'GTA Online, the live game' : 'GTA 6'}`,
     `Headline seed: ${s.title}`,
     `Summary: ${s.summary || ''}`,
     `Key points: ${(Array.isArray(s.key_points) ? s.key_points : []).join(' | ')}`,
@@ -218,7 +221,9 @@ export async function POST(req: Request) {
     .select('path,url,alt,credit,description')
     .order('path', { ascending: true })
     .limit(400);
-  const allAssets: any[] = assetsData || [];
+  // The media catalogue is GTA 6 material; an online story gets original
+  // motif art rather than the wrong game's screenshots.
+  const allAssets: any[] = isOnline ? [] : assetsData || [];
   const fresh = allAssets.filter((a) => !recentSrcs.has(a.url));
   const assets: any[] = fresh.length >= 20 ? fresh : allAssets;
 
@@ -279,7 +284,7 @@ export async function POST(req: Request) {
     slug,
     title: String(article.title || s.title).slice(0, 200),
     kicker: String(article.kicker || (isRumour ? 'Rumour' : 'News')).slice(0, 40),
-    category_slug: 'news',
+    category_slug: isOnline ? 'online' : 'news',
     excerpt: String(article.excerpt || '').slice(0, 300),
     body,
     gradient: gradientFor(s.category),

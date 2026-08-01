@@ -1,5 +1,7 @@
 import { parseFeed } from "./rss";
 
+export type Topic = "gta6" | "online";
+
 export interface RawItem {
   title: string;
   url: string;
@@ -7,6 +9,7 @@ export interface RawItem {
   publishedAt: string | null;
   snippet: string;
   kind: "news" | "reddit" | "youtube";
+  topic: Topic;
   engagement?: number;
 }
 
@@ -32,13 +35,19 @@ async function timedFetch(url: string, init: RequestInit = {}): Promise<Response
 // 200 rows of livestream titles and football scores.
 // ---------------------------------------------------------------------------
 const GTA6 = /\bgta\s*(6|vi)\b|grand theft auto\s*(6|vi|six)|\bgtavi\b/i;
+const GTAONLINE = /\bgta\s*online\b|\bgtao\b|grand theft auto online/i;
 
-function aboutGta6(title: string, snippet = ""): boolean {
-  return GTA6.test(`${title} ${snippet}`);
+/** Which desk a story belongs to. Online wins when it is named explicitly,
+ *  because "GTA 6" turns up as context in half the headlines in gaming. */
+function topicOf(title: string, snippet = ""): Topic | null {
+  const text = `${title} ${snippet}`;
+  if (GTAONLINE.test(text)) return "online";
+  if (GTA6.test(text)) return "gta6";
+  return null;
 }
 
 const JUNK =
-  /(come chat|let.?s see|reaction|livestream|\blive\b|giveaway|\bvs\.?\s|best[- ]selling|tier list|\bhalo\b|quitting|hopium|watch now|full stream)/i;
+  /(come chat|let.?s see|reaction|livestream|\blive\b|giveaway|\bvs\.?\s|best[- ]selling|tier list|\bhalo\b|quitting|hopium|watch now|full stream|looking for (a )?crew|\blfg\b|add me|anyone (want|up for)|friend request)/i;
 const VIDEOID_TAIL = /\([a-z0-9_-]{8,}\)\s*$/i;
 
 function isJunk(title: string): boolean {
@@ -48,7 +57,14 @@ function isJunk(title: string): boolean {
 // ---------------------------------------------------------------------------
 // Google News RSS: primary engine and spread counter.
 // ---------------------------------------------------------------------------
-const NEWS_QUERIES = ["GTA 6", "Grand Theft Auto VI", "GTA 6 leak", "GTA 6 trailer"];
+const NEWS_QUERIES = [
+  "GTA 6",
+  "Grand Theft Auto VI",
+  "GTA 6 leak",
+  "GTA 6 trailer",
+  "GTA Online",
+  "GTA Online weekly update",
+];
 
 function newsUrl(q: string): string {
   const query = encodeURIComponent(`${q} when:2d`);
@@ -72,7 +88,8 @@ async function fetchGoogleNews(): Promise<RawItem[]> {
       const xml = await res.text();
       for (const it of parseFeed(xml)) {
         const parsed = splitOutlet(it.title);
-        if (!aboutGta6(parsed.title, it.summary) || isJunk(parsed.title)) continue;
+        const topic = topicOf(parsed.title, it.summary);
+        if (!topic || isJunk(parsed.title)) continue;
         out.push({
           title: parsed.title,
           url: it.link,
@@ -80,6 +97,7 @@ async function fetchGoogleNews(): Promise<RawItem[]> {
           publishedAt: it.publishedAt,
           snippet: it.summary,
           kind: "news",
+          topic,
         });
       }
     })
@@ -105,7 +123,8 @@ async function fetchPress(): Promise<RawItem[]> {
       if (!res.ok) return;
       const xml = await res.text();
       for (const it of parseFeed(xml)) {
-        if (!aboutGta6(it.title, it.summary) || isJunk(it.title)) continue;
+        const topic = topicOf(it.title, it.summary);
+        if (!topic || isJunk(it.title)) continue;
         out.push({
           title: it.title,
           url: it.link,
@@ -113,6 +132,7 @@ async function fetchPress(): Promise<RawItem[]> {
           publishedAt: it.publishedAt,
           snippet: it.summary,
           kind: "news",
+          topic,
         });
       }
     })
@@ -124,7 +144,7 @@ async function fetchPress(): Promise<RawItem[]> {
 // Reddit: community pulse. The subreddit implies relevance, so only junk is
 // filtered, not the GTA 6 gate.
 // ---------------------------------------------------------------------------
-const SUBS = ["GTA6", "GTAVI"];
+const SUBS = ["GTA6", "GTAVI", "gtaonline"];
 
 async function fetchReddit(): Promise<RawItem[]> {
   const out: RawItem[] = [];
@@ -142,6 +162,8 @@ async function fetchReddit(): Promise<RawItem[]> {
         const d = k.data || {};
         const score = (d.score || 0) + (d.num_comments || 0);
         if (score < 60 || d.stickied || isJunk(d.title || "")) continue;
+        const subTopic: Topic =
+          String(d.subreddit || "").toLowerCase() === "gtaonline" ? "online" : "gta6";
         out.push({
           title: d.title || "",
           url:
@@ -154,6 +176,7 @@ async function fetchReddit(): Promise<RawItem[]> {
             : null,
           snippet: String(d.selftext || "").slice(0, 400),
           kind: "reddit",
+          topic: topicOf(d.title || "", d.selftext || "") ?? subTopic,
           engagement: score,
         });
       }

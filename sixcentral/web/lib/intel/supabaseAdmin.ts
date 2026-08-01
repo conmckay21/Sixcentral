@@ -27,6 +27,7 @@ const machineFields = (r: IntelRow) => ({
   strength_score: r.strength_score,
   rank_score: r.rank_score,
   auto_category: r.auto_category,
+  topic: r.topic,
   published_at: r.published_at,
   last_seen_at: new Date().toISOString(),
 });
