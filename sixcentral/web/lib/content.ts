@@ -38,6 +38,25 @@ function mapArticle(r: any): Article {
   };
 }
 
+// Supabase row -> Guide shape. Guides carry no hero media columns yet.
+function mapGuide(r: any): Guide {
+  return {
+    kind: 'guide',
+    slug: r.slug,
+    title: r.title,
+    kicker: r.kicker ?? '',
+    category: r.category_slug ?? '',
+    excerpt: r.excerpt ?? '',
+    updatedAt: typeof r.updated_at === 'string' ? r.updated_at.slice(0, 10) : r.updated_at,
+    readingMins: r.reading_mins ?? 5,
+    body: Array.isArray(r.body) ? r.body : [],
+    gradient: r.gradient ?? '',
+    isNew: r.is_new ?? undefined,
+    game: r.game_slug === 'gta-online' ? 'gta-online' : 'gta6',
+    youtubeId: r.youtube_id ?? undefined,
+  };
+}
+
 export async function getCategories(): Promise<Category[]> {
   const sb = getSupabase();
   if (sb) {
@@ -50,10 +69,47 @@ export async function getCategories(): Promise<Category[]> {
 export async function getGuides(): Promise<Guide[]> {
   const sb = getSupabase();
   if (sb) {
-    // const { data } = await sb.from('guides').select('*').order('updated_at', { ascending: false });
-    // if (data) return data.map(mapGuide);
+    const { data } = await sb
+      .from('guides')
+      .select('*')
+      .eq('published', true)
+      .order('updated_at', { ascending: false });
+    if (data && data.length) return data.map(mapGuide);
   }
   return byNewest(MOCK_GUIDES);
+}
+
+/** The GTA Online guides desk: live now, a guide per raid and the businesses. */
+export async function getOnlineGuides(limit = 24): Promise<Guide[]> {
+  const sb = getSupabase();
+  if (sb) {
+    const { data } = await sb
+      .from('guides')
+      .select('*')
+      .eq('published', true)
+      .eq('game_slug', 'gta-online')
+      .order('updated_at', { ascending: false })
+      .limit(limit);
+    if (data) return data.map(mapGuide);
+  }
+  return [];
+}
+
+/** GTA Online news: the online category, facts only, rumours stay in the Mill. */
+export async function getOnlineArticles(limit = 12): Promise<Article[]> {
+  const sb = getSupabase();
+  if (sb) {
+    const { data } = await sb
+      .from('articles')
+      .select('*')
+      .eq('published', true)
+      .eq('is_rumour', false)
+      .eq('category_slug', 'online')
+      .order('updated_at', { ascending: false })
+      .limit(limit);
+    if (data) return data.map(mapArticle);
+  }
+  return [];
 }
 
 export async function getGuideBySlug(slug: string): Promise<Guide | null> {

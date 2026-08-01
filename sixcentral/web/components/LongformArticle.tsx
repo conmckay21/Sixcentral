@@ -38,6 +38,28 @@ export default function LongformArticle({
           <div className="v" />
         </div>
 
+        {isGuide(content) && content.youtubeId && (
+          <div
+            style={{
+              position: 'relative',
+              aspectRatio: '16 / 9',
+              borderRadius: 14,
+              overflow: 'hidden',
+              border: '1px solid var(--line2)',
+              margin: '18px 0 6px',
+            }}
+          >
+            <iframe
+              src={`https://www.youtube-nocookie.com/embed/${content.youtubeId}`}
+              title={`Video guide: ${content.title}`}
+              allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              loading="lazy"
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
+            />
+          </div>
+        )}
+
         {!isGuide(content) && content.isRumour && (
           <div className="rumour-box">
             <strong>This is a Rumour Mill piece.</strong> Nothing here is confirmed by Rockstar

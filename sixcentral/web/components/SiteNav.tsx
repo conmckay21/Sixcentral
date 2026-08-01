@@ -10,6 +10,7 @@ export default function SiteNav() {
         </Link>
         <div className="nav__links">
           <Link href="/guides">Guides</Link>
+          <Link href="/online">Online</Link>
           <Link href="/crew">Crew</Link>
           <Link href="/clips">Clips</Link>
           <Link href="/news">News</Link>

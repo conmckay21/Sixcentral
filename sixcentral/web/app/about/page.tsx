@@ -6,7 +6,7 @@ import PlayStoreBadge from '@/components/PlayStoreBadge';
 export const metadata: Metadata = {
   title: 'About SixCentral',
   description:
-    'SixCentral is the independent GTA 6 companion: verified news, guides, the countdown and a community, built in the UK by fans who check their facts.',
+    'SixCentral is the independent GTA 6 and GTA Online companion: verified news, guides, the countdown and a community, built in the UK by fans who check their facts.',
   alternates: { canonical: '/about' },
 };
 
@@ -20,7 +20,7 @@ export default function About() {
             About <span className="c">SixCentral</span>
           </h1>
           <p style={{ maxWidth: '66ch' }}>
-            SixCentral is the GTA 6 companion for people who are tired of guesswork sold as fact.
+            SixCentral is the GTA 6 and GTA Online companion for people who are tired of guesswork sold as fact.
             Verified news, honest rumour coverage, guides that go live with the game, a countdown
             you can trust and a community that earns its stripes.
           </p>
@@ -47,8 +47,9 @@ export default function About() {
           <p style={{ color: 'var(--muted)' }}>
             The community lives on The Come-Up, our reputation ladder. Confirmed contributions,
             accepted clips, verified corrections and verified intel earn Respect, and the board is
-            shared between the site and the app. The fastest way in is the{' '}
-            <a href="https://discord.gg/8xsC3tymm" target="_blank" rel="noopener noreferrer">Discord</a>.
+            shared between the site and the app. The fastest way in is the Discord, which opens
+            from your <Link href="/account">account page</Link> once you have signed up. There is
+            no public invite, on purpose.
           </p>
           <p style={{ color: 'var(--muted)' }}>
             SixCentral is an independent fan-made companion and is not affiliated with, endorsed by

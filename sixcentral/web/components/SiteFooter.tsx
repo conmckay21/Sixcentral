@@ -11,7 +11,7 @@ export default function SiteFooter() {
               SIX<span className="c">CENTRAL</span>
             </div>
             <p className="footer__tag">
-              Guides, news and tools for Grand Theft Auto VI. Built by fans who check their facts.
+              Guides, news and tools for Grand Theft Auto VI and GTA Online. Built by fans who check their facts.
             </p>
           </div>
           <div className="footer__cols">
@@ -19,6 +19,7 @@ export default function SiteFooter() {
               <h4>Explore</h4>
               <Link href="/guides">Guides</Link>
               <Link href="/news">News</Link>
+              <Link href="/online">GTA Online</Link>
               <Link href="/news#rumour-mill">The Rumour Mill</Link>
               <Link href="/clips">Clips</Link>
               <Link href="/countdown">Countdown</Link>

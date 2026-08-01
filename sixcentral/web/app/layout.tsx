@@ -16,7 +16,7 @@ const ORG_LD = [
     name: 'SixCentral',
     url: SITE_URL,
     logo: `${SITE_URL}/app/app-icon.png`,
-    sameAs: ['https://discord.gg/8xsC3tymm', APP_STORE_URL, PLAY_STORE_URL],
+    sameAs: [APP_STORE_URL, PLAY_STORE_URL],
   },
   {
     '@context': 'https://schema.org',
@@ -28,11 +28,11 @@ const ORG_LD = [
 
 export const metadata: Metadata = {
   title: {
-    default: 'SixCentral | GTA 6 guides, news & tools (UK)',
+    default: 'SixCentral | GTA 6 & GTA Online guides, news & tools (UK)',
     template: '%s · SixCentral',
   },
   description:
-    'The UK companion for Grand Theft Auto VI. Verified guides, real news and an interactive tracker, built by fans who check their facts.',
+    'The UK companion for Grand Theft Auto VI and GTA Online. Verified guides, real news and an interactive tracker, built by fans who check their facts.',
   metadataBase: new URL('https://sixcentral.co.uk'),
   itunes: { appId: '6787364671' },
   robots: {
@@ -49,8 +49,8 @@ export const metadata: Metadata = {
   twitter: { card: 'summary_large_image' },
   alternates: { types: { 'application/rss+xml': '/feed.xml' } },
   openGraph: {
-    title: 'SixCentral | GTA 6 guides, news & tools',
-    description: 'The UK companion for Grand Theft Auto VI.',
+    title: 'SixCentral | GTA 6 & GTA Online guides, news & tools',
+    description: 'The UK companion for Grand Theft Auto VI and GTA Online.',
     siteName: 'SixCentral',
     locale: 'en_GB',
     type: 'website',

@@ -39,6 +39,10 @@ export type ContentBase = {
 
 export type Guide = ContentBase & {
   kind: 'guide';
+  /** Which desk the guide belongs to. Absent means the GTA 6 desk. */
+  game?: 'gta6' | 'gta-online';
+  /** SixCentral video guide; the guide page renders an embedded player when set. */
+  youtubeId?: string;
   // when a guide maps to a trackable collectible set, the app fills this in per-user.
   trackable?: { label: string; slug: string };
 };

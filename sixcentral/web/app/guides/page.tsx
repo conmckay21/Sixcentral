@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import NewsletterSignup from '@/components/NewsletterSignup';
 
 export const metadata: Metadata = {
@@ -46,8 +47,8 @@ const COVERAGE = [
   },
   {
     k: 'Online',
-    t: 'GTA Online 2, when it lands',
-    d: 'The weekly-update desk opens the day the online mode does: money methods, event coverage, and what is worth your time each week.',
+    t: 'The GTA Online desk, live now',
+    d: 'Not waiting for launch. Raid guides, business guides and the weekly update run today on the GTA Online desk, and the same desk carries over the day GTA 6 gets its own online mode.',
   },
 ];
 
@@ -86,6 +87,10 @@ export default function GuidesPage() {
               </div>
             ))}
           </div>
+          <p style={{ color: 'var(--muted)', marginTop: 18 }}>
+            The GTA Online desk is already live: <Link href="/online">news, guides and the Raid
+            Finder</Link>.
+          </p>
         </div>
       </section>
 
