@@ -89,7 +89,7 @@ export default function Guides() {
               <Pressable
                 key={g.slug}
                 style={st.card}
-                onPress={() => router.push({ pathname: '/guide/[slug]', params: { slug: g.slug } })}
+                onPress={() => router.push(`/guide/${g.slug}`)}
               >
                 {heroSrc ? (
                   <Image source={{ uri: heroSrc }} style={st.thumb} resizeMode="cover" />
