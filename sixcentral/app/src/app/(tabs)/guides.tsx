@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { C, G, GRAD } from '@/lib/theme';
@@ -89,7 +89,7 @@ export default function Guides() {
               <Pressable
                 key={g.slug}
                 style={st.card}
-                onPress={() => router.push(`/guide/${g.slug}`)}
+                onPress={() => router.push(`/guide/${g.slug}` as Href)}
               >
                 {heroSrc ? (
                   <Image source={{ uri: heroSrc }} style={st.thumb} resizeMode="cover" />
