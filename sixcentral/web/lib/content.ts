@@ -52,6 +52,7 @@ function mapGuide(r: any): Guide {
     body: Array.isArray(r.body) ? r.body : [],
     gradient: r.gradient ?? '',
     isNew: r.is_new ?? undefined,
+    heroImage: r.hero_image ?? undefined,
     game: r.game_slug === 'gta-online' ? 'gta-online' : 'gta6',
     youtubeId: r.youtube_id ?? undefined,
   };
