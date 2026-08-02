@@ -2,10 +2,10 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { discordApi, GUILD_ID } from '@/lib/discord';
 
 /**
- * The Raid Finder, Discord side. Raids live in raid_lobbies/raid_lobby_members
- * (shared with the web board); this module owns everything the bot does with
- * them: the start flow, joins and leaves, the live roster embed, and firing
- * gamertags at the host.
+ * The Heist Finder, Discord side. Heists live in raid_lobbies/raid_lobby_members
+ * (table names and custom_ids are frozen internals; the player-facing word is
+ * heist); this module owns everything the bot does with them: the start flow,
+ * joins and leaves, the live roster embed, and firing gamertags at the host.
  *
  * Identity: Discord users are keyed by discord_user_id on member rows and
  * host_discord_id on lobbies. Gamertags are remembered per platform in
@@ -110,7 +110,7 @@ export async function rememberTag(
 // ---------------------------------------------------------------------------
 
 /** Ephemeral raid-type picker, edited into the deferred reply. */
-export async function buildRaidPicker(
+export async function buildHeistPicker(
   sb: SupabaseClient,
   platform: Platform,
 ): Promise<{ content: string; components: unknown[] }> {
@@ -120,9 +120,9 @@ export async function buildRaidPicker(
     .eq('active', true)
     .order('sort');
   const types = (data ?? []) as { id: string; name: string }[];
-  if (!types.length) return { content: 'No raids are listed right now. Tell a moderator.', components: [] };
+  if (!types.length) return { content: 'No heists are listed right now. Tell a moderator.', components: [] };
   return {
-    content: `**Start a ${PLATFORM_LABEL[platform]} raid.** Which one are you running?`,
+    content: `**The ${PLATFORM_LABEL[platform]} heist board.** Which one are you running?`,
     components: [
       {
         type: 1,
@@ -130,7 +130,7 @@ export async function buildRaidPicker(
           {
             type: 3,
             custom_id: `raid_pick:${platform}`,
-            placeholder: 'Pick the raid',
+            placeholder: 'Pick the heist',
             options: types.slice(0, 25).map((t) => ({ label: t.name.slice(0, 100), value: t.id })),
           },
         ],
@@ -145,7 +145,7 @@ export function hostModal(raidTypeId: string, platform: Platform, storedTag: str
     type: 9,
     data: {
       custom_id: `raid_host_modal:${raidTypeId}:${platform}`,
-      title: 'Start the raid',
+      title: 'Start the heist',
       components: [
         {
           type: 1,
@@ -187,7 +187,7 @@ export function joinModal(lobbyId: string, platform: Platform | null) {
     type: 9,
     data: {
       custom_id: `raid_join_modal:${lobbyId}`,
-      title: 'Join the raid',
+      title: 'Join the heist',
       components: [
         {
           type: 1,
@@ -214,7 +214,7 @@ function renderRaid(lobby: Lobby, members: Member[]) {
   const crew = members
     .map((m, i) => `${i + 1}. **${m.gamertag}**${i === 0 ? ' (host)' : ''}`)
     .join('\n');
-  const state = done ? 'CLOSED' : full ? 'FULL' : `${members.length}/${max} — tap Join`;
+  const state = done ? 'CLOSED' : full ? 'FULL' : `${members.length}/${max} · tap Join`;
 
   const lines: string[] = [];
   if (lobby.note) lines.push(lobby.note);
@@ -229,9 +229,9 @@ function renderRaid(lobby: Lobby, members: Member[]) {
         description: lines.join('\n') || undefined,
         color: colour,
         fields: [
-          { name: `Crew — ${state}`, value: crew || 'Nobody yet.', inline: false },
+          { name: `Crew · ${state}`, value: crew || 'Nobody yet.', inline: false },
         ],
-        footer: { text: `SixCentral Raid Finder · ${SITE.replace('https://', '')}/online` },
+        footer: { text: `SixCentral Heist Finder · ${SITE.replace('https://', '')}/online` },
       },
     ],
     components: [
@@ -330,7 +330,7 @@ export async function createLobby(
     .select('id, slug, name, min_players, max_players')
     .eq('id', args.raidTypeId)
     .maybeSingle();
-  if (!raid) return 'That raid is no longer listed. Start again.';
+  if (!raid) return 'That heist is no longer listed. Start again.';
 
   await rememberTag(sb, args.hostDiscordId, args.platform, args.gamertag);
 
@@ -344,7 +344,7 @@ export async function createLobby(
     })
     .select('id')
     .single();
-  if (error || !inserted) return 'Could not open the raid. Try again in a moment.';
+  if (error || !inserted) return 'Could not open the heist. Try again in a moment.';
 
   await sb.from('raid_lobby_members').insert({
     lobby_id: inserted.id,
@@ -354,12 +354,12 @@ export async function createLobby(
 
   const lobby = await loadLobby(sb, inserted.id);
   const members = await loadMembers(sb, inserted.id);
-  if (!lobby) return 'Could not open the raid. Try again in a moment.';
+  if (!lobby) return 'Could not open the heist. Try again in a moment.';
 
   const roleId = await platformRoleId(args.platform);
   const ping = roleId ? `<@&${roleId}> ` : '';
   const posted = (await discordApi('POST', `/channels/${args.channelId}/messages`, {
-    content: `${ping}**${(raid as RaidType).name}** crew forming — hosted by **${args.gamertag}**`,
+    content: `${ping}**${(raid as RaidType).name}** crew forming, hosted by **${args.gamertag}**`,
     allowed_mentions: roleId ? { roles: [roleId] } : { parse: [] },
     ...renderRaid({ ...lobby, discord_channel_id: args.channelId }, members),
   })) as { id: string };
@@ -391,7 +391,7 @@ export async function createLobby(
     [args.hostDiscordId],
   );
 
-  return `Raid posted \u2713 The ${PLATFORM_LABEL[args.platform]} crew has been pinged. Gamertags come to you as people join.`;
+  return `Heist posted \u2713 The ${PLATFORM_LABEL[args.platform]} crew has been pinged. Gamertags come to you as people join.`;
 }
 
 export async function joinLobby(
@@ -401,8 +401,8 @@ export async function joinLobby(
   gamertag: string,
 ): Promise<string> {
   const lobby = await loadLobby(sb, lobbyId);
-  if (!lobby) return 'That raid is gone.';
-  if (lobby.status !== 'open') return 'That raid is closed or already full.';
+  if (!lobby) return 'That heist is gone.';
+  if (lobby.status !== 'open') return 'That heist is closed or already full.';
 
   await rememberTag(sb, discordId, lobby.platform, gamertag);
 
@@ -428,7 +428,7 @@ export async function joinLobby(
   await threadSay(
     lobby.discord_thread_id,
     host
-      ? `<@${host}> — **${gamertag}** is in (${members.length}/${max}). Add them and send the invite.`
+      ? `<@${host}>: **${gamertag}** is in (${members.length}/${max}). Add them and send the invite.`
       : `**${gamertag}** is in (${members.length}/${max}).`,
     host ? [host] : [],
   );
@@ -443,15 +443,15 @@ export async function joinLobby(
   }
 
   return nowFull
-    ? `You\u2019re in, and that fills the crew \u2713 **${lobby.raid_types.name}** is a go — watch the thread.`
-    : `You\u2019re in \u2713 The host has your gamertag. Watch the raid thread for the invite.`;
+    ? `You\u2019re in, and that fills the crew \u2713 **${lobby.raid_types.name}** is a go. Watch the thread.`
+    : `You\u2019re in \u2713 The host has your gamertag. Watch the heist thread for the invite.`;
 }
 
 export async function leaveLobby(sb: SupabaseClient, lobbyId: string, discordId: string): Promise<string> {
   const lobby = await loadLobby(sb, lobbyId);
-  if (!lobby) return 'That raid is gone.';
+  if (!lobby) return 'That heist is gone.';
   if (lobby.host_discord_id === discordId) {
-    return 'Hosts close rather than leave — tap Close if the run is off.';
+    return 'Hosts close rather than leave: tap Close if the run is off.';
   }
 
   const { data: gone } = await sb
@@ -477,15 +477,15 @@ export async function leaveLobby(sb: SupabaseClient, lobbyId: string, discordId:
 
 export async function closeLobby(sb: SupabaseClient, lobbyId: string, discordId: string): Promise<string> {
   const lobby = await loadLobby(sb, lobbyId);
-  if (!lobby) return 'That raid is gone.';
-  if (lobby.host_discord_id !== discordId) return 'Only the host can close this raid.';
+  if (!lobby) return 'That heist is gone.';
+  if (lobby.host_discord_id !== discordId) return 'Only the host can close this heist.';
   if (lobby.status === 'done' || lobby.status === 'cancelled') return 'Already closed.';
 
   await sb.from('raid_lobbies').update({ status: 'done' }).eq('id', lobbyId);
   lobby.status = 'done';
   const members = await loadMembers(sb, lobbyId);
   await editRaidMessage(lobby, members);
-  await threadSay(lobby.discord_thread_id, 'The host closed this raid. Good hunting.');
+  await threadSay(lobby.discord_thread_id, 'The host closed this heist. Good hunting.');
   return 'Raid closed \u2713';
 }
 
@@ -504,7 +504,7 @@ export async function sweepExpired(sb: SupabaseClient): Promise<number> {
     const members = await loadMembers(sb, row.id);
     try {
       await editRaidMessage(lobby, members);
-      await threadSay(lobby.discord_thread_id, 'This raid timed out and has been closed.');
+      await threadSay(lobby.discord_thread_id, 'This heist timed out and has been closed.');
     } catch {
       /* message deleted; row state is what matters */
     }

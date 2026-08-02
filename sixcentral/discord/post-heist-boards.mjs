@@ -1,8 +1,8 @@
 /**
- * Posts the Raid Finder board message into #xbox-raids and #ps5-raids: a
- * pinned "Start a raid" button per channel. The button is handled by the
+ * Posts the Heist Finder board message into #xbox-heists and #ps5-heists: a
+ * pinned "Start a heist" button per channel. The button is handled by the
  * interactions endpoint (custom_id raid_start:xbox / raid_start:ps5), which
- * walks the host through raid pick, gamertag and note, then posts the crew
+ * walks the host through the heist pick, gamertag and note, then posts the crew
  * embed with the platform-role ping.
  *
  * Idempotent enough: re-running posts a fresh copy, so run it once. If you
@@ -10,7 +10,7 @@
  *
  * Run (Node 18+), after the site deploy is live and setup.mjs has created
  * the raid channels:
- *   DISCORD_BOT_TOKEN=xxxx DISCORD_GUILD_ID=xxxx node discord/post-raid-boards.mjs
+ *   DISCORD_BOT_TOKEN=xxxx DISCORD_GUILD_ID=xxxx node discord/post-heist-boards.mjs
  */
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
@@ -34,8 +34,8 @@ async function api(method, path, body) {
 }
 
 const BOARDS = [
-  { channel: 'xbox-raids', platform: 'xbox', label: 'Xbox' },
-  { channel: 'ps5-raids', platform: 'ps5', label: 'PS5' },
+  { channel: 'xbox-heists', platform: 'xbox', label: 'Xbox' },
+  { channel: 'ps5-heists', platform: 'ps5', label: 'PS5' },
 ];
 
 const channels = await api('GET', `/guilds/${GUILD}/channels`);
@@ -43,14 +43,14 @@ const channels = await api('GET', `/guilds/${GUILD}/channels`);
 for (const board of BOARDS) {
   const ch = channels.find((c) => c.type === 0 && c.name === board.channel);
   if (!ch) {
-    console.error(`No #${board.channel} channel found. Run discord/setup.mjs first.`);
+    console.error(`No #${board.channel} channel found. Run discord/setup.mjs or rename-heists.mjs first.`);
     continue;
   }
 
   const content = [
-    `**The ${board.label} Raid Finder**`,
+    `**The ${board.label} Heist Finder**`,
     '',
-    'Running a heist and need a crew? Tap the button, pick the raid, drop your gamertag and an optional note. The crew gets pinged, people join with one tap, and every gamertag lands with you in the raid thread. When the crew is full, the post says so and the invites are on you.',
+    'Running a heist and need a crew? Tap the button, pick the heist, drop your gamertag and an optional note. The crew gets pinged, people join with one tap, and every gamertag lands with you in the heist thread. When the crew is full, the post says so and the invites are on you.',
     '',
     'One platform per board, no crossplay, no exceptions. Full rules and the live board: https://sixcentral.co.uk/online',
   ].join('\n');
@@ -59,7 +59,7 @@ for (const board of BOARDS) {
     {
       type: 1,
       components: [
-        { type: 2, style: 1, label: 'Start a raid', custom_id: `raid_start:${board.platform}` },
+        { type: 2, style: 1, label: 'Start a heist', custom_id: `raid_start:${board.platform}` }, // custom_id frozen
       ],
     },
   ];
@@ -67,8 +67,8 @@ for (const board of BOARDS) {
   const msg = await api('POST', `/channels/${ch.id}/messages`, { content, components });
   try {
     await api('PUT', `/channels/${ch.id}/pins/${msg.id}`);
-    console.log(`Posted and pinned the Raid Finder board in #${board.channel}.`);
+    console.log(`Posted and pinned the Heist Finder board in #${board.channel}.`);
   } catch {
-    console.log(`Posted the Raid Finder board in #${board.channel} (pin it manually).`);
+    console.log(`Posted the Heist Finder board in #${board.channel} (pin it manually).`);
   }
 }

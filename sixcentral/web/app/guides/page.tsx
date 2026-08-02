@@ -48,7 +48,7 @@ const COVERAGE = [
   {
     k: 'Online',
     t: 'The GTA Online desk, live now',
-    d: 'Not waiting for launch. Raid guides, business guides and the weekly update run today on the GTA Online desk, and the same desk carries over the day GTA 6 gets its own online mode.',
+    d: 'Not waiting for launch. Heist guides, business guides and the weekly update run today on the GTA Online desk, and the same desk carries over the day GTA 6 gets its own online mode.',
   },
 ];
 
@@ -71,6 +71,38 @@ export default function GuidesPage() {
 
       <section className="section">
         <div className="wrap">
+          <div
+            className="card"
+            style={{
+              padding: 28,
+              background: 'linear-gradient(160deg, rgba(31,229,214,0.12), var(--bg2))',
+              borderColor: 'var(--cyan)',
+            }}
+          >
+            <div className="kicker" style={{ color: 'var(--cyan)' }}>Live now</div>
+            <h2
+              style={{
+                fontFamily: 'var(--display)',
+                textTransform: 'uppercase',
+                fontSize: '1.8rem',
+                margin: '8px 0',
+              }}
+            >
+              The GTA Online guides desk is open
+            </h2>
+            <p style={{ color: 'var(--muted)', maxWidth: '60ch' }}>
+              GTA 6 guides wait for the game. GTA Online does not: heist guides, business guides
+              and the weekly update are publishing now, checked in-game before they go live.
+            </p>
+            <Link className="btn-crew" href="/online">
+              Go to the online desk
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="wrap">
           <div className="section__head">
             <h2>
               A to Z, <span className="c">the lot</span>
@@ -87,10 +119,7 @@ export default function GuidesPage() {
               </div>
             ))}
           </div>
-          <p style={{ color: 'var(--muted)', marginTop: 18 }}>
-            The GTA Online desk is already live: <Link href="/online">news, guides and the Raid
-            Finder</Link>.
-          </p>
+
         </div>
       </section>
 

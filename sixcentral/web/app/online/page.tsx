@@ -6,16 +6,16 @@ import NewsletterSignup from '@/components/NewsletterSignup';
 import { getOnlineArticles, getOnlineGuides } from '@/lib/content';
 
 export const metadata: Metadata = {
-  title: 'GTA Online news, guides and the Raid Finder',
+  title: 'GTA Online news, guides and the Heist Finder',
   description:
-    'The SixCentral GTA Online desk: verified news, guides checked in-game, the weekly update every Thursday, and crews forming in the Raid Finder on our Discord.',
+    'The SixCentral GTA Online desk: verified news, guides checked in-game, the weekly update every Thursday, and crews forming in the Heist Finder on our Discord.',
   alternates: { canonical: '/online' },
 };
 
 export const revalidate = 60;
 
 /**
- * Live crew counts for the Raid Finder strip. Raid data is service-role only
+ * Live crew counts for the Heist Finder strip. Raid data is service-role only
  * by design (recruiting lives in Discord, never on the site), so aggregate
  * numbers are read here on the server and nothing else ever leaves the table.
  */
@@ -67,7 +67,7 @@ export default async function OnlinePage() {
           <p style={{ maxWidth: '66ch' }}>
             GTA 6 launches single-player only. Rockstar said so themselves, which makes GTA Online
             the only multiplayer in town for a while yet. So the desk runs both games now: verified
-            online news, guides checked in-game before they publish, and the Raid Finder filling
+            online news, guides checked in-game before they publish, and the Heist Finder filling
             crews on our Discord.
           </p>
         </div>
@@ -114,7 +114,7 @@ export default async function OnlinePage() {
             </div>
           ) : (
             <p style={{ color: 'var(--muted)' }}>
-              Landing in batches: a guide for every raid on the Finder, then the businesses and the
+              Landing in batches: a guide for every heist on the Finder, then the businesses and the
               money. Nothing publishes here until it has been run in-game, and our own video sits at
               the top of a guide whenever we have one.
             </p>
@@ -122,7 +122,7 @@ export default async function OnlinePage() {
         </div>
       </section>
 
-      {/* The Raid Finder + inside the Discord */}
+      {/* The Heist Finder + inside the Discord */}
       <section className="section">
         <div className="wrap">
           <div className="grid grid--2">
@@ -135,7 +135,7 @@ export default async function OnlinePage() {
               }}
             >
               <div className="kicker" style={{ color: 'var(--pink-l)' }}>
-                The Raid Finder
+                The Heist Finder
               </div>
               <h3
                 style={{
@@ -149,8 +149,8 @@ export default async function OnlinePage() {
                 Crews on tap, no crossplay chaos
               </h3>
               <p style={{ color: 'var(--muted)', maxWidth: '52ch' }}>
-                Pick the raid, drop your gamertag once, and the right platform gets pinged. Xbox
-                raids stay Xbox, PS5 stays PS5, because GTA Online has no crossplay and neither do
+                Pick the heist, drop your gamertag once, and the right platform gets pinged. Xbox
+                heists stay Xbox, PS5 stays PS5, because GTA Online has no crossplay and neither do
                 we. When the crew fills, the host has every gamertag ready for invites. It runs
                 inside our Discord and nowhere else, by design: crew coordination stays off the
                 site and the app entirely.
@@ -193,7 +193,7 @@ export default async function OnlinePage() {
                 More than a chat
               </h3>
               <p style={{ color: 'var(--muted)', maxWidth: '52ch' }}>
-                The Raid Finder, platform lounges for Xbox and PS5, an /ask helper that only answers
+                The Heist Finder, platform lounges for Xbox and PS5, an /ask helper that only answers
                 from confirmed facts, /submit intel that earns Respect on The Come-Up, the verified
                 log where every accepted contribution gets its receipt, and the clips channel.
               </p>

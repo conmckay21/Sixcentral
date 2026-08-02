@@ -3,7 +3,7 @@ import { waitUntil } from '@vercel/functions';
 import { discordApi, verifyDiscordRequest, GUILD_ID } from '@/lib/discord';
 import { HELPER_SYSTEM } from '@/lib/gtaFacts';
 import {
-  buildRaidPicker,
+  buildHeistPicker,
   closeLobby,
   createLobby,
   getStoredTagFast,
@@ -12,8 +12,8 @@ import {
   joinLobby,
   joinModal,
   leaveLobby,
-} from '@/lib/raids';
-import type { Platform } from '@/lib/raids';
+} from '@/lib/heists';
+import type { Platform } from '@/lib/heists';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -80,7 +80,7 @@ export async function POST(req: Request) {
   const discordId = interaction.member?.user?.id ?? interaction.user?.id;
   if (!discordId) return immediate('Could not identify you. Try again.');
 
-  // Raid Finder first: some steps must answer with a modal, which cannot
+  // Heist Finder first: some steps must answer with a modal, which cannot
   // follow a deferred ACK, so these are routed before the generic path.
   const raid = await routeRaid(interaction, discordId);
   if (raid) {
@@ -98,7 +98,7 @@ export async function POST(req: Request) {
 }
 
 // ---------------------------------------------------------------------------
-// The Raid Finder - start, join, leave, close. Lives in lib/raids; this is
+// The Heist Finder - start, join, leave, close. Lives in lib/heists; this is
 // only the interaction routing, including the two modal steps.
 // ---------------------------------------------------------------------------
 function modalField(interaction: Interaction, id: string): string {
@@ -115,9 +115,10 @@ async function routeRaid(
   discordId: string,
 ): Promise<{ modal: unknown } | { job: () => Promise<Reply> } | null> {
   const customId = interaction.data?.custom_id ?? '';
+  // custom_ids stay raid_* forever: they are baked into already-posted buttons.
   if (!customId.startsWith('raid_')) return null;
   const [kind, a, b] = customId.split(':');
-  const offline = () => Promise.resolve('The Raid Finder is briefly offline. Try again shortly.');
+  const offline = () => Promise.resolve('The Heist Finder is briefly offline. Try again shortly.');
 
   // Buttons and the type picker
   if (interaction.type === 3) {
@@ -126,13 +127,13 @@ async function routeRaid(
         job: async () => {
           const sb = await serviceClient();
           if (!sb) return offline();
-          return buildRaidPicker(sb, a);
+          return buildHeistPicker(sb, a);
         },
       };
     }
     if (kind === 'raid_pick' && isPlatform(a)) {
       const raidTypeId = interaction.data?.values?.[0];
-      if (!raidTypeId) return { job: () => Promise.resolve('Pick a raid from the list.') };
+      if (!raidTypeId) return { job: () => Promise.resolve('Pick a heist from the list.') };
       const sb = await serviceClient();
       const stored = sb ? await getStoredTagFast(sb, discordId, a) : null;
       return { modal: hostModal(raidTypeId, a, stored) };
@@ -217,7 +218,7 @@ async function routeRaid(
     }
   }
 
-  return { job: () => Promise.resolve('That raid control is not recognised.') };
+  return { job: () => Promise.resolve('That heist control is not recognised.') };
 }
 
 function routeJob(interaction: Interaction, discordId: string): (() => Promise<string>) | null {

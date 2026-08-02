@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { sweepExpired } from '@/lib/raids';
+import { sweepExpired } from '@/lib/heists';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 /**
- * Raid Finder housekeeping, run by Vercel cron every 15 minutes: any lobby
+ * Heist Finder housekeeping, run by Vercel cron every 15 minutes: any lobby
  * past its expiry is marked done, its Discord post flips to closed with the
  * buttons disabled, and the crew thread gets a timeout note. Keeps the board
  * honest without anyone lifting a finger.

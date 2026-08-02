@@ -46,7 +46,7 @@ async function api(method, path, body) {
 // ---- permissions (bit strings) ----
 const VIEW = 1n << 10n;          // VIEW_CHANNEL
 const SEND = 1n << 11n;          // SEND_MESSAGES
-const THREADS = (1n << 34n) | (1n << 38n); // CREATE_PUBLIC_THREADS | SEND_MESSAGES_IN_THREADS
+const THREADS_ALL = (1n << 34n) | (1n << 38n); // CREATE_PUBLIC_THREADS | SEND_MESSAGES_IN_THREADS
 const P = (v) => v.toString();
 
 // ---- the ladder, bottom to top (creation order sets sidebar order) ----
@@ -97,8 +97,8 @@ const PLAN = [
   { category: 'PLATFORMS', channels: [
     { name: 'ps5-lounge',  mode: 'console', consoleRole: 'PlayStation', topic: 'PS5 crew: matchmaking and platform chat. Pick PlayStation in #welcome to unlock.' },
     { name: 'xbox-lounge', mode: 'console', consoleRole: 'Xbox',        topic: 'Xbox crew: matchmaking and platform chat. Pick Xbox in #welcome to unlock.' },
-    { name: 'ps5-raids',   mode: 'console', consoleRole: 'PlayStation', slowmode: 5, topic: 'GTA Online raids, PS5 only. Tap Start a raid, crews form here, gamertags in the thread.' },
-    { name: 'xbox-raids',  mode: 'console', consoleRole: 'Xbox',        slowmode: 5, topic: 'GTA Online raids, Xbox only. Tap Start a raid, crews form here, gamertags in the thread.' },
+    { name: 'ps5-heists',  mode: 'console', consoleRole: 'PlayStation', slowmode: 5, topic: 'GTA Online heists, PS5 only. Tap Start a heist, crews form here, gamertags in the thread.' },
+    { name: 'xbox-heists', mode: 'console', consoleRole: 'Xbox',        slowmode: 5, topic: 'GTA Online heists, Xbox only. Tap Start a heist, crews form here, gamertags in the thread.' },
   ]},
   { category: 'COMMUNITY', channels: [
     { name: 'general', mode: 'open', topic: 'Everything else.' },
@@ -120,6 +120,19 @@ async function main() {
   if (!botRole) {
     console.warn('WARN: bot role not found - invite the bot to the server first, then re-run,');
     console.warn('      otherwise the bot cannot post in #verified-log / #announcements.');
+  }
+
+  // A bot can only write overwrite bits it holds itself, so grant only what
+  // it has and say exactly what is missing rather than dying on a 403.
+  const botPerms = botRole ? BigInt(botRole.permissions) : 0n;
+  const THREADS = THREADS_ALL & botPerms;
+  if (THREADS !== THREADS_ALL) {
+    const missing = [];
+    if (!(botPerms & (1n << 34n))) missing.push('Create Public Threads');
+    if (!(botPerms & (1n << 38n))) missing.push('Send Messages in Threads');
+    console.warn(`WARN: the bot role is missing: ${missing.join(', ')}.`);
+    console.warn('      Channels will be created without those bits. Enable them on the bot role');
+    console.warn('      in Server Settings -> Roles, then re-run this script for full thread perms.');
   }
 
   // ---- roles ----

@@ -5,7 +5,7 @@
       "schedule": "0 11 * * *"
     },
     {
-      "path": "/api/discord/raid-sweep",
+      "path": "/api/discord/heist-sweep",
       "schedule": "*/15 * * * *"
     }
   ]
