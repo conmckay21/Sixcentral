@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation';
 import LongformArticle from '@/components/LongformArticle';
 import { getGuides, getGuideBySlug, getRelated } from '@/lib/content';
 
+export const revalidate = 300;
+
 export async function generateStaticParams() {
   const guides = await getGuides();
   return guides.map((g) => ({ slug: g.slug }));
