@@ -169,7 +169,8 @@ export default function CollectiblesDesk() {
   return (
     <div style={{ background: C.bg, minHeight: '100vh', color: C.text, padding: '28px 18px', fontFamily: 'ui-sans-serif, system-ui' }}>
       <div style={{ maxWidth: 860, margin: '0 auto' }}>
-        <h1 style={{ fontSize: 22, fontWeight: 900, letterSpacing: 0.4, margin: 0 }}>
+        <a href="/staff/intel" style={{ color: C.cyan, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>&larr; Intel Desk</a>
+        <h1 style={{ fontSize: 22, fontWeight: 900, letterSpacing: 0.4, margin: '10px 0 0' }}>
           COLLECTIBLES <span style={{ color: C.pink }}>ATLAS DESK</span>
         </h1>
         <p style={{ color: C.dim, fontSize: 13, lineHeight: 1.5, marginTop: 8 }}>

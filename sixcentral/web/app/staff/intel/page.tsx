@@ -266,6 +266,7 @@ export default function IntelPage() {
       <header className="intel-head">
         <div>
           <h1>Intel Desk</h1>
+          <a href="/staff/collectibles" style={{ color: "#1FE5D6", fontSize: 12, fontWeight: 700, textDecoration: "none", marginLeft: 12 }}>Atlas Desk &rarr;</a>
           <p className="sub">
             Confirmed over rumour. Ranked GTA signal for editorial decisions.
           </p>
