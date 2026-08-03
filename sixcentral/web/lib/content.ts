@@ -114,6 +114,11 @@ export async function getOnlineArticles(limit = 12): Promise<Article[]> {
 }
 
 export async function getGuideBySlug(slug: string): Promise<Guide | null> {
+  const sb = getSupabase();
+  if (sb) {
+    const { data } = await sb.from('guides').select('*').eq('slug', slug).eq('published', true).maybeSingle();
+    if (data) return mapGuide(data);
+  }
   const guides = await getGuides();
   return guides.find((g) => g.slug === slug) ?? null;
 }
