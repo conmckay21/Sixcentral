@@ -40,9 +40,19 @@ const GTA6_LIVE = [
   },
 ];
 
+function topicOf(kicker: string | null): string {
+  const k = (kicker ?? '').trim();
+  if (k.toLowerCase().includes('comparison')) return 'Comparisons';
+  const base = k.replace(/\s*guide$/i, '') || 'Guides';
+  return base.endsWith('s') ? base : `${base}s`;
+}
+
+const TOPIC_ORDER: Record<string, number> = { Heists: 0, Business: 1, Comparisons: 90 };
+
 export default function Guides() {
   const router = useRouter();
   const [guides, setGuides] = useState<GuideRow[] | null>(null);
+  const [topic, setTopic] = useState('All');
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
@@ -65,6 +75,13 @@ export default function Guides() {
     setRefreshing(false);
   }, [load]);
 
+  const topics = (() => {
+    const seen = new Set<string>();
+    for (const g of guides ?? []) seen.add(topicOf(g.kicker));
+    return ['All', ...Array.from(seen).sort((a, b) => (TOPIC_ORDER[a] ?? 50) - (TOPIC_ORDER[b] ?? 50) || a.localeCompare(b))];
+  })();
+  const shown = (guides ?? []).filter((g) => topic === 'All' || topicOf(g.kicker) === topic);
+
   return (
     <SafeAreaView style={st.safe}>
       <ScrollView
@@ -76,6 +93,15 @@ export default function Guides() {
         <Text style={st.sub}>Checked in-game before it is published. No guesswork sold as fact.</Text>
 
         <SectionTitle>GTA Online · live now</SectionTitle>
+        {guides && guides.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.chipsRow} contentContainerStyle={{ gap: 8 }}>
+            {topics.map((t) => (
+              <Pressable key={t} onPress={() => setTopic(t)} style={[st.filterChip, topic === t && st.filterChipOn]}>
+                <Text style={[st.filterChipText, topic === t && st.filterChipTextOn]}>{t}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        ) : null}
         {guides === null ? (
           <Text style={st.note}>Loading the desk…</Text>
         ) : guides.length === 0 ? (
@@ -83,7 +109,7 @@ export default function Guides() {
             The online desk could not load. Pull to refresh, or find every guide at sixcentral.co.uk/online.
           </Text>
         ) : (
-          guides.map((g) => {
+          shown.map((g) => {
             const heroSrc = absUrl(g.hero_image?.src ?? null);
             return (
               <Pressable
@@ -165,4 +191,9 @@ const st = StyleSheet.create({
   chipSoon: { borderColor: C.gold, backgroundColor: 'rgba(255,200,61,0.08)' },
   chipText: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
   note: { color: C.dim, lineHeight: 19, fontSize: 12, marginTop: 18 },
+  chipsRow: { marginBottom: 12 },
+  filterChip: { borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingVertical: 7, paddingHorizontal: 14, backgroundColor: 'rgba(255,255,255,0.03)' },
+  filterChipOn: { borderColor: C.pink, backgroundColor: 'rgba(255,46,136,0.12)' },
+  filterChipText: { color: C.muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  filterChipTextOn: { color: C.pink },
 });
