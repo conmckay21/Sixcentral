@@ -40,14 +40,23 @@ const GTA6_LIVE = [
   },
 ];
 
+const TOPIC_LABELS: Record<string, string> = {
+  'heist guide': 'Heists',
+  'business guide': 'Business',
+  'weapons guide': 'Weapons',
+  'vehicles guide': 'Vehicles',
+  'money guide': 'Money',
+  'the comparison desk': 'Comparisons',
+};
+
 function topicOf(kicker: string | null): string {
-  const k = (kicker ?? '').trim();
-  if (k.toLowerCase().includes('comparison')) return 'Comparisons';
-  const base = k.replace(/\s*guide$/i, '') || 'Guides';
-  return base.endsWith('s') ? base : `${base}s`;
+  const k = (kicker ?? '').trim().toLowerCase();
+  if (TOPIC_LABELS[k]) return TOPIC_LABELS[k];
+  if (k.includes('comparison')) return 'Comparisons';
+  return (kicker ?? '').trim().replace(/\s*guide$/i, '') || 'Guides';
 }
 
-const TOPIC_ORDER: Record<string, number> = { Heists: 0, Business: 1, Comparisons: 90 };
+const TOPIC_ORDER: Record<string, number> = { Heists: 0, Business: 1, Money: 2, Weapons: 3, Vehicles: 4, Comparisons: 90 };
 
 export default function Guides() {
   const router = useRouter();

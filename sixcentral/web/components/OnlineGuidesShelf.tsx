@@ -8,14 +8,23 @@ import GuideCard from './GuideCard';
  * Turns a guide kicker into a filter topic. Kickers are the source of truth,
  * so new desks (Weapons guide, Vehicles guide) grow their own chip automatically.
  */
+const TOPIC_LABELS: Record<string, string> = {
+  'heist guide': 'Heists',
+  'business guide': 'Business',
+  'weapons guide': 'Weapons',
+  'vehicles guide': 'Vehicles',
+  'money guide': 'Money',
+  'the comparison desk': 'Comparisons',
+};
+
 function topicOf(kicker: string): string {
   const k = kicker.trim().toLowerCase();
+  if (TOPIC_LABELS[k]) return TOPIC_LABELS[k];
   if (k.includes('comparison')) return 'Comparisons';
-  const base = kicker.trim().replace(/\s*guide$/i, '');
-  return base.endsWith('s') ? base : `${base}s`;
+  return kicker.trim().replace(/\s*guide$/i, '') || 'Guides';
 }
 
-const TOPIC_ORDER: Record<string, number> = { Heists: 0, Business: 1, Comparisons: 90 };
+const TOPIC_ORDER: Record<string, number> = { Heists: 0, Business: 1, Money: 2, Weapons: 3, Vehicles: 4, Comparisons: 90 };
 
 export default function OnlineGuidesShelf({ guides }: { guides: Guide[] }) {
   const [topic, setTopic] = useState('All');
