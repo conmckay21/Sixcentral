@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import ArticleCard from '@/components/ArticleCard';
 import GuideCard from '@/components/GuideCard';
+import OnlineGuidesShelf from '@/components/OnlineGuidesShelf';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import { getOnlineArticles, getOnlineGuides } from '@/lib/content';
 
@@ -48,7 +49,7 @@ function crewLine(c: { xbox: number; ps5: number }): string | null {
 export default async function OnlinePage() {
   const [articles, guides, counts] = await Promise.all([
     getOnlineArticles(6),
-    getOnlineGuides(12),
+    getOnlineGuides(100),
     crewCounts(),
   ]);
   const live = counts ? crewLine(counts) : null;
@@ -107,11 +108,7 @@ export default async function OnlinePage() {
             <Link href="/guides">The guides desk &rarr;</Link>
           </div>
           {guides.length ? (
-            <div className="grid grid--3">
-              {guides.map((g) => (
-                <GuideCard key={g.slug} guide={g} />
-              ))}
-            </div>
+            <OnlineGuidesShelf guides={guides} />
           ) : (
             <p style={{ color: 'var(--muted)' }}>
               Landing in batches: a guide for every heist on the Finder, then the businesses and the
