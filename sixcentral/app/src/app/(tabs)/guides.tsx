@@ -101,6 +101,10 @@ export default function Guides() {
         <Text style={st.h1}>Guides</Text>
         <Text style={st.sub}>Checked in-game before it is published. No guesswork sold as fact.</Text>
 
+        <Pressable onPress={() => router.push('/collectibles' as Href)} style={st.trackerCard}>
+          <Text style={st.trackerTitle}>COLLECTIBLES TRACKER</Text>
+          <Text style={st.trackerSub}>All 23 sets, tick off every item, synced to your account</Text>
+        </Pressable>
         <SectionTitle>GTA Online · live now</SectionTitle>
         {guides && guides.length > 0 ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={st.chipsRow} contentContainerStyle={{ gap: 8 }}>
@@ -201,6 +205,9 @@ const st = StyleSheet.create({
   chipText: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
   note: { color: C.dim, lineHeight: 19, fontSize: 12, marginTop: 18 },
   chipsRow: { marginBottom: 12 },
+  trackerCard: { borderWidth: 1, borderColor: C.cyan, borderRadius: 14, padding: 13, marginBottom: 14, backgroundColor: 'rgba(31,229,214,0.07)' },
+  trackerTitle: { color: C.cyan, fontSize: 13, fontWeight: '900', letterSpacing: 0.6 },
+  trackerSub: { color: C.muted, fontSize: 11.5, marginTop: 4 },
   filterChip: { borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingVertical: 7, paddingHorizontal: 14, backgroundColor: 'rgba(255,255,255,0.03)' },
   filterChipOn: { borderColor: C.pink, backgroundColor: 'rgba(255,46,136,0.12)' },
   filterChipText: { color: C.muted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
