@@ -205,7 +205,7 @@ const st = StyleSheet.create({
   chipText: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
   note: { color: C.dim, lineHeight: 19, fontSize: 12, marginTop: 18 },
   chipsRow: { marginBottom: 12 },
-  trackerCard: { borderWidth: 1, borderColor: C.cyan, borderRadius: 14, padding: 13, marginBottom: 14, backgroundColor: 'rgba(31,229,214,0.07)' },
+  trackerCard: { borderWidth: 1, borderColor: C.cyan, borderRadius: 14, padding: 13, marginTop: 16, marginBottom: 14, backgroundColor: 'rgba(31,229,214,0.07)' },
   trackerTitle: { color: C.cyan, fontSize: 13, fontWeight: '900', letterSpacing: 0.6 },
   trackerSub: { color: C.muted, fontSize: 11.5, marginTop: 4 },
   filterChip: { borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingVertical: 7, paddingHorizontal: 14, backgroundColor: 'rgba(255,255,255,0.03)' },

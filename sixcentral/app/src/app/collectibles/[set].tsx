@@ -10,6 +10,7 @@ type SetRow = {
   name: string;
   total: number | null;
   reward: string;
+  hint: string | null;
 };
 
 type ItemRow = { idx: number; label: string; notes: string | null };
@@ -26,7 +27,7 @@ export default function CollectibleSet() {
     if (!setSlug) return;
     const { data: s } = await supabase
       .from('collectible_sets')
-      .select('slug,name,total,reward')
+      .select('slug,name,total,reward,hint')
       .eq('slug', setSlug)
       .maybeSingle();
     setMeta((s as SetRow) ?? null);
@@ -91,6 +92,7 @@ export default function CollectibleSet() {
 
   const total = meta?.total ?? 0;
   const numbers = useMemo(() => Array.from({ length: total }, (_, i) => i + 1), [total]);
+  const hasLabels = useMemo(() => Object.keys(items).length > 0, [items]);
   const selectedItem = selected != null ? items[selected] : undefined;
 
   return (
@@ -99,6 +101,11 @@ export default function CollectibleSet() {
         <Text style={st.h1}>{meta?.name?.toUpperCase() ?? 'COLLECTIBLES'}</Text>
         {meta ? (
           <Text style={st.reward}>{meta.reward}</Text>
+        ) : null}
+        {meta?.hint ? (
+          <View style={st.hintBox}>
+            <Text style={st.hintText}>{meta.hint}</Text>
+          </View>
         ) : null}
         <View style={st.progressRow}>
           <Text style={st.progressText}>
@@ -116,33 +123,60 @@ export default function CollectibleSet() {
           </View>
         ) : null}
 
-        <View style={st.grid}>
-          {numbers.map((n) => {
-            const on = ticked.has(n);
-            return (
-              <Pressable
-                key={n}
-                onPress={() => toggle(n)}
-                style={[st.tile, on && st.tileOn, !uid && st.tileDisabled]}
-              >
-                <Text style={[st.tileText, on && st.tileTextOn]}>{n}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {selectedItem ? (
-          <View style={st.detail}>
-            <Text style={st.detailLabel}>
-              #{selected}: {selectedItem.label}
-            </Text>
-            {selectedItem.notes ? <Text style={st.detailNotes}>{selectedItem.notes}</Text> : null}
+        {hasLabels ? (
+          <View style={{ marginTop: 14 }}>
+            {numbers.map((n) => {
+              const on = ticked.has(n);
+              const item = items[n];
+              return (
+                <Pressable
+                  key={n}
+                  onPress={() => toggle(n)}
+                  style={[st.row, on && st.rowOn, !uid && st.tileDisabled]}
+                >
+                  <View style={[st.tick, on && st.tickOn]}>
+                    {on ? <Text style={st.tickMark}>✓</Text> : null}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[st.rowLabel, on && st.rowLabelOn]}>
+                      #{n}  {item?.label ?? ''}
+                    </Text>
+                    {item?.notes ? <Text style={st.rowNotes}>{item.notes}</Text> : null}
+                  </View>
+                </Pressable>
+              );
+            })}
           </View>
         ) : (
-          <Text style={st.hint}>
-            Tick items in any order as you collect them. Item names and locations appear here as the
-            SixCentral atlas fills in.
-          </Text>
+          <>
+            <View style={st.grid}>
+              {numbers.map((n) => {
+                const on = ticked.has(n);
+                return (
+                  <Pressable
+                    key={n}
+                    onPress={() => toggle(n)}
+                    style={[st.tile, on && st.tileOn, !uid && st.tileDisabled]}
+                  >
+                    <Text style={[st.tileText, on && st.tileTextOn]}>{n}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {selectedItem ? (
+              <View style={st.detail}>
+                <Text style={st.detailLabel}>
+                  #{selected}: {selectedItem.label}
+                </Text>
+                {selectedItem.notes ? <Text style={st.detailNotes}>{selectedItem.notes}</Text> : null}
+              </View>
+            ) : (
+              <Text style={st.hint}>
+                Tick items in any order as you collect them. Item names and locations appear here as
+                the SixCentral atlas fills in.
+              </Text>
+            )}
+          </>
         )}
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -201,4 +235,14 @@ const st = StyleSheet.create({
   detailLabel: { color: C.text, fontSize: 13, fontWeight: '800' },
   detailNotes: { color: C.muted, fontSize: 12, lineHeight: 17, marginTop: 5 },
   hint: { color: C.dim, fontSize: 11.5, lineHeight: 16, marginTop: 16 },
+  hintBox: { marginTop: 12, borderWidth: 1, borderColor: C.line, borderRadius: 12, padding: 11, backgroundColor: 'rgba(31,229,214,0.05)' },
+  hintText: { color: C.muted, fontSize: 12, lineHeight: 17 },
+  row: { flexDirection: 'row', gap: 10, borderWidth: 1, borderColor: C.line, borderRadius: 12, padding: 11, marginBottom: 8, backgroundColor: 'rgba(255,255,255,0.02)', alignItems: 'flex-start' },
+  rowOn: { borderColor: C.pink, backgroundColor: 'rgba(255,46,136,0.08)' },
+  tick: { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: C.line, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  tickOn: { borderColor: C.pink, backgroundColor: C.pink },
+  tickMark: { color: '#fff', fontSize: 13, fontWeight: '900', lineHeight: 15 },
+  rowLabel: { color: C.text, fontSize: 13, fontWeight: '700', lineHeight: 18 },
+  rowLabelOn: { color: C.pink },
+  rowNotes: { color: C.dim, fontSize: 11.5, lineHeight: 16, marginTop: 3 },
 });
