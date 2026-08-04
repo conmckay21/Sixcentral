@@ -77,6 +77,25 @@ export default function LongformArticle({
                   {block.items?.map((it, j) => <li key={j}>{it}</li>)}
                 </ul>
               );
+            if (block.type === 'table')
+              return (
+                <div key={i} className="gtable-wrap">
+                  <table className="gtable">
+                    <thead>
+                      <tr>
+                        {block.headers?.map((h, j) => <th key={j}>{h}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {block.rows?.map((r, j) => (
+                        <tr key={j}>
+                          {r.map((c, k) => <td key={k}>{c}</td>)}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
             return <p key={i}>{block.text}</p>;
           })}
         </div>

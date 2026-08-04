@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { voteBus } from '@/lib/voteBus';
 import { SITE } from '@/lib/site';
 
-type Block = { type: 'p' | 'h2' | 'ul'; text?: string; items?: string[] };
+type Block = { type: 'p' | 'h2' | 'ul' | 'table'; text?: string; items?: string[]; headers?: string[]; rows?: string[][] };
 type Item = {
   slug: string;
   title: string;
@@ -105,6 +105,26 @@ export default function Guide() {
               <Text key={i} style={st.h2}>
                 {b.text}
               </Text>
+            );
+          }
+          if (b.type === 'table') {
+            return (
+              <ScrollView key={i} horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+                <View>
+                  <View style={st.trow}>
+                    {(b.headers ?? []).map((h, j) => (
+                      <Text key={j} style={[st.tcell, st.thead]}>{h}</Text>
+                    ))}
+                  </View>
+                  {(b.rows ?? []).map((r, j) => (
+                    <View key={j} style={[st.trow, j % 2 === 1 && st.trowAlt]}>
+                      {r.map((c, k) => (
+                        <Text key={k} style={[st.tcell, k === 0 && st.tfirst]}>{c}</Text>
+                      ))}
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
             );
           }
           if (b.type === 'ul') {
@@ -216,6 +236,11 @@ function Reactions({ slug }: { slug: string }) {
 }
 
 const st = StyleSheet.create({
+  trow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: C.line },
+  trowAlt: { backgroundColor: 'rgba(255,255,255,0.02)' },
+  tcell: { width: 118, color: C.muted, fontSize: 11.5, lineHeight: 16, paddingVertical: 8, paddingHorizontal: 8 },
+  thead: { color: C.cyan, fontWeight: '800', textTransform: 'uppercase', fontSize: 10, letterSpacing: 0.5 },
+  tfirst: { color: C.text, fontWeight: '700', width: 150 },
   safe: { flex: 1, backgroundColor: C.bg },
   pad: { padding: 20, paddingBottom: 44 },
   back: { color: C.cyan, fontWeight: '800', marginBottom: 16, fontSize: 13 },

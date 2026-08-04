@@ -664,3 +664,13 @@ select.nl__input { appearance: none; }
 /* ---- Flair treatments: the two new tiers ---- */
 .flair-cyan_edge  { border-color: #1FE5D6 !important; box-shadow: 0 0 0 2px rgba(31, 229, 214, 0.3); }
 .flair-amber_ring { border-color: var(--orange) !important; box-shadow: 0 0 12px rgba(255, 158, 69, 0.7); }
+
+
+/* Guide data tables */
+.gtable-wrap { overflow-x: auto; margin: 18px 0 26px; border: 1px solid var(--line); border-radius: 12px; }
+.gtable { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.gtable th { font-family: var(--mono); font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--cyan); text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.gtable td { color: var(--muted); padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.gtable td:first-child { color: var(--text); font-weight: 600; white-space: nowrap; }
+.gtable tr:last-child td { border-bottom: none; }
+.gtable tbody tr:nth-child(even) { background: rgba(255,255,255,0.02); }

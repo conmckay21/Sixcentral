@@ -27,7 +27,7 @@ export type ContentBase = {
   downCount?: number; // ISO date
   readingMins: number;
   // simple block content for the scaffold; swap for MDX / rich text later
-  body: Array<{ type: 'p' | 'h2' | 'ul'; text?: string; items?: string[] }>;
+  body: Array<{ type: 'p' | 'h2' | 'ul' | 'table'; text?: string; items?: string[]; headers?: string[]; rows?: string[][] }>;
   gradient: string; // hero palette (all-original, no game art)
   motif?: Motif;    // HeroArt illustration key
   /** Optional credited official screenshot; falls back to HeroArt when absent. */
