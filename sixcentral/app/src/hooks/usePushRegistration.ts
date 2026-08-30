@@ -98,9 +98,13 @@ export function usePushRegistration(accessToken?: string | null) {
   // Deep link a tapped notification straight to the article.
   useEffect(() => {
     responseListener.current = Notifications.addNotificationResponseReceivedListener((res) => {
-      const data = res.notification.request.content.data as { slug?: string; url?: string }
-      if (data?.slug) router.push(`/news/${data.slug}`)
-      else if (data?.url) router.push(data.url)
+      const data = res.notification.request.content.data as {
+        slug?: string
+        kind?: string
+      }
+      if (!data?.slug) return
+      const path = data.kind === 'guide' ? `/guide/${data.slug}` : `/article/${data.slug}`
+      router.push(path as never)
     })
     return () => responseListener.current?.remove()
   }, [])

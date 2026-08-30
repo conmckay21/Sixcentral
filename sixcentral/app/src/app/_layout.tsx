@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
 import { C } from '@/lib/theme';
+import { usePushRegistration } from '@/hooks/usePushRegistration';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -19,6 +20,8 @@ const SixTheme = {
 };
 
 export default function RootLayout() {
+  usePushRegistration();
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
     <ThemeProvider value={SixTheme}>
