@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import * as Notifications from 'expo-notifications';
+import * as Updates from 'expo-updates';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { C, G, GRAD } from '@/lib/theme';
@@ -53,6 +55,7 @@ export default function Account() {
   const [pushOn, setPushOn] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushBlocked, setPushBlocked] = useState(false);
+  const [diag, setDiag] = useState('gathering…');
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
@@ -98,6 +101,27 @@ export default function Account() {
       setPushBlocked(status !== 'granted' && !canAskAgain);
     });
   }, []);
+
+  // TEMPORARY diagnostics. Remove once the first-launch prompt is confirmed.
+  useEffect(() => {
+    (async () => {
+      try {
+        const perm = await Notifications.getPermissionsAsync();
+        const asked = await AsyncStorage.getItem('sixcentral.push.asked.v1');
+        const lines = [
+          `bundle: ${Updates.isEmbeddedLaunch ? 'EMBEDDED (no OTA yet)' : 'OTA APPLIED'}`,
+          `updateId: ${Updates.updateId ? String(Updates.updateId).slice(0, 8) : 'none'}`,
+          `channel: ${Updates.channel ?? 'none'}`,
+          `runtime: ${Updates.runtimeVersion ?? 'none'}`,
+          `perm: ${perm.status} · canAskAgain: ${String(perm.canAskAgain)}`,
+          `askedFlag: ${asked ?? 'not set'}`,
+        ];
+        setDiag(lines.join('\n'));
+      } catch (e) {
+        setDiag(`diag error: ${String(e)}`);
+      }
+    })();
+  }, [pushOn]);
 
   function flash(good: boolean, text: string) {
     if (good) {
@@ -349,8 +373,8 @@ export default function Account() {
         ) : (
           <>
             <Text style={st.dobHint}>
-              Get an alert the moment major GTA 6 news drops. We keep it to the big stuff,
-              never every post.
+              Alerts are off. Turn them on and we will let you know the moment major
+              GTA 6 news drops. We keep it to the big stuff, never every post.
             </Text>
             <Pressable style={[st.btn, pushBusy && { opacity: 0.6 }]} onPress={enablePush} disabled={pushBusy}>
               <Text style={st.btnText}>{pushBusy ? 'Just a sec…' : 'Turn on alerts'}</Text>
@@ -437,6 +461,20 @@ export default function Account() {
             <Text style={st.proSub}>Landing with the game this November.</Text>
           </LinearGradient>
         )}
+
+        <Text style={st.label}>Push diagnostics</Text>
+        <View style={st.diagBox}>
+          <Text style={st.diagText}>{diag}</Text>
+        </View>
+        <Pressable
+          style={st.keepBtn}
+          onPress={async () => {
+            await AsyncStorage.removeItem('sixcentral.push.asked.v1');
+            flash(true, 'Asked flag cleared. Fully close and reopen the app.');
+          }}
+        >
+          <Text style={st.keepBtnText}>Reset asked flag</Text>
+        </Pressable>
 
         <Text style={st.label}>Danger zone</Text>
         {!delOpen ? (
@@ -544,5 +582,7 @@ const st = StyleSheet.create({
   delBtnText: { color: '#fff', fontWeight: '900', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 },
   keepBtn: { borderColor: C.line2, borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13 },
   keepBtnText: { color: C.muted, fontWeight: '800', fontSize: 12 },
+  diagBox: { borderColor: C.line2, borderWidth: 1, borderRadius: 12, padding: 12, backgroundColor: C.bg2, marginBottom: 10 },
+  diagText: { color: C.muted, fontSize: 11, lineHeight: 18, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' },
   muted: { color: C.muted, lineHeight: 20 },
 });
