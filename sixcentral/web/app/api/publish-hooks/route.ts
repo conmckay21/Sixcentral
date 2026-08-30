@@ -85,6 +85,7 @@ export async function POST(req: NextRequest) {
     body: title,
     url,
     articleSlug: slug,
+    kind,
   })
 
   return NextResponse.json({ ok: true, indexed: true, push: result })

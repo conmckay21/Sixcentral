@@ -17,6 +17,7 @@ export type PushPayload = {
   body: string
   url?: string
   articleSlug?: string
+  kind?: string
 }
 
 type ExpoTicket = {
@@ -102,6 +103,7 @@ export async function sendPush(payload: PushPayload) {
         url: payload.url ?? null,
         slug: payload.articleSlug ?? null,
         topic: payload.topic,
+        kind: payload.kind ?? "article",
       },
       channelId: payload.topic,
       priority: 'high' as const,
