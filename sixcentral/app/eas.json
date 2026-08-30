@@ -10,11 +10,15 @@
     },
     "preview": {
       "distribution": "internal",
-      "channel": "preview"
+      "channel": "preview",
+      "node": "24.15.0",
+      "image": "latest"
     },
     "production": {
       "autoIncrement": true,
-      "channel": "production"
+      "channel": "production",
+      "node": "24.15.0",
+      "image": "latest"
     }
   },
   "submit": {
