@@ -11,14 +11,12 @@
     "preview": {
       "distribution": "internal",
       "channel": "preview",
-      "node": "24.15.0",
-      "image": "latest"
+      "node": "24.15.0"
     },
     "production": {
       "autoIncrement": true,
       "channel": "production",
-      "node": "24.15.0",
-      "image": "latest"
+      "node": "24.15.0"
     }
   },
   "submit": {
