@@ -4,10 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
+import * as Notifications from 'expo-notifications';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { C, G, GRAD } from '@/lib/theme';
 import { flairColor } from '@/lib/flairs';
+import { usePushRegistration } from '@/hooks/usePushRegistration';
 import Avatar from '@/components/Avatar';
 
 type Flair = { key: string; label: string; min_rank_id: number };
@@ -47,6 +49,11 @@ export default function Account() {
   const [delText, setDelText] = useState('');
   const [deleting, setDeleting] = useState(false);
 
+  const { registerForPush } = usePushRegistration(session?.access_token ?? null);
+  const [pushOn, setPushOn] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushBlocked, setPushBlocked] = useState(false);
+
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
       setSession(data.session);
@@ -85,6 +92,13 @@ export default function Account() {
     });
   }, []);
 
+  useEffect(() => {
+    Notifications.getPermissionsAsync().then(({ status, canAskAgain }) => {
+      setPushOn(status === 'granted');
+      setPushBlocked(status !== 'granted' && !canAskAgain);
+    });
+  }, []);
+
   function flash(good: boolean, text: string) {
     if (good) {
       setOk(text);
@@ -93,6 +107,21 @@ export default function Account() {
     } else {
       setMsg(text);
       setOk('');
+    }
+  }
+
+  async function enablePush() {
+    if (pushBusy) return;
+    setPushBusy(true);
+    const granted = await registerForPush();
+    setPushBusy(false);
+    setPushOn(granted);
+    if (granted) {
+      flash(true, 'Alerts are on ✓');
+    } else {
+      const { canAskAgain } = await Notifications.getPermissionsAsync();
+      setPushBlocked(!canAskAgain);
+      flash(false, canAskAgain ? 'Alerts stayed off. You can turn them on any time.' : 'Notifications are switched off for SixCentral in your device settings.');
     }
   }
 
@@ -303,6 +332,32 @@ export default function Account() {
           })}
         </View>
 
+        <Text style={st.label}>Notifications</Text>
+        {pushOn ? (
+          <View style={st.pushOnBox}>
+            <Text style={st.pushOnText}>ALERTS ON</Text>
+            <Text style={st.pushOnSub}>
+              We will let you know when the big GTA 6 news lands. Turn them off any time
+              in your device settings.
+            </Text>
+          </View>
+        ) : pushBlocked ? (
+          <Text style={st.dobHint}>
+            Notifications are switched off for SixCentral in your device settings. Turn
+            them back on there and we will pick it up from here.
+          </Text>
+        ) : (
+          <>
+            <Text style={st.dobHint}>
+              Get an alert the moment major GTA 6 news drops. We keep it to the big stuff,
+              never every post.
+            </Text>
+            <Pressable style={[st.btn, pushBusy && { opacity: 0.6 }]} onPress={enablePush} disabled={pushBusy}>
+              <Text style={st.btnText}>{pushBusy ? 'Just a sec…' : 'Turn on alerts'}</Text>
+            </Pressable>
+          </>
+        )}
+
         <Text style={st.label}>Bio · {bio.length}/200</Text>
         <TextInput
           style={[st.input, { minHeight: 80, textAlignVertical: 'top' }]}
@@ -444,6 +499,9 @@ const st = StyleSheet.create({
   flairChip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 7 },
   flairDot: { width: 8, height: 8, borderRadius: 4 },
   flairText: { color: C.text, fontSize: 11, fontWeight: '700' },
+  pushOnBox: { borderColor: C.green, borderWidth: 1, borderRadius: 16, padding: 16, backgroundColor: 'rgba(53,226,124,0.07)' },
+  pushOnText: { color: C.green, fontWeight: '900', fontSize: 14, letterSpacing: 1 },
+  pushOnSub: { color: C.muted, marginTop: 4, fontSize: 12, lineHeight: 17 },
   input: { backgroundColor: C.bg2, borderColor: C.line2, borderWidth: 1, borderRadius: 12, color: C.text, padding: 13 },
   platRow: { flexDirection: 'row', gap: 8 },
   plat: { borderColor: C.line2, borderWidth: 1, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8 },
