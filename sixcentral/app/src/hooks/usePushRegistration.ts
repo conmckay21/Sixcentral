@@ -28,15 +28,32 @@ Notifications.setNotificationHandler({
   }),
 })
 
-/** Resolves once the app is foregrounded, so the dialog is not shown to nobody. */
-function waitUntilActive(): Promise<void> {
+/**
+ * Resolves once the app is foregrounded, or after a hard timeout.
+ *
+ * The timeout is not optional. At cold launch iOS can report currentState as
+ * 'unknown' or 'background' while the app is in fact already on screen, and no
+ * 'change' event ever arrives. Without the race this hangs forever and the
+ * prompt never fires.
+ */
+function waitUntilActive(timeoutMs = 1500): Promise<void> {
   if (AppState.currentState === 'active') return Promise.resolve()
   return new Promise((resolve) => {
-    const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') {
+    let done = false
+    const finish = () => {
+      if (done) return
+      done = true
+      clearTimeout(timer)
+      try {
         sub.remove()
-        resolve()
+      } catch {
+        // listener already gone
       }
+      resolve()
+    }
+    const timer = setTimeout(finish, timeoutMs)
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') finish()
     })
   })
 }
