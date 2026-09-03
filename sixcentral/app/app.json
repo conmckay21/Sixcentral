@@ -20,6 +20,7 @@
     },
     "android": {
       "package": "uk.co.sixcentral.app",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#0B0810",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "402390280370",
+    "project_id": "six-central",
+    "storage_bucket": "six-central.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:402390280370:android:9c1559697207058ace81ab",
+        "android_client_info": {
+          "package_name": "uk.co.sixcentral.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyACNQNGEf0ltlwAKSGQ8EHQRdhx83rDFKE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
