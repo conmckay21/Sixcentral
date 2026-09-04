@@ -14,6 +14,33 @@ const API_BASE = 'https://sixcentral.co.uk'
 const ASKED_KEY = 'sixcentral.push.asked.v1'
 const INSTALL_KEY = 'sixcentral.push.install.v1'
 
+// Temporary diagnostics. Fire and forget, never throws, never awaited on the
+// critical path. Removed once Android registration is confirmed on device.
+function diag(step: string, detail?: unknown) {
+  try {
+    const text =
+      detail instanceof Error
+        ? `${detail.name}: ${detail.message}`
+        : detail === undefined
+          ? null
+          : typeof detail === 'string'
+            ? detail
+            : JSON.stringify(detail)
+    fetch(`${API_BASE}/api/push/diag`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        step,
+        detail: text,
+        deviceId: `${Device.osName}-${Device.modelId ?? Device.modelName}`,
+        platform: Platform.OS,
+      }),
+    }).catch(() => {})
+  } catch {
+    // Diagnostics must never affect the app.
+  }
+}
+
 // Stable per install. Lets the server retire the previous token when Expo
 // rotates it, so one phone never holds two live tokens.
 async function getInstallId(): Promise<string | null> {
@@ -107,10 +134,16 @@ export function usePushRegistration(accessToken?: string | null) {
   const registerForPush = useCallback(async (): Promise<boolean> => {
     if (!Device.isDevice) return false
 
-    await ensureAndroidChannels()
+    diag('register:enter')
+    try {
+      await ensureAndroidChannels()
+    } catch (err) {
+      diag('register:channels_error', err)
+    }
 
     const existing = await Notifications.getPermissionsAsync()
     let status = existing.status
+    diag('register:permission', { status, canAskAgain: existing.canAskAgain })
 
     if (status !== 'granted') {
       if (!existing.canAskAgain) return false
@@ -126,10 +159,18 @@ export function usePushRegistration(accessToken?: string | null) {
       'ef1968be-aa57-4737-b75f-7935b9ccf397'
 
     try {
-      const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId })
+      let token: string
+      try {
+        const result = await Notifications.getExpoPushTokenAsync({ projectId })
+        token = result.data
+        diag('register:token_ok', token.slice(0, 30))
+      } catch (err) {
+        diag('register:token_error', err)
+        throw err
+      }
       const installId = await getInstallId()
 
-      await fetch(`${API_BASE}/api/push/register`, {
+      const res = await fetch(`${API_BASE}/api/push/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -145,7 +186,9 @@ export function usePushRegistration(accessToken?: string | null) {
           topicWeekly: true,
         }),
       })
+      diag('register:response', res.status)
     } catch (err) {
+      diag('register:catch', err)
       // Offline, the endpoint is down, or the native token call failed (on
       // Android that means Firebase did not initialise). Permission is still
       // granted, and the next cold start will retry the registration.
@@ -169,8 +212,10 @@ export function usePushRegistration(accessToken?: string | null) {
     ;(async () => {
       if (!Device.isDevice) return
 
+      diag('bootstrap:enter')
       try {
         const { status, canAskAgain } = await Notifications.getPermissionsAsync()
+        diag('bootstrap:permission', { status, canAskAgain })
 
         if (status === 'granted') {
           await registerForPush()
@@ -194,8 +239,9 @@ export function usePushRegistration(accessToken?: string | null) {
         if (await AsyncStorage.getItem(ASKED_KEY)) return
 
         await registerForPush()
-      } catch {
+      } catch (err) {
         // Never let a permissions hiccup take the app down on launch.
+        diag('bootstrap:catch', err)
       }
     })()
   }, [registerForPush])
