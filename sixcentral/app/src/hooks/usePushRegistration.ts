@@ -12,6 +12,21 @@ import { router } from 'expo-router'
 
 const API_BASE = 'https://sixcentral.co.uk'
 const ASKED_KEY = 'sixcentral.push.asked.v1'
+const INSTALL_KEY = 'sixcentral.push.install.v1'
+
+// Stable per install. Lets the server retire the previous token when Expo
+// rotates it, so one phone never holds two live tokens.
+async function getInstallId(): Promise<string | null> {
+  try {
+    const existing = await AsyncStorage.getItem(INSTALL_KEY)
+    if (existing) return existing
+    const fresh = Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')
+    await AsyncStorage.setItem(INSTALL_KEY, fresh)
+    return fresh
+  } catch {
+    return null
+  }
+}
 const FIRST_PROMPT_DELAY_MS = 2500
 
 // Module scope on purpose. A ref would reset if the root layout remounts, and
@@ -112,6 +127,7 @@ export function usePushRegistration(accessToken?: string | null) {
 
     try {
       const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId })
+      const installId = await getInstallId()
 
       await fetch(`${API_BASE}/api/push/register`, {
         method: 'POST',
@@ -122,6 +138,7 @@ export function usePushRegistration(accessToken?: string | null) {
         body: JSON.stringify({
           token,
           deviceId: `${Device.osName}-${Device.modelId ?? Device.modelName}`,
+          installId,
           platform: Platform.OS === 'ios' ? 'ios' : 'android',
           appVersion: Constants.expoConfig?.version ?? null,
           topicNews: true,

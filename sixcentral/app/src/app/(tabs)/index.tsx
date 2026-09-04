@@ -12,6 +12,7 @@ import { voteBus } from '@/lib/voteBus';
 import { C, G, GRAD } from '@/lib/theme';
 import { Chip, SectionTitle } from '@/components/ui';
 import AlertsCard from '@/components/AlertsCard';
+import BackgroundAlertsCard from '@/components/BackgroundAlertsCard';
 
 const LAUNCH = new Date('2026-11-19T00:00:00Z').getTime();
 const SITE = 'https://sixcentral.co.uk';
@@ -258,6 +259,7 @@ export default function Home() {
         </Pressable>
 
         <AlertsCard />
+        <BackgroundAlertsCard />
 
         <SectionTitle>Latest</SectionTitle>
         <FlatList

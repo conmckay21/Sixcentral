@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
   const token = typeof payload.token === 'string' ? payload.token : ''
   const deviceId = typeof payload.deviceId === 'string' ? payload.deviceId : ''
   const platform = payload.platform === 'ios' || payload.platform === 'android' ? payload.platform : ''
+  const installId = typeof payload.installId === 'string' && payload.installId.length <= 64 ? payload.installId : null
 
   if (!token.startsWith('ExponentPushToken')) {
     return NextResponse.json({ error: 'Invalid Expo push token' }, { status: 400 })
@@ -52,6 +53,7 @@ export async function POST(req: NextRequest) {
     platform,
     user_id: userId,
     app_version: typeof payload.appVersion === 'string' ? payload.appVersion : null,
+    install_id: installId,
     is_active: true,
     last_seen_at: new Date().toISOString(),
   }
@@ -66,6 +68,18 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  // One live token per install. When Expo rotates the token on the same
+  // install, the old one is retired here rather than lingering until a send
+  // reports it dead and the person gets the same alert twice.
+  if (installId) {
+    await db
+      .from('push_tokens')
+      .update({ is_active: false })
+      .eq('install_id', installId)
+      .neq('token', token)
+      .eq('is_active', true)
   }
 
   return NextResponse.json({ ok: true })
